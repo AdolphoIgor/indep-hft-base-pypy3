@@ -12,7 +12,8 @@ class Constants:
                     "required": True,
                     "datatype": str,
                     "calculated": True,
-                    "comments": "BeginString = “FIX.4.4”. Deve ser o primeiro campo da mensagem."
+                    "comments": "BeginString = “FIX.4.4”. Deve ser o primeiro campo da mensagem.",
+                    "default": "FIX.4.4"
                 },
                 {
                     "tag": 9,

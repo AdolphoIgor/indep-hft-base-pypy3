@@ -26,7 +26,6 @@ class PreConfiguratorJob(Job):
         while self._keep_running:
 
             if len(self._dict_configs) == 0:
-                ''' This gets the config.template to replace the control config. file control/config_cmd.json'''
                 with open(self.__config_file_path, mode='r', encoding=self.__encoder) as json_file:
                     self._dict_configs.update(json.load(json_file))
 

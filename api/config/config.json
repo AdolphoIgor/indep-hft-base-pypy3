@@ -296,7 +296,7 @@
           "type": "telnet",
           "hosts": [
             {
-              "host": "test_mode",
+              "host": "rmshml.cedrotech.com",
               "port": 443
             }
           ],
@@ -306,11 +306,11 @@
           "enabled": true,
           "brokers": [
             {
-              "id": 191,
-              "name": "adolpho.igor",
-              "usr": "CDRFIX",
+              "id": -1,
+              "name": "",
+              "usr": "",
               "pwd": -1,
-              "enabled": true
+              "enabled": false
             }
           ]
         },

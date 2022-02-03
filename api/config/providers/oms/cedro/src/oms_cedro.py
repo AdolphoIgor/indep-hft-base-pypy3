@@ -293,7 +293,6 @@ class CedroOMSProvider(CedroOMSProviderBasic):
             
         """
         # Every order has the following fields.
-        kwargs["BeginString"] = "FIX.4.4"
         kwargs["MsgSeqNum"] = self.__get_next_msg_seq_num()
         kwargs["SendingTime"] = datetime.now() + timedelta(seconds=-2)
         kwargs["Signature"] = self.__session.get("token")

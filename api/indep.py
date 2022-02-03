@@ -23,6 +23,7 @@ class IndepBase:
         logger.name = Constants.SOFTWARE_NAME
 
         self._test_mode = bool(kwargs.get("test_mode", False))
+        self._config_cmd_json = "control/config_cmd.json"
 
         # Holds the current configuration of the entire system.
         self._dict_configs = {}
@@ -198,7 +199,7 @@ class IndepBase:
             "encoder": "UTF-8",
             "sleep_when_done": 10,
             "config_file_path": "api/config/config.json",
-            "config_cmd_file_path": "control/config_cmd.json",
+            "config_cmd_file_path": self._config_cmd_json,
         }
 
         cls_str = f'PreConfiguratorJob(' \
@@ -237,7 +238,7 @@ class IndepBase:
 
         ''' Updates the control config... '''
         encoder = Constants.DEFAULT_ENCODER
-        with open('control/config_cmd.json', mode='w', encoding=encoder) as f:
+        with open(self._config_cmd_json, mode='w', encoding=encoder) as f:
             f.truncate(0)
             f.seek(0)
             json.dump(self._dict_configs, f, ensure_ascii=True, indent=2)
