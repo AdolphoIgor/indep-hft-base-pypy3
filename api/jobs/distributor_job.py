@@ -161,7 +161,7 @@ class DistributorJob(Job):
                 if not dct_oms_prvd.get("producer_running", False) and \
                         dct_oms_prvd.get("global_provider_queue", None) is not None and \
                         dct_oms_prvd.get("global_provider_decoder", None) is not None:
-                    prov = provider.get("name").replace(" ", '').lower()
+                    prov = provider.get("name").replace(" ", "").lower()
                     name = f"thr_distributor_md_{provider.get('id')}_{prov}"
                     f_path = f'{self.__log_oms_path}{datetime.now().strftime("%Y%m%d%H")}' + \
                              f'_{prov}' + '_oms_log_data.txt'

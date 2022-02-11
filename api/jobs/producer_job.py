@@ -89,39 +89,6 @@ class ProducerJob(Job):
 
                     time.sleep(0.01)
 
-            prdr_name = "oms_providers"
-            for provider in configs.get(prdr_name, []):
-
-                lst_oms_providers, lst_oms_sel_providers, dct_oms_prvd = \
-                    self._get_internal_provider_data(prdr_name, provider.get("id"))
-
-                if dct_oms_prvd.get("connected", False):
-                    # every provider in the list below has points to the same provider, so it's enought use the first
-                    # one to get the messages returned by de OMS.
-                    conn = dct_oms_prvd.get("global_provider_conn", None).get_connection()
-
-                    if conn is None:
-                        time.sleep(1)
-                        continue
-
-                    if not dct_oms_prvd.get("producer_running", False):
-                        queue = dct_oms_prvd.get("global_provider_queue", None)
-                        if queue is not None:
-                            prov = provider.get("name").replace(" ", '').lower()
-                            path = f'{self.__log_oms_cfg_path}{datetime.now().strftime("%Y%m%d")}' \
-                                   f'_{prov}_oms_log_raw.txt'
-
-                            name = f"thr_producer_oms_{provider.get('id')}_{prov}"
-                            thr_ = threading.Thread(
-                                target=__process_producer, name=name, args=(conn, queue, path, name, self.__encoder,
-                                                                            self._keep_running))
-                            self._lst_thread_pool.append({"name": name, "level": 2.2, "pointer": thr_})
-                            thr_.start()
-                            self._logger.info(f"Initializing the thread {name}...")
-                            dct_oms_prvd["producer_running"] = True
-
-                    time.sleep(0.01)
-
             time.sleep(self.__sleep_when_done)
 
         self._logger.info("Producer was finalized.")

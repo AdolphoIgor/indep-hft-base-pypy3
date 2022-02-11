@@ -43,7 +43,8 @@
             "encoder": "UTF-8",
             "sleep_when_done": 60,
             "log_market_data_cfg_path": "logs/marketdata/config/",
-            "log_oms_cfg_path": "logs/oms/config/"
+            "log_oms_cfg_path": "logs/oms/config/",
+            "delimiter": "|"
           }
         }
       ]
@@ -293,24 +294,13 @@
         "id": 0,
         "name": "CedroOMS",
         "connection": {
-          "type": "telnet",
+          "type": "cedro_quickfix",
           "hosts": [
             {
-              "host": "rmshml.cedrotech.com",
-              "port": 443
-            }
-          ],
-          "software_key": "",
-          "username": "adolpho.igor",
-          "password": "Trocar@22",
-          "enabled": true,
-          "brokers": [
-            {
-              "id": -1,
-              "name": "",
-              "usr": "",
-              "pwd": -1,
-              "enabled": false
+              "username": "adolpho.igor",
+              "password": "Trocar@22",
+              "enabled": true,
+              "settings_file": "api/config/quickfix_settings_homol.cfg"
             }
           ]
         },

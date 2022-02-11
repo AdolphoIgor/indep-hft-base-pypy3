@@ -25,10 +25,10 @@ class Connection:
         return self._connected
 
     def connect(self):
-        """ Every subclass must provide it's own way to connect to. """
+        """ Every subclass must provide its own way to connect to. """
 
     def disconnect(self):
-        """ Every subclass must provide it's own way to disconnect itself from. """
+        """ Every subclass must provide its own way to disconnect itself from. """
 
-    def execute(self, msg: bytes):
-        """ Every subclass must provide it's own way to execute a command in the server. """
+    def execute(self, msg):
+        """ Every subclass must provide its own way to execute a command in the server. """

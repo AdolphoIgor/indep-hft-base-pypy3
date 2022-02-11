@@ -6,7 +6,7 @@ from api.config.providers.oms.provider import OMSProvider
 from api.constants import Constants as Constants
 from api.exceptions import LayoutIndexNotFound, LayoutRequiredFildNotProvided, PayloadItemNotFound, \
     PayloadItemNotAsExpected
-from api.io.network.connection_telnet import ConnectionTelnetCedro
+from api.io.network.connection import Connection
 from api.logger import logger
 
 
@@ -131,11 +131,12 @@ class CedroOMSProviderBasic(OMSProvider):
 class CedroOMSProvider(CedroOMSProviderBasic):
     __used_classes = [datetime, date, time, timedelta]
 
-    def __init__(self, conn: ConnectionTelnetCedro, **kwargs):
+    def __init__(self, conn: Connection, **kwargs):
         super().__init__(**kwargs)
         logger.name = Constants.SOFTWARE_NAME
-        self.__oms_connection = conn
         self.__lst_logon = []
+
+        self.__oms_connection = conn
         self.__production_environment = False
 
     def __del__(self):
@@ -155,6 +156,33 @@ class CedroOMSProvider(CedroOMSProviderBasic):
         self.__oms_connection.execute(encoded)
 
         return self.decode(encoded)[0]
+
+
+    '''
+        FIX.MESSAGE EXAMPLE:
+    
+        message = fix.Message()
+        header = message.getHeader()
+    
+        header.setField(fix.BeginString("FIX.4.4"))
+        header.setField(fix.SenderCompID("adolpho.igor"))
+        header.setField(fix.TargetCompID("CDRFIX"))
+        header.setField(fix.SenderSubID("ALGO-PETR4"))
+        header.setField(fix.MsgType("A"))
+        header.setField(fix.MsgSeqNum(1))
+    
+        message.setField(fix.EncryptMethod(0))
+        message.setField(fix.HeartBtInt(30))
+        message.setField(fix.Username("adolpho.igor"))
+        # message.setField(fix.Password("Trocar@22"))
+        message.setField(fix.NewPassword("Trocar@22"))
+    
+        trstime = fix.TransactTime()
+        trstime.setString(datetime.now().strftime("%Y%m%d-%H:%M:%S.%f")[:-3])
+        message.setField(trstime)
+    
+        # print(message.toString())
+    '''
 
     def logon(self) -> bool:
         result = False
@@ -222,7 +250,7 @@ class CedroOMSProvider(CedroOMSProviderBasic):
 
         return result
 
-    def encode(self, algo_name="", **kwargs) -> bytes:
+    def encode(self, algo_name="", **kwargs) -> str:
         """
             :param algo_name: Will be the iaentity of the message's sender. If it's not provided, will return a id
                 composed with "OMS_NAME+DELIMITER+BROKER_NAME" which is enough to identify orders such as LOGON/LOGOUT.
@@ -230,7 +258,7 @@ class CedroOMSProvider(CedroOMSProviderBasic):
             :return: the encoded message in a byte-string format.
         """
         if not self.is_connected():
-            return bytes(chr(0), "UTF-8")
+            return chr(0)
 
         def health_check(i_l_itm, **i_kwargs) -> bool:
             # some calculated fields must be ignored at this time
@@ -330,4 +358,4 @@ class CedroOMSProvider(CedroOMSProviderBasic):
         kwargs["CheckSum"] = hashlib.md5(str_out).hexdigest()
         str_out = str_out + str(10) + d1 + str(kwargs.get("CheckSum")) + d2
 
-        return bytes(str_out, "UTF-8")
+        return str_out

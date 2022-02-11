@@ -8,22 +8,6 @@ class Constants:
     EXIT_SUCCESS = 0
     EXIT_ERROR = 1
 
-    BKP_PATH = 'bkp'
-    BKP_LOGS = f'{BKP_PATH}/logs/'
-    LOG_PATH = 'logs'
-    LOG_OMS = f'{LOG_PATH}/oms/'
-    LOG_OMS_RAW = f'{LOG_OMS}/raw/'
-    LOG_OMS_DATA = f'{LOG_OMS}/data/'
-    LOG_OMS_CONFIG = f'{LOG_OMS}/config/'
-    LOG_ALGO = f'{LOG_PATH}/algo/'
-    LOG_ALGO_RAW = f'{LOG_ALGO}/raw/'
-    LOG_ALGO_DATA = f'{LOG_ALGO}/data/'
-    LOG_ALGO_CONFIG = f'{LOG_ALGO}/config/'
-    LOG_MARKETDATA = f'{LOG_PATH}/marketdata/'
-    LOG_MARKETDATA_RAW = f'{LOG_MARKETDATA}/raw/'
-    LOG_MARKETDATA_DATA = f'{LOG_MARKETDATA}/data/'
-    LOG_MARKETDATA_CONFIG = f'{LOG_MARKETDATA}/config/'
-
     POSITION_NEW = 0
     POSITION_OPENED = 1
     POSITION_STOPED = 2

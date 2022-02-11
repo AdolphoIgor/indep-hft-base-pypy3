@@ -65,17 +65,9 @@ class IndepBase:
                     "providers": [
                         {
                             "id": 0, 
-                            "connected": False,
-                            "global_provider_conn": ConnectionTelnetCedro(),                    
-                            "global_provider_queue": Queue(),
-                            "global_provider_decoder": CedroOMSProviderBasic()
-                            "global_provider_lst_brokers_conn": [
-                                {
-                                    "broker_id": broker.get("id"),
-                                    "broker_name": broker.get("name"), 
-                                    "cls_ptr": CedroOMSProvider()
-                                }
-                            ],
+                            "connected": False,                            
+                            "global_provider_conn": ConnectionQuickFix(), 
+                            "global_provider_decoder": CedroOMSProviderBasic(),                               
                             "orders": [
                                 {                           
                                     "algo_id": algo.get("id", -1),
@@ -85,6 +77,7 @@ class IndepBase:
                                     "thread_broker_id": thread.get("broker_id", ""),                                
                                     "status": "opened",
                                     "orders": {
+                                        "new": []
                                         "sent": [],
                                         "received": []
                                     }

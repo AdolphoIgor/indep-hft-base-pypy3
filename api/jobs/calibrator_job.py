@@ -26,6 +26,7 @@ class CalibratorJob(Job):
 
         while self._keep_running:
 
+            # TODO: Vai apenas recuparar os perc_trailing e outras informações vindas do projeto do calibrador.
             lst_algos = self._dict_configs.get("algos", {})
             if len(lst_algos) == 0:
                 time.sleep(1)
