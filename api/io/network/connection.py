@@ -20,11 +20,16 @@ class Connection:
 
         return self._conn
 
+    def set_connection(self, conn):
+        """ Return the current connection."""
+        if self.is_connected:
+            self._conn = conn
+
     def is_connected(self):
         """ Verifies if the client is connected. """
         return self._connected
 
-    def connect(self):
+    def connect(self, **kwargs):
         """ Every subclass must provide its own way to connect to. """
 
     def disconnect(self):

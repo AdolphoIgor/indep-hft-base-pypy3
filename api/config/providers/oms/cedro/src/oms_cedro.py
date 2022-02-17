@@ -4,7 +4,7 @@ from datetime import datetime, date, time, timedelta
 from api.config.providers.oms.cedro.src.constants import Constants as CrystalOMSConstants
 from api.config.providers.oms.provider import OMSProvider
 from api.constants import Constants as Constants
-from api.exceptions import LayoutIndexNotFound, LayoutRequiredFildNotProvided, PayloadItemNotFound, \
+from api.exceptions import LayoutRequiredFildNotProvided, PayloadItemNotFound, \
     PayloadItemNotAsExpected
 from api.io.network.connection import Connection
 from api.logger import logger
@@ -25,9 +25,6 @@ class CedroOMSProviderBasic(OMSProvider):
             "token": None
         }
 
-    def get_template(self, msg_type: str, lst_ignore: list) -> dict:
-        return CrystalOMSConstants().get_template(msg_type, lst_ignore)
-
     def __get_sender_id(self, algo_name="") -> str:
         oms_name = self.__oms_name.replace(" ", "").replace("_", "").upper()
         broker_id = self.__session.get("id")
@@ -39,10 +36,6 @@ class CedroOMSProviderBasic(OMSProvider):
 
         return result
 
-    @staticmethod
-    def decode_sender_id(sender_sub_id: str) -> list:
-        return sender_sub_id.split(CrystalOMSConstants.MSG_VALUE_DELIMITER)
-
     def __get_next_msg_seq_num(self) -> int:
         self.__msg_seq_num = self.__msg_seq_num + 1
         return self.__msg_seq_num
@@ -51,8 +44,68 @@ class CedroOMSProviderBasic(OMSProvider):
         self.__cl_ord_id = self.__cl_ord_id + 1
         return self.__cl_ord_id
 
+    def get_template(self, msg_type: str, lst_ignore: list) -> dict:
+        return CrystalOMSConstants().get_template(msg_type, lst_ignore)
+
+    @staticmethod
+    def decode_sender_id(sender_sub_id: str) -> list:
+        return sender_sub_id.split(CrystalOMSConstants.MSG_VALUE_DELIMITER)
+
     @staticmethod
     def decode(data) -> list:
+
+        def processa_lista(i_lst_data, i_sel_df, i_dct_ret):
+
+            for i_tag, i_data in i_lst_data:
+                dct_layout = {}
+                lst_subtags = None
+                for i_itm in i_sel_df:
+                    if i_itm.get("tag") == i_tag:
+                        dct_layout = i_itm
+                        lst_subtags = i_itm.get("subtags", [])
+                        break
+
+                if len(dct_layout) == 0:
+                    continue
+
+                if dct_layout.get("datatype") == float:
+                    i_data = float(i_data)
+                elif dct_layout.get("datatype") == int:
+                    i_data = int(i_data)
+                elif dct_layout.get("datatype") == str:
+                    i_data = str(i_data)
+                elif dct_layout.get("datatype") == bool:
+                    i_data = bool(i_data)
+                elif dct_layout.get("datatype").find("datetime") >= 0:
+                    try:
+                        i_data = eval(dct_layout.get("datatype").format(i_data))
+                    except ValueError:
+                        pass
+
+                key_name = dct_layout.get("name")
+                if key_name not in i_dct_ret:
+                    i_dct_ret[key_name] = i_data
+                else:
+                    key_str = ""
+                    for k, _ in i_dct_ret.items():
+                        if k.find(key_name) > -1:
+                            key_str = k
+
+                    lst_name_lvl = key_str.split("_")
+                    count = 0
+                    try:
+                        count = int(lst_name_lvl[-1]) + 1
+                        name = f'{key_name}_{count}'
+                    except ValueError:
+                        name = f'{key_name}_{count}'
+
+                    i_dct_ret[name] = i_data
+
+                if lst_subtags is not None and len(lst_subtags) > 0:
+                    lst_sel_subtags = [dtc.get("tag") for dtc in lst_subtags]
+                    lst_sel_data = list(filter(lambda x: x[0] in lst_sel_subtags, i_lst_data))
+                    processa_lista(lst_sel_data, lst_subtags, i_dct_ret)
+
         data = str(data)
 
         msg_filter = ["b\"", "\r\n", "\r", "\n", "\""]
@@ -80,52 +133,19 @@ class CedroOMSProviderBasic(OMSProvider):
                         break
 
                 if len(msg_type) == 0:
-                    raise LayoutRequiredFildNotProvided(Constants.LAYOUT_ITEM_NOT_PROVIDED)
+                    print("KD o MSGTYPE?")
 
                 # it selects the suitable layout for the register received.
                 sel_df = CrystalOMSConstants().get_layout(msg_type)
                 if len(sel_df) == 0:
-                    raise LayoutIndexNotFound(Constants.LAYOUT_NOT_FOUND)
+                    print("Não tem layout para o MSGTYPE informado!")
 
                 # create a dict from the stream received.
-                result = {}
-                for tag, data in lst_data:
-                    dct_layout = {}
-                    for itm in sel_df:
+                dtc_ret = {}
+                processa_lista(lst_data, sel_df, dtc_ret)
+                result_list.append(dtc_ret)
 
-                        lst_subtags = itm.get("subtags", [])
-                        if len(lst_subtags) == 0:
-                            if itm.get("tag") == tag:
-                                dct_layout = itm
-                                break
-                        else:
-                            for i_itm in lst_subtags:
-                                if i_itm.get("tag") == tag:
-                                    dct_layout = itm
-                                    break
-
-                    if len(dct_layout) == 0:
-                        logger.info(Constants.LAYOUT_ITEM_NOT_FOUND.format(tag))
-                        continue
-
-                    if dct_layout.get("datatype") == float:
-                        data = float(data)
-                    elif dct_layout.get("datatype") == int:
-                        data = int(data)
-                    elif dct_layout.get("datatype") == str:
-                        data = str(data)
-                    elif dct_layout.get("datatype") == bool:
-                        data = bool(data)
-                    elif dct_layout.get("datatype").find("datetime") >= 0:
-                        try:
-                            data = eval(dct_layout.get("datatype").format(data))
-                        except ValueError:
-                            pass
-
-                    result[dct_layout.get("name")] = data
-                result_list.append(result)
-
-            return result_list
+        return result_list
 
 
 class CedroOMSProvider(CedroOMSProviderBasic):
@@ -134,8 +154,8 @@ class CedroOMSProvider(CedroOMSProviderBasic):
     def __init__(self, conn: Connection, **kwargs):
         super().__init__(**kwargs)
         logger.name = Constants.SOFTWARE_NAME
-        self.__lst_logon = []
 
+        self.__lst_logon = []
         self.__oms_connection = conn
         self.__production_environment = False
 
@@ -156,33 +176,6 @@ class CedroOMSProvider(CedroOMSProviderBasic):
         self.__oms_connection.execute(encoded)
 
         return self.decode(encoded)[0]
-
-
-    '''
-        FIX.MESSAGE EXAMPLE:
-    
-        message = fix.Message()
-        header = message.getHeader()
-    
-        header.setField(fix.BeginString("FIX.4.4"))
-        header.setField(fix.SenderCompID("adolpho.igor"))
-        header.setField(fix.TargetCompID("CDRFIX"))
-        header.setField(fix.SenderSubID("ALGO-PETR4"))
-        header.setField(fix.MsgType("A"))
-        header.setField(fix.MsgSeqNum(1))
-    
-        message.setField(fix.EncryptMethod(0))
-        message.setField(fix.HeartBtInt(30))
-        message.setField(fix.Username("adolpho.igor"))
-        # message.setField(fix.Password("Trocar@22"))
-        message.setField(fix.NewPassword("Trocar@22"))
-    
-        trstime = fix.TransactTime()
-        trstime.setString(datetime.now().strftime("%Y%m%d-%H:%M:%S.%f")[:-3])
-        message.setField(trstime)
-    
-        # print(message.toString())
-    '''
 
     def logon(self) -> bool:
         result = False
@@ -230,6 +223,48 @@ class CedroOMSProvider(CedroOMSProviderBasic):
                     break
 
         return result
+
+    '''
+    
+        message = fix.Message()
+        header = message.getHeader()
+        msgtype_field = header.getField("MsgType").getValue()
+        rawdata_field = header.getField("RawData").getValue()
+    
+        message.getHeader().getField(new SenderCompID()).getValue()
+    
+        FIX.MESSAGE EXAMPLE:
+    
+        message = fix.Message()
+        header = message.getHeader()
+    
+        header.setField(fix.BeginString("FIX.4.4"))
+        header.setField(fix.SenderCompID("adolpho.igor"))
+        header.setField(fix.TargetCompID("CDRFIX"))
+        header.setField(fix.SenderSubID("ALGO-PETR4"))
+        header.setField(fix.MsgType("A"))
+        header.setField(fix.MsgSeqNum(1))
+    
+        message.setField(fix.EncryptMethod(0))
+        message.setField(fix.HeartBtInt(30))
+        message.setField(fix.Username("adolpho.igor"))
+        # message.setField(fix.Password("Trocar@22"))
+        message.setField(fix.NewPassword("Trocar@22"))
+    
+        trstime = fix.TransactTime()
+        trstime.setString(datetime.now().strftime("%Y%m%d-%H:%M:%S.%f")[:-3])
+        message.setField(trstime)
+    
+        # print(message.toString())
+        BOA
+        "8=FIX.4.49=10535=A34=149=adolpho.igor52=20220210-20:54:08.76156=CDRFIX98=0108=30
+        553=adolpho.igor554=Trocar@12310=106"
+        
+        REPETE LOGIN
+        message = "8=FIX.4.49=13635=A34=149=adolpho.igor52=20220210-20:54:08.76156=CDRFIX98=0
+        108=30141=Y553=adolpho.igor554=Trocar@1239933=RMS10733=3.0.2.21210=147"
+
+    '''
 
     def logout(self):
         order = {

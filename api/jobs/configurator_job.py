@@ -137,66 +137,71 @@ class ConfiguratorJob(Job):
                     conection and eliminate evey queue and lists of instruments, also its important to resume every 
                     thread involved into.                            
                 '''
-                connection = provider.get("connection", {})
-                for host in connection.get("hosts", []):
+                connections = provider.get("connections", {})
+                for conn in connections:
+                    for host in conn.get("hosts", []):
 
-                    if not configs.get("online", False) or \
-                            dct_oms_prvd.get("connected", False) and not host.get("enabled"):
+                        if not configs.get("online", False) or \
+                                dct_oms_prvd.get("connected", False) and not host.get("enabled"):
 
-                        if dct_oms_prvd.get("connected", False):
-                            dct_oms_prvd["global_provider_decoder"] = None
-                            dct_oms_prvd["global_provider_conn"].disconnect()
-                            dct_oms_prvd["global_provider_conn"] = None
-                            dct_oms_prvd["global_provider_queue"] = None
-                            dct_oms_prvd["orders"].clear()
-                            dct_oms_prvd["orders"] = None
-                            dct_oms_prvd["positions"].clear()
-                            dct_oms_prvd["positions"] = None
+                            if dct_oms_prvd.get("connected", False):
+                                dct_oms_prvd["global_provider_decoder"] = None
+                                dct_oms_prvd["global_provider_conn"].disconnect()
+                                dct_oms_prvd["global_provider_conn"] = None
+                                dct_oms_prvd["global_provider_queue"] = None
+                                dct_oms_prvd["lst_admin_msgs"].clear()
+                                dct_oms_prvd["lst_admin_msgs"] = None
+                                dct_oms_prvd["lst_senders"].clear()
+                                dct_oms_prvd["lst_senders"] = None
 
-                            dct_oms_prvd["connected"] = False
+                                dct_oms_prvd["connected"] = False
 
-                            self._logger.info(f"The connection to OMS {provider.get('name')} was terminated.")
+                                self._logger.info(f"The connection to OMS {provider.get('name')} was terminated.")
 
-                    else:
-                        ''' The system turning online. It starts connection, queues and lists. '''
-                        if not dct_oms_prvd.get("connected", False) and host.get("enabled"):
-                            dct_oms_prvd["id"] = provider.get("id")
-                            dct_oms_prvd["connected"] = False
+                        else:
+                            ''' The system turning online. It starts connection, queues and lists. '''
+                            if not dct_oms_prvd.get("connected", False) and host.get("enabled"):
+                                dct_oms_prvd["id"] = provider.get("id")
+                                dct_oms_prvd["begin_string"] = host.get("begin_string")
+                                dct_oms_prvd["sender_comp_id"] = host.get("sender_comp_id")
+                                dct_oms_prvd["target_comp_id"] = host.get("target_comp_id")
+                                dct_oms_prvd["session_qualifier"] = host.get("session_qualifier")
+                                dct_oms_prvd["connected"] = False
 
-                            if connection.get("type").lower() == "cedro_quickfix":
+                                if conn.get("type").lower() == "cedro_quickfix":
+                                    queue = Queue()
 
-                                queue = Queue()
+                                    qfix_conn = ConnectionFactory.get_connection(
+                                        conn_type=ConnectionFactory.CONNECTION_TYPE.get("QUICKFIX"),
+                                        settings_file=host.get("settings_file"),
+                                        global_queue=queue,
+                                        delimiter=self.__delimiter
+                                    )
 
-                                qfix_conn = ConnectionFactory.get_connection(
-                                    conn_type=ConnectionFactory.CONNECTION_TYPE.get("QUICKFIX"),
-                                    settings_file=host.get("settings_file"),
-                                    global_queue=queue,
-                                    delimiter=self.__delimiter
-                                )
+                                    oms_prov = eval(f"{provider.get('CedroOMSProvider')}("
+                                                    f"qfix_conn, "
+                                                    f"oms_name=dct_oms_prvd.get('name'), "
+                                                    f"id=dct_oms_prvd.get('id'), "
+                                                    f"usr=host.get('username', ''), "
+                                                    f"pdw=host.get('password', '') "
+                                                    f").logon()")
 
-                                oms_prov = eval(f"{provider.get('CedroOMSProvider')}("
-                                                f"qfix_conn, "
-                                                f"oms_name=dct_oms_prvd.get('name'), "
-                                                f"id=dct_oms_prvd.get('id'), "
-                                                f"usr=host.get('username', ''), "
-                                                f"pdw=host.get('password', '') "
-                                                f").logon()")
+                                    dct_oms_prvd["connected"] = oms_prov.is_connected()
+                                    if dct_oms_prvd["connected"]:
+                                        dct_oms_prvd["global_provider_conn"] = oms_prov
+                                        dct_oms_prvd["global_provider_queue"] = queue
+                                        dct_oms_prvd["lst_admin_msgs"] = []
+                                        dct_oms_prvd["lst_senders"] = []
+                                        dct_oms_prvd["global_provider_decoder"] = \
+                                            eval(f"{provider.get('configurator_class_decoder')}()")
 
-                                dct_oms_prvd["connected"] = oms_prov.is_connected()
-                                if dct_oms_prvd["connected"]:
-                                    dct_oms_prvd["global_provider_conn"] = oms_prov
-                                    dct_oms_prvd["global_provider_queue"] = queue
-                                    dct_oms_prvd["orders"] = []
-                                    dct_oms_prvd["positions"] = []
-                                    dct_oms_prvd["global_provider_decoder"] = \
-                                        eval(f"{provider.get('configurator_class_decoder')}()")
+                                        self._logger.info(f"The connection to OMS {provider.get('name')} was "
+                                                          f"established.")
+                                        break
 
-                                    self._logger.info(f"The connection to OMS {provider.get('name')} was established.")
-                                    break
+                                    lst_oms_providers.append(dct_oms_prvd)
 
-                                lst_oms_providers.append(dct_oms_prvd)
-
-                        time.sleep(0.01)
+                            time.sleep(0.01)
 
             ''' Writes the current configuration in a report file. '''
             f_path = f'{self.__log_oms_cfg_path}{datetime.now().strftime("%Y%m%d")}_oms_log_config.txt'

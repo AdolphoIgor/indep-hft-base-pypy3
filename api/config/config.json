@@ -293,17 +293,23 @@
       {
         "id": 0,
         "name": "CedroOMS",
-        "connection": {
-          "type": "cedro_quickfix",
-          "hosts": [
-            {
-              "username": "adolpho.igor",
-              "password": "Trocar@22",
-              "enabled": true,
-              "settings_file": "api/config/quickfix_settings_homol.cfg"
-            }
-          ]
-        },
+        "connections": [
+          {
+            "type": "cedro_quickfix",
+            "hosts": [
+              {
+                "begin_string": "FIX.4.4",
+                "sender_comp_id": "adolpho.igor",
+                "target_comp_id": "CDRFIX",
+                "session_qualifier": "cedro_homol",
+                "username": "adolpho.igor",
+                "password": "Trocar@22",
+                "enabled": true,
+                "settings_file": "api/config/quickfix_settings_homol.cfg"
+              }
+            ]
+          }
+        ],
         "configurator_class": "CedroOMSProvider",
         "configurator_class_decoder": "CedroOMSProviderBasic"
       }

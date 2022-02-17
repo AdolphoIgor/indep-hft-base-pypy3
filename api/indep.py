@@ -64,40 +64,27 @@ class IndepBase:
                     "type": "oms_providers", 
                     "providers": [
                         {
-                            "id": 0, 
-                            "connected": False,                            
-                            "global_provider_conn": ConnectionQuickFix(), 
-                            "global_provider_decoder": CedroOMSProviderBasic(),                               
-                            "orders": [
-                                {                           
-                                    "algo_id": algo.get("id", -1),
-                                    "algo_name": algo.get("name", ""),
-                                    "thread_symbol": thread.get("symbol", ""),
-                                    "thread_oms_id": thread.get("oms_id", ""),
-                                    "thread_broker_id": thread.get("broker_id", ""),                                
-                                    "status": "opened",
-                                    "orders": {
-                                        "new": []
-                                        "sent": [],
-                                        "received": []
-                                    }
-                                } -> this would be the reference sended to the algorithm. 
-                            ],
-                            "positions": [
+                            "id": 0,
+                            "begin_string": "FIX.4.4",
+                            "sender_comp_id": "adolpho.igor",
+                            "target_comp_id": "CDRFIX",
+                            "session_qualifier": "cedro_homol",
+                            
+                            "connected": True,
+                        
+                            "global_provider_conn": CedroOMSProvider(),
+                            "global_provider_queue": Queue(),
+                            "global_provider_decoder": CedroOMSProviderBasic(),
+                            
+                            "lst_admin_msgs": []
+                            "lst_senders": [
                                 {
-                                    "algo_id": algo.get("id", -1),
-                                    "algo_name": algo.get("name", ""),
-                                    "thread_symbol": thread.get("symbol", ""),
-                                    "thread_oms_id": thread.get("oms_id", ""),
-                                    "thread_broker_id": thread.get("broker_id", ""),
-                                    "order_qtd": 10000, 
-                                    "order_price": 23.30,                                    
-                                    "exec_qtt": 8000,
-                                    "exec_price": 23.35,
-                                    "last_price": 23.85,
-                                    "position:" 4000.00 
+                                    "SenderSubID": "ALGO-PETR4",
+                                    "lst_orders_sent": [],
+                                    "lst_order_received": []
+                                    "lst_positions": []
                                 }
-                            ]                                
+                            ]
                         }                        
                     ]
                 },
