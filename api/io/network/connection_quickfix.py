@@ -21,7 +21,11 @@ class QuickFixGenApplication(fix.Application):
         self._queue = queue
         self._delimiter = delimiter
         self._connected = False
-        self._token = {}
+        self._token = None
+
+        self._init_msg_seq_num = None
+        self._accep_msg_seq_num = None
+        self._cl_ord_id = None
 
     def __del__(self):
         self._session_id = None
@@ -62,38 +66,81 @@ class QuickFixGenApplication(fix.Application):
 
     def onLogout(self, session_id):
         self._connected = False
-        self._token = {}
+        self._token = None
+        self._init_msg_seq_num = None
+        self._accep_msg_seq_num = None
+        self._cl_ord_id = None
         logger.info(f"onLogout - Session: {session_id}")
 
     def toAdmin(self, message, session_id):
-        logger.info(f"toAdmin - message: {self._str(message)}")
-        self._queue.put_nowait(message)
+        msg = self._str(message)
+        self._queue.put_nowait(msg)
+        logger.info(f"toAdmin - message: {msg}")
+
+        try:
+            msg_seq_num = self.get_field_value(fix.MsgSeqNum(), message)
+            if msg_seq_num is not None:
+                self._init_msg_seq_num = msg_seq_num
+
+            cl_ord_id = self.get_field_value(fix.ClOrdID(), message)
+            if cl_ord_id is not None:
+                self._cl_ord_id = cl_ord_id
+
+        except fix.FieldNotFound:
+            pass
 
     def fromAdmin(self, message, session_id):
-        logger.info(f"fromAdmin - message: {self._str(message)}")
-        self._queue.put_nowait(message)
+        msg = self._str(message)
+        self._queue.put_nowait(msg)
+        logger.info(f"fromAdmin - message: {msg}")
 
         msgtype_field = self.get_field_value(fix.MsgType(), message)
         try:
             rawdata_field = self.get_field_value(fix.RawData(), message)
-            # keeping the logon credentials
             if msgtype_field == "A" and rawdata_field is not None and len(rawdata_field) > 0:
-                lst_ret = rawdata_field.split("\t")
-                self._token['usr'] = lst_ret[0]
-                self._token['pwd'] = lst_ret[1]
-                self._token['token'] = lst_ret[2]
+                self._token = rawdata_field
                 logger.info(f"fromAdmin - self._token: {self._token}")
+
+            msg_seq_num = self.get_field_value(fix.MsgSeqNum(), message)
+            if msg_seq_num is not None:
+                self._accep_msg_seq_num = msg_seq_num
+
+            cl_ord_id = self.get_field_value(fix.ClOrdID(), message)
+            if cl_ord_id is not None:
+                self._cl_ord_id = cl_ord_id
 
         except fix.FieldNotFound:
             pass
 
     def toApp(self, message, session_id):
-        logger.info(f"toApp - self._token: {self._str(message)}")
-        self._queue.put_nowait(message)
+        msg = self._str(message)
+        self._queue.put_nowait(msg)
+        logger.info(f"toApp - message: {msg}")
+
+        try:
+            cl_ord_id = self.get_field_value(fix.ClOrdID(), message)
+            if cl_ord_id is not None:
+                self._cl_ord_id = cl_ord_id
+
+        except fix.FieldNotFound:
+            pass
 
     def fromApp(self, message, session_id):
-        logger.info(f"fromApp - message: {self._str(message)}")
-        self._queue.put_nowait(message)
+        msg = self._str(message)
+        self._queue.put_nowait(msg)
+        logger.info(f"fromApp - message: {msg}")
+
+        try:
+            msg_seq_num = self.get_field_value(fix.MsgSeqNum(), message)
+            if msg_seq_num is not None:
+                self._accep_msg_seq_num = msg_seq_num
+
+            cl_ord_id = self.get_field_value(fix.ClOrdID(), message)
+            if cl_ord_id is not None:
+                self._cl_ord_id = cl_ord_id
+
+        except fix.FieldNotFound:
+            pass
 
     def send_message(self, message):
         self._session.sendToTarget(self.str_msg_to_fix_msg(message), self._session_id)
@@ -104,17 +151,18 @@ class QuickFixGenApplication(fix.Application):
     def get_token(self):
         return self._token
 
-    def get_msg_queue(self):
-        return self._queue
+    def get_msg_seq_num(self):
+        return self._init_msg_seq_num, self._accep_msg_seq_num
+
+    def get_cl_ord_id(self):
+        return self._cl_ord_id
 
 
 class ConnectionQuickFix(Connection):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._settings_file = kwargs.get("settings_file")
-        self._lst_orders = kwargs.get("lst_orders")
-        self._lst_positions = kwargs.get("lst_positions")
-        self._queue = kwargs.get("queue")
+        self._queue = kwargs.get("global_queue")
         self._delimiter = kwargs.get("delimiter")
 
         self._application = QuickFixGenApplication(fix.Session, self._queue, self._delimiter)
@@ -165,7 +213,13 @@ class ConnectionQuickFix(Connection):
         if self._application is None:
             return False
 
-        if not self.is_connected:
-            self.connect()
-
         self._application.send_message(message)
+
+    def get_token(self):
+        return self._application.get_token()
+
+    def get_msg_seq_num(self):
+        return self._application.get_msg_seq_num()
+
+    def get_cl_ord_id(self):
+        return self._application.get_cl_ord_id()

@@ -63,6 +63,7 @@ class Constants:
                     "name": "TargetCompID",
                     "required": True,
                     "datatype": str,
+                    "calculated": True,
                     "comments": "Identificador do sistema que vai receber a mensagem. Para mensagens enviadas "
                                 "pelo Crystal Broker = identificador da contraparte que receberá a mensagem ("
                                 "igual ao login - Username informado na mensagem de Logon - MsgType = A). Para "

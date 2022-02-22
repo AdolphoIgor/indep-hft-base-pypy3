@@ -18,6 +18,3 @@ class Constants:
 
     PAYLOAD_ITEM_NOT_FOUND = "The expected item: '{0}' was not found from the given payload. "
     PAYLOAD_ITEM_INVALID = "The expected item: '{0}' from the given payload has an invalid value. Reason: {1}."
-
-    LOGOUT_MSG = "Error during logon process to OMS: {0}. Msg:{1}."
-    LOGON_MSG = "Logon process to OMS: {0} has success."

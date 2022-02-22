@@ -2,13 +2,13 @@ import time
 from datetime import datetime
 from queue import Queue
 
-from api.config.providers.oms.cedro.src.oms_cedro import CedroOMSProviderBasic
+from api.config.providers.oms.cedro.src.oms_cedro import CedroOMSProviderBasic, CedroOMSProvider
 from api.io.network.connection_factory import ConnectionFactory
 from api.jobs.job import Job
 
 
 class ConfiguratorJob(Job):
-    _lst_cls = [CedroOMSProviderBasic]
+    _lst_cls = [CedroOMSProviderBasic, CedroOMSProvider]
 
     def __init__(self, logger, dict_configs, lst_config_pool, lst_thread_pool, **kwargs):
         super().__init__(logger, dict_configs, lst_config_pool, lst_thread_pool)
@@ -33,7 +33,7 @@ class ConfiguratorJob(Job):
             lst_md_providers = None
             for provider in configs.get(prdr_name, []):
 
-                for connection in provider.get("connection", {}):
+                for connection in provider.get("connections", {}):
 
                     lst_md_providers, lst_md_sel_providers, dct_md_prvd = \
                         self._get_internal_provider_data(prdr_name, provider.get("id"))
@@ -146,7 +146,7 @@ class ConfiguratorJob(Job):
 
                             if dct_oms_prvd.get("connected", False):
                                 dct_oms_prvd["global_provider_decoder"] = None
-                                dct_oms_prvd["global_provider_conn"].disconnect()
+                                dct_oms_prvd["global_provider_conn"].logout()
                                 dct_oms_prvd["global_provider_conn"] = None
                                 dct_oms_prvd["global_provider_queue"] = None
                                 dct_oms_prvd["lst_admin_msgs"].clear()
@@ -178,13 +178,24 @@ class ConfiguratorJob(Job):
                                         delimiter=self.__delimiter
                                     )
 
-                                    oms_prov = eval(f"{provider.get('CedroOMSProvider')}("
-                                                    f"qfix_conn, "
-                                                    f"oms_name=dct_oms_prvd.get('name'), "
-                                                    f"id=dct_oms_prvd.get('id'), "
-                                                    f"usr=host.get('username', ''), "
-                                                    f"pdw=host.get('password', '') "
-                                                    f").logon()")
+                                    str_cls = f"{provider.get('configurator_class')}(" \
+                                              f"qfix_conn, " \
+                                              f"oms_id=conn.get('id'), " \
+                                              f"oms_name=conn.get('name'), " \
+                                              f"begin_string=host.get('begin_string'), " \
+                                              f"sender_comp_id=host.get('sender_comp_id'), " \
+                                              f"target_comp_id=host.get('target_comp_id'), " \
+                                              f"session_qualifier=host.get('session_qualifier'), " \
+                                              f"username=host.get('username'), " \
+                                              f"password=host.get('password'), " \
+                                              f"encode_field_delimiter=provider.get('encode_field_delimiter', ''), " \
+                                              f"values_field_delimiter=provider.get('values_field_delimiter', '')" \
+                                              f")"
+
+                                    oms_prov = eval(str_cls)
+                                    oms_prov.logon()
+                                    oms_prov.execute(**{"MsgType": "5", "Text": "LOGOUT REQUESTED BY CLIENT."})
+                                    oms_prov.logout()
 
                                     dct_oms_prvd["connected"] = oms_prov.is_connected()
                                     if dct_oms_prvd["connected"]:

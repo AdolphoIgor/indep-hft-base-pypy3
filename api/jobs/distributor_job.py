@@ -78,19 +78,101 @@ class DistributorJob(Job):
                     while not queue.empty() and i_keep_running:
                         lst_msgs = decoder.decode(queue.get())
                         for msg in lst_msgs:
-                            # I'm pushing the error in case the SenderSubID has not present.
-                            # pattern: lst_sender = [OMS_NAME, BROKER_ID, (optional: ALGO_NAME)]
-                            lst_sender = decoder.decode_sender_id(msg['SenderSubID'])
+                            '''
+                            
+                                msgtype_field = self.get_field_value(fix.MsgType(), message)
+                                try:
+                                    rawdata_field = self.get_field_value(fix.RawData(), message)
+                                    # keeping the logon credentials
+                                    if msgtype_field == "A" and rawdata_field is not None and len(rawdata_field) > 0:
+                                        lst_ret = rawdata_field.split("\t")
+                                        self._token['usr'] = lst_ret[0]
+                                        self._token['pwd'] = lst_ret[1]
+                                        self._token['token'] = lst_ret[2]
+                                        logger.info(f"fromAdmin - self._token: {self._token}")
+                        
+                                except fix.FieldNotFound:
+                                    pass
+                                                    
+                            
+                            
+                            
+                            
+                                lst_res = []
+                                tlnt_conn = self._oms_connection.get_connection()
+                                int_next_exp_msg_seq = -1
+                                while len(lst_res) < 2:
+                                    srv_resps = self.decode(tlnt_conn.read_until(tlnt_conn.to_bytes(
+                                        CrystalOMSConstants.MSG_DELIMITER)).decode(Constants.DEFAULT_ENCODER))
 
-                            for dct_algo_ordr in i_dct_md_prvd.get('orders', []):
-                                if dct_algo_ordr.get("algo_name") == lst_sender[2] and \
-                                        dct_algo_ordr.get("thread_broker_id") == lst_sender[1]:
-                                    dct_algo_ordr.get("orders", {}).get("received").append(msg)
-                                    dt = datetime.now().strftime("%Y%m%d %H%M%S.%f")
-                                    fl.write(f"'{dt}': {str(msg)}\r\n")
-                                    fl.flush()
-                                    time.sleep(0.01)
-                                    break
+                                    for res in srv_resps:
+                                        if res.get("MsgType", "") in ["A", "BD"]:
+                                            if res.get("NextExpectedMsgSeqNum", -1) in [-1, int_next_exp_msg_seq]:
+                                                int_next_exp_msg_seq = res.get("NextExpectedMsgSeqNum", -1)
+                                                lst_res.append(res)
+
+                                if len(lst_res) == 2:
+                                    if len(self._lst_logon) > 0:
+                                        self._lst_logon.extend(lst_res)
+
+                                    for res in lst_res:
+                                        if res.get("MsgType", "") == "A":
+                                            lst_logon = res.get("RawData", "").split(chr(10))
+                                            self._token = lst_logon[2]
+                                            self._production_environment = res.get("TestMessageIndicator", "Y") == "N"
+                                            self._msg_seq_num = -1 if res.get("ResetSeqNumFlag", "Y") == "N" else self._msg_seq_num
+                                            self._cl_ord_id = -1 if res.get("ResetSeqNumFlag", "Y") == "N" else self._cl_ord_id
+                                            logger.info(Constants.LOGON_MSG.format(self._oms_name))
+                                            result = True
+                                            break
+
+                                        elif res.get("MsgType", "") == "5":
+                                            self._token = None
+                                            logger.info(Constants.LOGOUT_MSG.format(self._oms_name, res.get("Text", "")))
+                                            break
+                                                                                   
+
+                                    
+                                    message = fix.Message()
+                                    header = message.getHeader()
+                                    msgtype_field = header.getField("MsgType").getValue()
+                                    rawdata_field = header.getField("RawData").getValue()
+                            
+                                    message.getHeader().getField(new SenderCompID()).getValue()
+                            
+                                    FIX.MESSAGE EXAMPLE:
+                            
+                                    message = fix.Message()
+                                    header = message.getHeader()
+                            
+                                    header.setField(fix.BeginString("FIX.4.4"))
+                                    header.setField(fix.SenderCompID("adolpho.igor"))
+                                    header.setField(fix.TargetCompID("CDRFIX"))
+                                    header.setField(fix.SenderSubID("ALGO-PETR4"))
+                                    header.setField(fix.MsgType("A"))
+                                    header.setField(fix.MsgSeqNum(1))
+                            
+                                    message.setField(fix.EncryptMethod(0))
+                                    message.setField(fix.HeartBtInt(30))
+                                    message.setField(fix.Username("adolpho.igor"))
+                                    # message.setField(fix.Password("Trocar@22"))
+                                    message.setField(fix.NewPassword("Trocar@22"))
+                            
+                                    trstime = fix.TransactTime()
+                                    trstime.setString(datetime.now().strftime("%Y%m%d-%H:%M:%S.%f")[:-3])
+                                    message.setField(trstime)
+                            
+                                    # print(message.toString())
+                                    BOA
+                                    "8=FIX.4.49=10535=A34=149=adolpho.igor52=20220210-20:54:08.76156=CDRFIX98=0108=30
+                                    553=adolpho.igor554=Trocar@12310=106"
+                            
+                                    REPETE LOGIN
+                                    message = "8=FIX.4.49=13635=A34=149=adolpho.igor52=20220210-20:54:08.76156=CDRFIX98=0
+                                    108=30141=Y553=adolpho.igor554=Trocar@1239933=RMS10733=3.0.2.21210=147"
+                            
+                   
+                            '''
 
                 time.sleep(0.1)
             self._logger.info(f"Thread {i_name} was finalized.")

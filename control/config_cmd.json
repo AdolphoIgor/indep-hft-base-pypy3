@@ -43,14 +43,15 @@
             "encoder": "UTF-8",
             "sleep_when_done": 60,
             "log_market_data_cfg_path": "logs/marketdata/config/",
-            "log_oms_cfg_path": "logs/oms/config/"
+            "log_oms_cfg_path": "logs/oms/config/",
+            "delimiter": "|"
           }
         }
       ]
     },
     {
       "order": 2,
-      "enabled": true,
+      "enabled": false,
       "job": "Subscriber",
       "dateteime": "08:41:00",
       "threads": [
@@ -68,7 +69,7 @@
     },
     {
       "order": 3,
-      "enabled": true,
+      "enabled": false,
       "job": "Producer",
       "dateteime": "08:41:30",
       "threads": [
@@ -89,7 +90,7 @@
     },
     {
       "order": 4,
-      "enabled": true,
+      "enabled": false,
       "job": "Distributor",
       "dateteime": "08:42:00",
       "threads": [
@@ -110,7 +111,7 @@
     },
     {
       "order": 5,
-      "enabled": true,
+      "enabled": false,
       "job": "Executor",
       "dateteime": "08:42:30",
       "threads": [
@@ -176,11 +177,11 @@
         "name": "Cedro Technologies",
         "market": "b3sa",
         "country": "brazil",
-        "connection": [
+        "connections": [
           {
             "type": "telnet",
             "name": "Crystal Data Provider",
-            "enabled": true,
+            "enabled": false,
             "hosts": [
               {
                 "host": "localhost",
@@ -195,21 +196,19 @@
                 "port": 81
               }
             ],
-            "software_key": "",
             "username": "adolphoigor",
             "password": "102030"
           },
           {
             "type": "ftp",
             "name": "Tick by Tick",
-            "enabled": true,
+            "enabled": false,
             "hosts": [
               {
                 "host": "files.cedrotech.com",
                 "port": 21
               }
             ],
-            "software_key": "",
             "username": "md_adolphorodrigues",
             "password": "hQ28u7XA"
           }
@@ -291,30 +290,27 @@
       {
         "id": 0,
         "name": "CedroOMS",
-        "connection": {
-          "type": "telnet",
-          "hosts": [
-            {
-              "host": "localhost",
-              "port": 12345
-            }
-          ],
-          "software_key": "",
-          "username": "oms_user_name",
-          "password": "oms_password",
-          "enabled": true,
-          "brokers": [
-            {
-              "id": 191,
-              "name": "Nova Futura",
-              "usr": "igor",
-              "pwd": 123456,
-              "enabled": true
-            }
-          ]
-        },
+        "connections": [
+          {
+            "type": "cedro_quickfix",
+            "hosts": [
+              {
+                "begin_string": "FIX.4.4",
+                "sender_comp_id": "adolpho.igor",
+                "target_comp_id": "CDRFIX",
+                "session_qualifier": "cedro_homol",
+                "username": "adolpho.igor",
+                "password": "Trocar@22",
+                "enabled": true,
+                "settings_file": "api/config/quickfix_settings_homol.cfg"
+              }
+            ]
+          }
+        ],
         "configurator_class": "CedroOMSProvider",
-        "configurator_class_decoder": "CedroOMSProviderBasic"
+        "configurator_class_decoder": "CedroOMSProviderBasic",
+        "encode_field_delimiter": "\u0001",
+        "values_field_delimiter": "="
       }
     ]
   },

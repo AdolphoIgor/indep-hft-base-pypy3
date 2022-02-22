@@ -51,7 +51,7 @@
     },
     {
       "order": 2,
-      "enabled": true,
+      "enabled": false,
       "job": "Subscriber",
       "dateteime": "08:41:00",
       "threads": [
@@ -69,7 +69,7 @@
     },
     {
       "order": 3,
-      "enabled": true,
+      "enabled": false,
       "job": "Producer",
       "dateteime": "08:41:30",
       "threads": [
@@ -90,7 +90,7 @@
     },
     {
       "order": 4,
-      "enabled": true,
+      "enabled": false,
       "job": "Distributor",
       "dateteime": "08:42:00",
       "threads": [
@@ -111,7 +111,7 @@
     },
     {
       "order": 5,
-      "enabled": true,
+      "enabled": false,
       "job": "Executor",
       "dateteime": "08:42:30",
       "threads": [
@@ -178,11 +178,11 @@
         "name": "Cedro Technologies",
         "market": "b3sa",
         "country": "brazil",
-        "connection": [
+        "connections": [
           {
             "type": "telnet",
             "name": "Crystal Data Provider",
-            "enabled": true,
+            "enabled": false,
             "hosts": [
               {
                 "host": "localhost",
@@ -197,21 +197,19 @@
                 "port": 81
               }
             ],
-            "software_key": "",
             "username": "adolphoigor",
             "password": "102030"
           },
           {
             "type": "ftp",
             "name": "Tick by Tick",
-            "enabled": true,
+            "enabled": false,
             "hosts": [
               {
                 "host": "files.cedrotech.com",
                 "port": 21
               }
             ],
-            "software_key": "",
             "username": "md_adolphorodrigues",
             "password": "hQ28u7XA"
           }
@@ -311,7 +309,9 @@
           }
         ],
         "configurator_class": "CedroOMSProvider",
-        "configurator_class_decoder": "CedroOMSProviderBasic"
+        "configurator_class_decoder": "CedroOMSProviderBasic",
+        "encode_field_delimiter": "\u0001",
+        "values_field_delimiter": "="
       }
     ]
   },

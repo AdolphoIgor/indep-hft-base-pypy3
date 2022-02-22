@@ -37,3 +37,12 @@ class Connection:
 
     def execute(self, msg):
         """ Every subclass must provide its own way to execute a command in the server. """
+
+    def get_token(self):
+        """ Every subclass must provide a way to recoveer the token returned by the acceptor. """
+
+    def get_msg_seq_num(self):
+        """ Every subclass must provide a way to recoveer the message sequence number of the messages. """
+
+    def get_cl_ord_id(self):
+        """ Every subclass must provide a way to recoveer the order id of the every order to be sent. """
