@@ -6,7 +6,6 @@ import schedule
 
 from api.constants import Constants
 from api.jobs.bkp_job import BackupJob
-from api.jobs.calibrator_job import CalibratorJob
 from api.jobs.configurator_job import ConfiguratorJob
 from api.jobs.distributor_job import DistributorJob
 from api.jobs.executor_job import ExecutorJob
@@ -76,15 +75,21 @@ class IndepBase:
                             "global_provider_queue": Queue(),
                             "global_provider_decoder": CedroOMSProviderBasic(),
                             
-                            "lst_admin_msgs": []
-                            "lst_senders": [
-                                {
-                                    "SenderSubID": "ALGO-PETR4",
-                                    "lst_orders_sent": [],
-                                    "lst_order_received": []
-                                    "lst_positions": []
-                                }
-                            ]
+                            "admin_msg_types": {
+                                "BD": {last Counterparty System Status Response from admin}, 
+                                "AP": {last Position report from admin},  
+                                "U68": {last Finantial Account Info Report from admin}
+                            },
+                            "news_msg_types": {
+                                "B": [list of {bunch of news reported from admin}],
+                                "U2": [list of {bunch of headlines reports from admin}]
+                            },
+                            "algo_msg_types": {
+                                "ALGO-PETR4": [list of {every message sent/reveived sorted by timestamp}]
+                            },                            
+                            "algo_positions": {
+                                "ALGO-PETR4": {data of that algo's position.},
+                            }
                         }                        
                     ]
                 },
@@ -102,50 +107,7 @@ class IndepBase:
                                 "instruments": ["T"]
                                 "market_data_instance" = [{"type": "T", "instrument": {MARKET_DATA}}],	
                                 "oms_id": 0,
-                                "oms_instance": {
-                                    "id": 0, 
-                                    "connected": False,
-                                    "global_provider_conn": ConnectionTelnetCedro(),                    
-                                    "global_provider_queue": Queue(),
-                                    "global_provider_decoder": CedroOMSProviderBasic()
-                                    "global_provider_lst_brokers_conn": [
-                                        {
-                                            "broker_id": broker.get("id"),
-                                            "broker_name": broker.get("name"), 
-                                            "cls_ptr": CedroOMSProvider()
-                                        }
-                                    ],
-                                    "orders": [
-                                        {                           
-                                            "algo_id": algo.get("id", -1),
-                                            "algo_name": algo.get("name", ""),
-                                            "thread_symbol": thread.get("symbol", ""),
-                                            "thread_oms_id": thread.get("oms_id", ""),
-                                            "thread_broker_id": thread.get("broker_id", ""),                                
-                                            "status": "opened",
-                                            "orders": {
-                                                "sent": [],
-                                                "received": []
-                                            }
-                                        } -> this would be the reference sended to the algorithm. 
-                                    ],
-                                    "positions": [
-                                        {
-                                            "algo_id": algo.get("id", -1),
-                                            "algo_name": algo.get("name", ""),
-                                            "thread_symbol": thread.get("symbol", ""),
-                                            "thread_oms_id": thread.get("oms_id", ""),
-                                            "thread_broker_id": thread.get("broker_id", ""),
-                                            "order_qtd": 10000, 
-                                            "order_price": 23.30,                                    
-                                            "exec_qtt": 8000,
-                                            "exec_price": 23.35,
-                                            "last_price": 23.85,
-                                            "position:" 4000.00 
-                                        }
-                                    ]                                
-                                }
-                                "broker_id": 191,
+                                "oms_instance": {oms_provider}
                                 "start_class": "Opening",
                                 "start_parameters": {
                                     "side": "S",
@@ -229,7 +191,7 @@ class IndepBase:
 
 class Indep(IndepBase):
     __used_classes = [PreConfiguratorJob, ConfiguratorJob, DistributorJob, ExecutorJob, FakeProviderJob, ProducerJob,
-                      SubscriberJob, BackupJob, CalibratorJob]
+                      SubscriberJob, BackupJob]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

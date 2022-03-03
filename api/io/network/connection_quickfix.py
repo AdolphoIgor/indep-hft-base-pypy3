@@ -56,6 +56,39 @@ class QuickFixGenApplication(fix.Application):
 
         return message
 
+    def is_message_to_discard(self, message) -> bool:
+        msgtype_field = self._get_field_value(fix.MsgType(), message)
+        return msgtype_field not in ['0', '1', '2', '4', '5', 'A', 'B', 'U1', 'U2', 'U3']
+
+    def _process_msg_seq_num(self, message):
+        try:
+            msg_seq_num = self._get_field_value(fix.MsgSeqNum(), message)
+            if msg_seq_num is not None:
+                self._init_msg_seq_num = msg_seq_num
+
+        except fix.FieldNotFound:
+            pass
+
+    def _process_cl_ord_id(self, message):
+        try:
+            cl_ord_id = self._get_field_value(fix.ClOrdID(), message)
+            if cl_ord_id is not None:
+                self._cl_ord_id = cl_ord_id
+
+        except fix.FieldNotFound:
+            pass
+
+    def _process_logon_token(self, message):
+        msgtype_field = self._get_field_value(fix.MsgType(), message)
+        try:
+            rawdata_field = self._get_field_value(fix.RawData(), message)
+            if msgtype_field == "A" and rawdata_field is not None and len(rawdata_field) > 0:
+                self._token = rawdata_field
+                logger.info(f"fromAdmin - self._token: {self._token}")
+
+        except fix.FieldNotFound:
+            pass
+
     def onCreate(self, session_id):
         self._session_id = session_id
         logger.info(f"onCreate - Session: {session_id}")
@@ -73,74 +106,43 @@ class QuickFixGenApplication(fix.Application):
         logger.info(f"onLogout - Session: {session_id}")
 
     def toAdmin(self, message, session_id):
+        self._process_msg_seq_num(message)
+        self._process_cl_ord_id(message)
+
         msg = self._str(message)
-        self._queue.put_nowait(msg)
+        if self.is_message_to_discard(message):
+            self._queue.put_nowait(msg)
+
         logger.info(f"toAdmin - message: {msg}")
 
-        try:
-            msg_seq_num = self.get_field_value(fix.MsgSeqNum(), message)
-            if msg_seq_num is not None:
-                self._init_msg_seq_num = msg_seq_num
-
-            cl_ord_id = self.get_field_value(fix.ClOrdID(), message)
-            if cl_ord_id is not None:
-                self._cl_ord_id = cl_ord_id
-
-        except fix.FieldNotFound:
-            pass
-
-    def fromAdmin(self, message, session_id):
-        msg = self._str(message)
-        self._queue.put_nowait(msg)
-        logger.info(f"fromAdmin - message: {msg}")
-
-        msgtype_field = self.get_field_value(fix.MsgType(), message)
-        try:
-            rawdata_field = self.get_field_value(fix.RawData(), message)
-            if msgtype_field == "A" and rawdata_field is not None and len(rawdata_field) > 0:
-                self._token = rawdata_field
-                logger.info(f"fromAdmin - self._token: {self._token}")
-
-            msg_seq_num = self.get_field_value(fix.MsgSeqNum(), message)
-            if msg_seq_num is not None:
-                self._accep_msg_seq_num = msg_seq_num
-
-            cl_ord_id = self.get_field_value(fix.ClOrdID(), message)
-            if cl_ord_id is not None:
-                self._cl_ord_id = cl_ord_id
-
-        except fix.FieldNotFound:
-            pass
-
     def toApp(self, message, session_id):
+        self._process_msg_seq_num(message)
+        self._process_cl_ord_id(message)
+
         msg = self._str(message)
-        self._queue.put_nowait(msg)
+        if self.is_message_to_discard(message):
+            self._queue.put_nowait(msg)
+
         logger.info(f"toApp - message: {msg}")
 
-        try:
-            cl_ord_id = self.get_field_value(fix.ClOrdID(), message)
-            if cl_ord_id is not None:
-                self._cl_ord_id = cl_ord_id
+    def fromAdmin(self, message, session_id):
+        self._process_msg_seq_num(message)
+        self._process_logon_token(message)
 
-        except fix.FieldNotFound:
-            pass
+        msg = self._str(message)
+        if self.is_message_to_discard(message):
+            self._queue.put_nowait(msg)
+
+        logger.info(f"fromAdmin - message: {msg}")
 
     def fromApp(self, message, session_id):
+        self._process_msg_seq_num(message)
+
         msg = self._str(message)
-        self._queue.put_nowait(msg)
+        if self.is_message_to_discard(message):
+            self._queue.put_nowait(msg)
+
         logger.info(f"fromApp - message: {msg}")
-
-        try:
-            msg_seq_num = self.get_field_value(fix.MsgSeqNum(), message)
-            if msg_seq_num is not None:
-                self._accep_msg_seq_num = msg_seq_num
-
-            cl_ord_id = self.get_field_value(fix.ClOrdID(), message)
-            if cl_ord_id is not None:
-                self._cl_ord_id = cl_ord_id
-
-        except fix.FieldNotFound:
-            pass
 
     def send_message(self, message):
         self._session.sendToTarget(self.str_msg_to_fix_msg(message), self._session_id)
@@ -203,11 +205,9 @@ class ConnectionQuickFix(Connection):
             initiator.start()
             self._application.send_message(message)
 
-            time.sleep(2)
             if not self._application.is_connected():
+                time.sleep(20)
                 initiator.stop()
-
-            time.sleep(0.5)
 
     def execute(self, message):
         if self._application is None:

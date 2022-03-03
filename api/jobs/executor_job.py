@@ -1,3 +1,4 @@
+import json
 import time
 
 from api.jobs.job import Job
@@ -70,44 +71,24 @@ class ExecutorJob(Job):
                     lst_algos_prv, lst_algos_sel_prv, dct_algo_prv = \
                         self._get_internal_provider_data("algo_providers", algo_id)
 
-                    '''
-                    ----------------------------------------------------------------------------------------------------
-                    System Recovery:
-                    ----------------------------------------------------------------------------------------------------
-                    For situarions when the system is restarted (and the content of 'oms_providers' and 'algo' is 
-                    recovered by the OMS_MGR thread from the propper log file, since the thread was running, it is
-                    absolutelly necessary to restart it. This approach has been verified here.
-                    
-                    algo_name = f'thr_executor_{algo.get("name", "")}'
-                    algo_running = False
-                    if len(dct_algo_prv) > 0 and dct_algo_prv.get("running", False):
-                        lst_thr = list(filter(lambda x: x.get("level") == 5.1, self._lst_thread_pool))
-                        for thr in lst_thr:
-                            if thr.get("name") == algo_name and thr.get("pointer").is_alive():
-                                algo_running = True
-                                break
-                    '''
-
                     # Starts the algorithm.
                     # copy of the algo dictionary
                     algo_name = f'thr_executor_{algo.get("name", "")}'
                     if algo.get("enabled", False) and not dct_algo_prv.get('running', False):
                         dct_algo_prv = eval(str(algo))
 
-                        # TODO: AJUSTAR PARA PEGAR O ARQUIVO DE BACKTEST DO PROJETO DE TREINAMENTO.
-                        '''
                         dct_backtest_file = {}
                         with open(self.__backtest_filename, mode='r', encoding=self.__encoder) as json_file:
                             dct_backtest_file.update(json.load(json_file))
 
                         for bcktst in dct_backtest_file.get("backtests", []):
                             if bcktst.get("algo_name") == algo.get("name", ""):
-                                dct_algo_prv.get("stop_parameters")["perc_trailing"] = bcktst.get("per_trl")
+                                lst_exec = bcktst.get("executions")
+                                lst_exec.sort(key=(lambda x: int(x.get("exec_date").replace("-", ""))))
+                                dct_algo_prv.get("stop_parameters")["backtest"] = lst_exec[-1]
                                 break
-                        '''
 
                         for thread in dct_algo_prv.get("threads"):
-
                             # It gets the marketdata required for the algorithm.
                             bl_found = False
                             for provider in configs.get("market_data_providers", []):
@@ -129,33 +110,6 @@ class ExecutorJob(Job):
                             if len(dct_oms_prvd) == 0:
                                 break
 
-                            complement = {
-                                "orders": [
-                                    {
-                                        "algo_id": algo_id,
-                                        "algo_name": algo.get("name", ""),
-                                        "thread_symbol": thread.get("symbol", ""),
-                                        "thread_oms_id": thread.get("oms_id", ""),
-                                        "thread_broker_id": thread.get("broker_id", ""),
-                                        "status": None,
-                                        "orders": {
-                                            "sent": [],
-                                            "received": []
-                                        }
-                                    }
-                                ],
-                                "positions": [
-                                    {
-                                        "algo_id": algo_id,
-                                        "algo_name": algo.get("name", ""),
-                                        "thread_symbol": thread.get("symbol", ""),
-                                        "thread_oms_id": thread.get("oms_id", ""),
-                                        "thread_broker_id": thread.get("broker_id", ""),
-                                        "order_id": -1
-                                    }
-                                ]
-                            }
-                            dct_oms_prvd.update(complement)
                             thread["oms_instance"] = dct_oms_prvd
 
                         # Each algorithm will receive its own context to pe and check its orders:

@@ -70,109 +70,32 @@ class DistributorJob(Job):
                 time.sleep(0.1)
             self._logger.info(f"Thread {i_name} was finalized.")
 
-        def __process_oms_distributor(i_dct_md_prvd, i_f_path, i_name, i_encoder, i_keep_running):
+        def __process_oms_distributor(i_dct_md_prvd, i_name, i_keep_running):
             queue = i_dct_md_prvd.get("global_provider_queue", None)
             decoder = i_dct_md_prvd.get("global_provider_decoder", None)
-            while i_keep_running:
-                with open(i_f_path, 'a', encoding=i_encoder) as fl:
-                    while not queue.empty() and i_keep_running:
-                        lst_msgs = decoder.decode(queue.get())
-                        for msg in lst_msgs:
-                            '''
-                            
-                                msgtype_field = self.get_field_value(fix.MsgType(), message)
-                                try:
-                                    rawdata_field = self.get_field_value(fix.RawData(), message)
-                                    # keeping the logon credentials
-                                    if msgtype_field == "A" and rawdata_field is not None and len(rawdata_field) > 0:
-                                        lst_ret = rawdata_field.split("\t")
-                                        self._token['usr'] = lst_ret[0]
-                                        self._token['pwd'] = lst_ret[1]
-                                        self._token['token'] = lst_ret[2]
-                                        logger.info(f"fromAdmin - self._token: {self._token}")
-                        
-                                except fix.FieldNotFound:
-                                    pass
-                                                    
-                            
-                            
-                            
-                            
-                                lst_res = []
-                                tlnt_conn = self._oms_connection.get_connection()
-                                int_next_exp_msg_seq = -1
-                                while len(lst_res) < 2:
-                                    srv_resps = self.decode(tlnt_conn.read_until(tlnt_conn.to_bytes(
-                                        CrystalOMSConstants.MSG_DELIMITER)).decode(Constants.DEFAULT_ENCODER))
+            dct_admin_msg_types = i_dct_md_prvd.get("admin_msg_types", {})
+            dct_news_msg_types = i_dct_md_prvd.get("news_msg_types", {})
+            dct_algo_msg_types = i_dct_md_prvd.get("algo_msg_types", {})
+            dct_algo_positions = i_dct_md_prvd.get("algo_positions", {})
 
-                                    for res in srv_resps:
-                                        if res.get("MsgType", "") in ["A", "BD"]:
-                                            if res.get("NextExpectedMsgSeqNum", -1) in [-1, int_next_exp_msg_seq]:
-                                                int_next_exp_msg_seq = res.get("NextExpectedMsgSeqNum", -1)
-                                                lst_res.append(res)
+            while not queue.empty() and i_keep_running:
+                lst_msgs = decoder.decode(queue.get())
+                for msg in lst_msgs:
 
-                                if len(lst_res) == 2:
-                                    if len(self._lst_logon) > 0:
-                                        self._lst_logon.extend(lst_res)
+                    msg_type = msg.get("MsgType", "")
+                    if msg_type in ["BD", "AP", "U68"]:
+                        dct_admin_msg_types[msg_type] = msg
 
-                                    for res in lst_res:
-                                        if res.get("MsgType", "") == "A":
-                                            lst_logon = res.get("RawData", "").split(chr(10))
-                                            self._token = lst_logon[2]
-                                            self._production_environment = res.get("TestMessageIndicator", "Y") == "N"
-                                            self._msg_seq_num = -1 if res.get("ResetSeqNumFlag", "Y") == "N" else self._msg_seq_num
-                                            self._cl_ord_id = -1 if res.get("ResetSeqNumFlag", "Y") == "N" else self._cl_ord_id
-                                            logger.info(Constants.LOGON_MSG.format(self._oms_name))
-                                            result = True
-                                            break
+                    if msg_type in ["B", "U2"]:
+                        dct_news_msg_types[msg_type] = msg
 
-                                        elif res.get("MsgType", "") == "5":
-                                            self._token = None
-                                            logger.info(Constants.LOGOUT_MSG.format(self._oms_name, res.get("Text", "")))
-                                            break
-                                                                                   
+                    if msg_type in ["8", "9", "D", "F", "G", "J", "S"]:
+                        sender_sub_id = msg.get("SenderSubID", "")
+                        dct_algo_msg_types.get(sender_sub_id, []).append(msg)
 
-                                    
-                                    message = fix.Message()
-                                    header = message.getHeader()
-                                    msgtype_field = header.getField("MsgType").getValue()
-                                    rawdata_field = header.getField("RawData").getValue()
-                            
-                                    message.getHeader().getField(new SenderCompID()).getValue()
-                            
-                                    FIX.MESSAGE EXAMPLE:
-                            
-                                    message = fix.Message()
-                                    header = message.getHeader()
-                            
-                                    header.setField(fix.BeginString("FIX.4.4"))
-                                    header.setField(fix.SenderCompID("adolpho.igor"))
-                                    header.setField(fix.TargetCompID("CDRFIX"))
-                                    header.setField(fix.SenderSubID("ALGO-PETR4"))
-                                    header.setField(fix.MsgType("A"))
-                                    header.setField(fix.MsgSeqNum(1))
-                            
-                                    message.setField(fix.EncryptMethod(0))
-                                    message.setField(fix.HeartBtInt(30))
-                                    message.setField(fix.Username("adolpho.igor"))
-                                    # message.setField(fix.Password("Trocar@22"))
-                                    message.setField(fix.NewPassword("Trocar@22"))
-                            
-                                    trstime = fix.TransactTime()
-                                    trstime.setString(datetime.now().strftime("%Y%m%d-%H:%M:%S.%f")[:-3])
-                                    message.setField(trstime)
-                            
-                                    # print(message.toString())
-                                    BOA
-                                    "8=FIX.4.49=10535=A34=149=adolpho.igor52=20220210-20:54:08.76156=CDRFIX98=0108=30
-                                    553=adolpho.igor554=Trocar@12310=106"
-                            
-                                    REPETE LOGIN
-                                    message = "8=FIX.4.49=13635=A34=149=adolpho.igor52=20220210-20:54:08.76156=CDRFIX98=0
-                                    108=30141=Y553=adolpho.igor554=Trocar@1239933=RMS10733=3.0.2.21210=147"
-                            
-                   
-                            '''
+                        dct_positions = dct_algo_positions.get(sender_sub_id, {})
+                        if sender_sub_id not in dct_positions:
+                            dct_positions[sender_sub_id] = {}
 
                 time.sleep(0.1)
             self._logger.info(f"Thread {i_name} was finalized.")
@@ -245,11 +168,9 @@ class DistributorJob(Job):
                         dct_oms_prvd.get("global_provider_decoder", None) is not None:
                     prov = provider.get("name").replace(" ", "").lower()
                     name = f"thr_distributor_md_{provider.get('id')}_{prov}"
-                    f_path = f'{self.__log_oms_path}{datetime.now().strftime("%Y%m%d%H")}' + \
-                             f'_{prov}' + '_oms_log_data.txt'
                     thr_ = threading.Thread(
                         target=__process_oms_distributor, name=name,
-                        args=(dct_oms_prvd, f_path, name, self.__encoder, self._keep_running))
+                        args=(dct_oms_prvd, name, self._keep_running))
                     self._lst_thread_pool.append({"name": name, "level": 3.2, "pointer": thr_})
                     thr_.start()
                     self._logger.info(f"Initializing the thread {name}...")
