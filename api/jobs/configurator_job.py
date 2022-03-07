@@ -194,7 +194,8 @@ class ConfiguratorJob(Job):
 
                                     oms_prov = eval(str_cls)
                                     oms_prov.logon()
-                                    oms_prov.execute(**{"MsgType": "5", "Text": "LOGOUT REQUESTED BY CLIENT."})
+                                    var_con = oms_prov.is_connected()
+                                    # oms_prov.execute(**{"MsgType": "5", "Text": "LOGOUT REQUESTED BY CLIENT."})
                                     oms_prov.logout()
 
                                     dct_oms_prvd["connected"] = oms_prov.is_connected()

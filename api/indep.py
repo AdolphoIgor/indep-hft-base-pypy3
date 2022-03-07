@@ -202,6 +202,7 @@ class Indep(IndepBase):
         self._lst_thread_pool.append({"name": name, "level": -999.0, "pointer": thr_})
         thr_.setDaemon(True)
         thr_.start()
+        time.sleep(1)
 
     def run(self):
         lst_scheduling = self._dict_configs.get('scheduling')

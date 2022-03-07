@@ -34,8 +34,8 @@ class QuickFixGenApplication(fix.Application):
         """ Convert a FIX message to a readable string. """
         return msg.toString().replace('\x01', self._delimiter)
 
-    @staticmethod
-    def get_field_value(fobj, msg):
+    def get_field_value(self, fobj, msg):
+        msg = self.str_msg_to_fix_msg(msg)
         if msg.getHeader().isSetField(fobj.getField()):
             msg.getHeader().getField(fobj)
             return fobj.getValue()
@@ -57,12 +57,12 @@ class QuickFixGenApplication(fix.Application):
         return message
 
     def is_message_to_discard(self, message) -> bool:
-        msgtype_field = self._get_field_value(fix.MsgType(), message)
+        msgtype_field = self.get_field_value(fix.MsgType(), message)
         return msgtype_field not in ['0', '1', '2', '4', '5', 'A', 'B', 'U1', 'U2', 'U3']
 
     def _process_msg_seq_num(self, message):
         try:
-            msg_seq_num = self._get_field_value(fix.MsgSeqNum(), message)
+            msg_seq_num = self.get_field_value(fix.MsgSeqNum(), message)
             if msg_seq_num is not None:
                 self._init_msg_seq_num = msg_seq_num
 
@@ -71,7 +71,7 @@ class QuickFixGenApplication(fix.Application):
 
     def _process_cl_ord_id(self, message):
         try:
-            cl_ord_id = self._get_field_value(fix.ClOrdID(), message)
+            cl_ord_id = self.get_field_value(fix.ClOrdID(), message)
             if cl_ord_id is not None:
                 self._cl_ord_id = cl_ord_id
 
@@ -79,9 +79,9 @@ class QuickFixGenApplication(fix.Application):
             pass
 
     def _process_logon_token(self, message):
-        msgtype_field = self._get_field_value(fix.MsgType(), message)
+        msgtype_field = self.get_field_value(fix.MsgType(), message)
         try:
-            rawdata_field = self._get_field_value(fix.RawData(), message)
+            rawdata_field = self.get_field_value(fix.RawData(), message)
             if msgtype_field == "A" and rawdata_field is not None and len(rawdata_field) > 0:
                 self._token = rawdata_field
                 logger.info(f"fromAdmin - self._token: {self._token}")
@@ -173,6 +173,10 @@ class ConnectionQuickFix(Connection):
         log_factory = fix.FileLogFactory(settings)
         self.set_connection(fix.SocketInitiator(self._application, store_factory, settings, log_factory))
 
+    def is_connected(self):
+        self._connected = self._application.is_connected()
+        return self._connected
+
     def disconnect(self):
         initiator = self.get_connection()
         if initiator is not None:
@@ -186,7 +190,6 @@ class ConnectionQuickFix(Connection):
             return
 
         try:
-            message = self._application.str_msg_to_fix_msg(message)
             msgtype_field = self._application.get_field_value(fix.MsgType(), message)
             if msgtype_field is None or msgtype_field != "A":
                 return
@@ -199,14 +202,18 @@ class ConnectionQuickFix(Connection):
 
         initiator = self.get_connection()
         while True:
-            if self._application.is_connected():
+            if self.is_connected():
                 break
 
             initiator.start()
             self._application.send_message(message)
+            time.sleep(2)
+            if self.is_connected():
+                break
 
-            if not self._application.is_connected():
-                time.sleep(20)
+            time.sleep(10)
+
+            if not self.is_connected():
                 initiator.stop()
 
     def execute(self, message):
