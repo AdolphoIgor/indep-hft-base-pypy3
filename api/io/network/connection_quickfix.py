@@ -12,7 +12,7 @@ class QuickFixGenApplication(fix.Application):
         This is also the actual producer class for messages comming from OMS providers using FIX protocol.
     """
 
-    def __init__(self, session, queue, delimiter="|"):
+    def __init__(self, session, queue, delimiter="\u0001"):
         super().__init__()
         logger.name = Constants.SOFTWARE_NAME
 
@@ -32,7 +32,8 @@ class QuickFixGenApplication(fix.Application):
 
     def _str(self, msg):
         """ Convert a FIX message to a readable string. """
-        return msg.toString().replace('\x01', self._delimiter)
+        msg = msg.toString()
+        return msg if self._delimiter == "\u0001" else msg.replace("\u0001", self._delimiter)
 
     def get_field_value(self, fobj, msg):
         msg = self.str_msg_to_fix_msg(msg)

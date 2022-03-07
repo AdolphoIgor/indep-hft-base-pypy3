@@ -47,6 +47,16 @@ class ProducerJob(Job):
                 time.sleep(1)
                 continue
 
+            level = None
+            lst_scheduling = self._dict_configs.get('scheduling')
+            for sch in lst_scheduling:
+                if sch.get("job", None) == "Producer":
+                    level = float(f'{sch.get("order")}.0')
+                    break
+
+            if level is None:
+                break
+
             prdr_name = "market_data_providers"
             for provider in configs.get(prdr_name, []):
 
@@ -82,7 +92,7 @@ class ProducerJob(Job):
                             thr_ = threading.Thread(
                                 target=__process_producer, name=name, args=(conn, queue, path, name, self.__encoder,
                                                                             self._keep_running))
-                            self._lst_thread_pool.append({"name": name, "level": 2.1, "pointer": thr_})
+                            self._lst_thread_pool.append({"name": name, "level": level + 0.1, "pointer": thr_})
                             thr_.start()
                             self._logger.info(f"Initializing the thread {name}...")
                             dct_md_prvd["producer_running"] = True

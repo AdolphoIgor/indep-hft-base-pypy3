@@ -16,7 +16,6 @@ class ConfiguratorJob(Job):
         self.__sleep_when_done = kwargs.get("sleep_when_done")
         self.__log_market_data_cfg_path = kwargs.get("log_market_data_cfg_path")
         self.__log_oms_cfg_path = kwargs.get("log_oms_cfg_path")
-        self.__delimiter = kwargs.get("delimiter")
 
     def run(self) -> None:
         """
@@ -175,7 +174,7 @@ class ConfiguratorJob(Job):
                                         conn_type=ConnectionFactory.CONNECTION_TYPE.get("QUICKFIX"),
                                         settings_file=host.get("settings_file"),
                                         global_queue=queue,
-                                        delimiter=self.__delimiter
+                                        delimiter=provider.get('encode_field_delimiter', '')
                                     )
 
                                     str_cls = f"{provider.get('configurator_class')}(" \
@@ -194,9 +193,9 @@ class ConfiguratorJob(Job):
 
                                     oms_prov = eval(str_cls)
                                     oms_prov.logon()
-                                    var_con = oms_prov.is_connected()
+                                    # var_con = oms_prov.is_connected()
                                     # oms_prov.execute(**{"MsgType": "5", "Text": "LOGOUT REQUESTED BY CLIENT."})
-                                    oms_prov.logout()
+                                    # oms_prov.logout()
 
                                     dct_oms_prvd["connected"] = oms_prov.is_connected()
                                     if dct_oms_prvd["connected"]:
@@ -204,14 +203,13 @@ class ConfiguratorJob(Job):
                                         dct_oms_prvd["global_provider_queue"] = queue
                                         dct_oms_prvd["lst_admin_msgs"] = []
                                         dct_oms_prvd["lst_senders"] = []
-                                        dct_oms_prvd["global_provider_decoder"] = \
-                                            eval(f"{provider.get('configurator_class_decoder')}()")
+                                        dct_oms_prvd["global_provider_decoder"] = oms_prov
+
+                                        lst_oms_providers.append(dct_oms_prvd)
 
                                         self._logger.info(f"The connection to OMS {provider.get('name')} was "
                                                           f"established.")
                                         break
-
-                                    lst_oms_providers.append(dct_oms_prvd)
 
                             time.sleep(0.01)
 

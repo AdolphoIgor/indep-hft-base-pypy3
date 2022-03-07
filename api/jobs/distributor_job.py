@@ -39,6 +39,10 @@ class DistributorJob(Job):
                         time.sleep(1)
                         continue
 
+                    if i_global_queue.empty():
+                        time.sleep(0.5)
+                        continue
+
                     instruments = i_configurator.decode(i_global_queue.get())
                     for instrument in instruments:
                         for symbol, sbl_lst in symbol_queue:
@@ -78,7 +82,11 @@ class DistributorJob(Job):
             dct_algo_msg_types = i_dct_md_prvd.get("algo_msg_types", {})
             dct_algo_positions = i_dct_md_prvd.get("algo_positions", {})
 
-            while not queue.empty() and i_keep_running:
+            while i_keep_running:
+                if queue.empty():
+                    time.sleep(0.5)
+                    continue
+
                 lst_msgs = decoder.decode(queue.get())
                 for msg in lst_msgs:
 
@@ -86,10 +94,10 @@ class DistributorJob(Job):
                     if msg_type in ["BD", "AP", "U68"]:
                         dct_admin_msg_types[msg_type] = msg
 
-                    if msg_type in ["B", "U2"]:
+                    elif msg_type in ["B", "U2"]:
                         dct_news_msg_types[msg_type] = msg
 
-                    if msg_type in ["8", "9", "D", "F", "G", "J", "S"]:
+                    elif msg_type in ["8", "9", "D", "F", "G", "J", "S"]:
                         sender_sub_id = msg.get("SenderSubID", "")
                         dct_algo_msg_types.get(sender_sub_id, []).append(msg)
 
@@ -108,6 +116,16 @@ class DistributorJob(Job):
             if len(configs) == 0:
                 time.sleep(1)
                 continue
+
+            level = None
+            lst_scheduling = self._dict_configs.get('scheduling')
+            for sch in lst_scheduling:
+                if sch.get("job", None) == "Distributor":
+                    level = float(f'{sch.get("order")}.0')
+                    break
+
+            if level is None:
+                break
 
             '''
             ---------------------------------------------------------------------------------------    
@@ -138,7 +156,7 @@ class DistributorJob(Job):
                         target=__process_md_distributor, name=name,
                         args=(global_queue, dct_md_prvd, lst_md_files, f_path, configurator, name, self.__encoder,
                               self._keep_running))
-                    self._lst_thread_pool.append({"name": name, "level": 3.1, "pointer": thr_})
+                    self._lst_thread_pool.append({"name": name, "level": level + 0.1, "pointer": thr_})
                     thr_.start()
                     self._logger.info(f"Initializing the thread {name}...")
                     dct_md_prvd["distributor_running"] = True
@@ -163,18 +181,19 @@ class DistributorJob(Job):
                         time.sleep(1)
                         continue
 
-                if not dct_oms_prvd.get("producer_running", False) and \
+                if not dct_oms_prvd.get("running", False) and \
                         dct_oms_prvd.get("global_provider_queue", None) is not None and \
                         dct_oms_prvd.get("global_provider_decoder", None) is not None:
+
                     prov = provider.get("name").replace(" ", "").lower()
                     name = f"thr_distributor_md_{provider.get('id')}_{prov}"
                     thr_ = threading.Thread(
                         target=__process_oms_distributor, name=name,
                         args=(dct_oms_prvd, name, self._keep_running))
-                    self._lst_thread_pool.append({"name": name, "level": 3.2, "pointer": thr_})
+                    self._lst_thread_pool.append({"name": name, "level": level + 0.2, "pointer": thr_})
                     thr_.start()
                     self._logger.info(f"Initializing the thread {name}...")
-                    dct_oms_prvd["distributor_running"] = True
+                    dct_oms_prvd["running"] = True
 
                 time.sleep(0.01)
 

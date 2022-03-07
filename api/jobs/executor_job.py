@@ -27,6 +27,16 @@ class ExecutorJob(Job):
                 time.sleep(1)
                 continue
 
+            level = None
+            lst_scheduling = self._dict_configs.get('scheduling')
+            for sch in lst_scheduling:
+                if sch.get("job", None) == "Executor":
+                    level = float(f'{sch.get("order")}.0')
+                    break
+
+            if level is None:
+                break
+
             if configs.get("online", False):
                 lst_algos = self._dict_configs.get("algos", [])
 
@@ -121,7 +131,7 @@ class ExecutorJob(Job):
                                       f'keep_running=self._keep_running, '
                                       f'algo_cfg=dct_algo_prv)'
                                       )
-                        self._lst_thread_pool.append({"name": algo_name, "level": 5.1, "pointer": target})
+                        self._lst_thread_pool.append({"name": algo_name, "level": level + 0.1, "pointer": target})
 
                         target.start()
                         dct_algo_prv['running'] = True

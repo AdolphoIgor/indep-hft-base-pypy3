@@ -43,15 +43,14 @@
             "encoder": "UTF-8",
             "sleep_when_done": 60,
             "log_market_data_cfg_path": "logs/marketdata/config/",
-            "log_oms_cfg_path": "logs/oms/config/",
-            "delimiter": "|"
+            "log_oms_cfg_path": "logs/oms/config/"
           }
         }
       ]
     },
     {
       "order": 2,
-      "enabled": false,
+      "enabled": true,
       "job": "Subscriber",
       "dateteime": "08:41:00",
       "threads": [
@@ -69,7 +68,7 @@
     },
     {
       "order": 3,
-      "enabled": false,
+      "enabled": true,
       "job": "Producer",
       "dateteime": "08:41:30",
       "threads": [
@@ -90,7 +89,7 @@
     },
     {
       "order": 4,
-      "enabled": false,
+      "enabled": true,
       "job": "Distributor",
       "dateteime": "08:42:00",
       "threads": [
@@ -280,7 +279,7 @@
                 "target_comp_id": "CDRFIX",
                 "session_qualifier": "cedro_homol",
                 "username": "adolpho.igor",
-                "password": "Trocar@102030",
+                "password": "CedroPwd123",
                 "enabled": true,
                 "settings_file": "api/config/quickfix_settings_homol.cfg"
               }

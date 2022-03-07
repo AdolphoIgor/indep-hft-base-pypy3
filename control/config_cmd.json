@@ -43,15 +43,14 @@
             "encoder": "UTF-8",
             "sleep_when_done": 60,
             "log_market_data_cfg_path": "logs/marketdata/config/",
-            "log_oms_cfg_path": "logs/oms/config/",
-            "delimiter": "|"
+            "log_oms_cfg_path": "logs/oms/config/"
           }
         }
       ]
     },
     {
       "order": 2,
-      "enabled": false,
+      "enabled": true,
       "job": "Subscriber",
       "dateteime": "08:41:00",
       "threads": [
@@ -69,7 +68,7 @@
     },
     {
       "order": 3,
-      "enabled": false,
+      "enabled": true,
       "job": "Producer",
       "dateteime": "08:41:30",
       "threads": [
@@ -90,7 +89,7 @@
     },
     {
       "order": 4,
-      "enabled": false,
+      "enabled": true,
       "job": "Distributor",
       "dateteime": "08:42:00",
       "threads": [
@@ -123,33 +122,13 @@
           "daemon": true,
           "config": {
             "sleep_when_done": 3.75,
-            "backtest_filename": "api/config/backtest.json"
+            "backtest_filename": "/home/adolpho/Devel/indep/indep-data/reports/backtests/backtest.json"
           }
         }
       ]
     },
     {
       "order": 6,
-      "enabled": false,
-      "job": "Calibrator",
-      "dateteime": "19:00:00",
-      "threads": [
-        {
-          "order": 0,
-          "enabled": true,
-          "thread_name": "thr_calibrator",
-          "target": "CalibratorJob",
-          "daemon": true,
-          "config": {
-            "sleep_when_done": 0,
-            "delimiter": "|",
-            "encoder": "UTF-8"
-          }
-        }
-      ]
-    },
-    {
-      "order": 7,
       "enabled": false,
       "job": "Backup",
       "dateteime": "07:00:00",
@@ -300,7 +279,7 @@
                 "target_comp_id": "CDRFIX",
                 "session_qualifier": "cedro_homol",
                 "username": "adolpho.igor",
-                "password": "Trocar@22",
+                "password": "CedroPwd123",
                 "enabled": true,
                 "settings_file": "api/config/quickfix_settings_homol.cfg"
               }
