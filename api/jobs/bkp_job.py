@@ -18,6 +18,11 @@ class BackupJob(Job):
     def run(self) -> None:
         self._logger.info("Initializing the Backup...")
 
+        configs = self._dict_configs.get("configs", {})
+        if not configs.get("online", False):
+            time.sleep(self.__sleep_when_done)
+            return
+
         zips = []
         for (dirpath, dirnames, filenames) in walk(self.__logs_path):
             for filename in filenames:

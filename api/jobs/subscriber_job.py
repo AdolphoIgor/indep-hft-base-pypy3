@@ -18,15 +18,14 @@ class SubscriberJob(Job):
         while self._keep_running:
 
             configs = self._dict_configs.get("configs", {})
-            if len(configs) == 0:
-                time.sleep(1)
+            if not configs.get("online", False):
+                time.sleep(self.__sleep_when_done)
                 continue
 
             prdr_name = "market_data_providers"
             for provider in configs.get(prdr_name, []):
 
-                lst_md_providers, lst_md_sel_providers, dct_md_prvd = \
-                    self._get_internal_provider_data(prdr_name, provider.get("id"))
+                _, __, dct_md_prvd = self._get_internal_provider_data(prdr_name, provider.get("id"))
 
                 if dct_md_prvd.get("connected", False):
                     md_prov = dct_md_prvd.get("global_provider_conn", None)

@@ -43,8 +43,8 @@ class ProducerJob(Job):
         while self._keep_running:
 
             configs = self._dict_configs.get("configs", {})
-            if len(configs) == 0:
-                time.sleep(1)
+            if not configs.get("online", False):
+                time.sleep(self.__sleep_when_done)
                 continue
 
             level = None

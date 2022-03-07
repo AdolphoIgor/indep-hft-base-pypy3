@@ -99,11 +99,13 @@ class DistributorJob(Job):
 
                     elif msg_type in ["8", "9", "D", "F", "G", "J", "S"]:
                         sender_sub_id = msg.get("SenderSubID", "")
-                        dct_algo_msg_types.get(sender_sub_id, []).append(msg)
+                        if sender_sub_id not in dct_algo_msg_types:
+                            dct_algo_msg_types[sender_sub_id] = []
 
-                        dct_positions = dct_algo_positions.get(sender_sub_id, {})
-                        if sender_sub_id not in dct_positions:
-                            dct_positions[sender_sub_id] = {}
+                        dct_algo_msg_types.get(sender_sub_id).append(msg)
+
+                        if sender_sub_id not in dct_algo_positions:
+                            dct_algo_positions[sender_sub_id] = {}
 
                 time.sleep(0.1)
             self._logger.info(f"Thread {i_name} was finalized.")
@@ -113,8 +115,8 @@ class DistributorJob(Job):
         while self._keep_running:
 
             configs = self._dict_configs.get("configs", {})
-            if len(configs) == 0:
-                time.sleep(1)
+            if not configs.get("online", False):
+                time.sleep(self.__sleep_when_done)
                 continue
 
             level = None
@@ -135,8 +137,7 @@ class DistributorJob(Job):
             lst_md_files = []
             prdr_name = "market_data_providers"
             for provider in configs.get(prdr_name, []):
-                lst_md_providers, lst_md_sel_providers, dct_md_prvd = \
-                    self._get_internal_provider_data(prdr_name, provider.get("id"))
+                _, __, dct_md_prvd = self._get_internal_provider_data(prdr_name, provider.get("id"))
 
                 global_queue = None
                 if dct_md_prvd.get("connected", False):
@@ -171,8 +172,7 @@ class DistributorJob(Job):
             prdr_name = "oms_providers"
             for provider in configs.get(prdr_name, []):
 
-                lst_oms_providers, lst_oms_sel_providers, dct_oms_prvd = \
-                    self._get_internal_provider_data(prdr_name, provider.get("id"))
+                _, __, dct_oms_prvd = self._get_internal_provider_data(prdr_name, provider.get("id"))
 
                 if dct_oms_prvd.get("connected", False):
                     conn = dct_oms_prvd.get("global_provider_conn", None).get_connection()

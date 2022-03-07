@@ -27,6 +27,9 @@ class ConfiguratorJob(Job):
         while self._keep_running:
 
             configs = self._dict_configs.get("configs", {})
+            if not configs.get("online", False):
+                time.sleep(self.__sleep_when_done)
+                continue
 
             prdr_name = "market_data_providers"
             lst_md_providers = None
@@ -34,8 +37,7 @@ class ConfiguratorJob(Job):
 
                 for connection in provider.get("connections", {}):
 
-                    lst_md_providers, lst_md_sel_providers, dct_md_prvd = \
-                        self._get_internal_provider_data(prdr_name, provider.get("id"))
+                    lst_md_providers, _, dct_md_prvd = self._get_internal_provider_data(prdr_name, provider.get("id"))
 
                     ''' If the system was requested to shutdown (online was changed), this will do it smoothly by ending  
                         every thread's infinite loop. 
@@ -44,8 +46,7 @@ class ConfiguratorJob(Job):
                         conection and eliminate evey queue and lists of instruments, also its important to resume every 
                         thread involved into.                             
                     '''
-                    if not configs.get("online", False) or \
-                            (dct_md_prvd.get("connected", False) and not connection.get("enabled")):
+                    if dct_md_prvd.get("connected", False) and not connection.get("enabled"):
 
                         self._keep_running = False
 
@@ -126,8 +127,7 @@ class ConfiguratorJob(Job):
             lst_oms_providers = None
             for provider in configs.get(prdr_name, []):
 
-                lst_oms_providers, lst_oms_sel_providers, dct_oms_prvd = \
-                    self._get_internal_provider_data(prdr_name, provider.get("id"))
+                lst_oms_providers, _, dct_oms_prvd = self._get_internal_provider_data(prdr_name, provider.get("id"))
 
                 ''' If the system was requested to shutdown (online was changed), this will do it smoothly by ending  
                     every thread's infinite loop.  
@@ -140,8 +140,7 @@ class ConfiguratorJob(Job):
                 for conn in connections:
                     for host in conn.get("hosts", []):
 
-                        if not configs.get("online", False) or \
-                                dct_oms_prvd.get("connected", False) and not host.get("enabled"):
+                        if dct_oms_prvd.get("connected", False) and not host.get("enabled"):
 
                             if dct_oms_prvd.get("connected", False):
                                 dct_oms_prvd["global_provider_decoder"] = None

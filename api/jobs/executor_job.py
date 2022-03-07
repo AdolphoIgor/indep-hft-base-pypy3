@@ -23,8 +23,18 @@ class ExecutorJob(Job):
         while self._keep_running:
 
             configs = self._dict_configs.get("configs", {})
-            if len(configs) == 0:
-                time.sleep(1)
+            if not configs.get("online", False):
+                time.sleep(self.__sleep_when_done)
+                continue
+
+            lst_md_prv, _, __ = self._get_internal_provider_data("market_data_providers")
+            if len(lst_md_prv) == 0:
+                time.sleep(self.__sleep_when_done)
+                continue
+
+            lst_oms_prv, _, __ = self._get_internal_provider_data("market_data_providers")
+            if len(lst_oms_prv) == 0:
+                time.sleep(self.__sleep_when_done)
                 continue
 
             level = None
@@ -37,114 +47,116 @@ class ExecutorJob(Job):
             if level is None:
                 break
 
-            if configs.get("online", False):
-                lst_algos = self._dict_configs.get("algos", [])
+            lst_algos = self._dict_configs.get("algos", [])
 
-                # Prevents two opposed operations (Buy and Sell) for the same symbol in a partiicular broker.
-                lst_sbl_side_bkr = []
-                for algo in lst_algos:
-                    for thr in algo.get("threads", []):
+            # Prevents two opposed operations (Buy and Sell) for the same symbol in a particular broker.
+            lst_sbl_side_bkr = []
+            for algo in lst_algos:
+                if not algo.get("enabled", False):
+                    continue
 
-                        dct_sbl_side_bkr = None
-                        for lssb in lst_sbl_side_bkr:
-                            if lssb.get("broker_id") == thr.get("broker_id"):
-                                dct_sbl_side_bkr = lssb
-                                break
+                for thr in algo.get("threads", []):
 
-                        if dct_sbl_side_bkr is None:
-                            dct_sbl_side_bkr = {"broker_id": thr.get("broker_id"), "symbols": []}
-                            lst_sbl_side_bkr.append(dct_sbl_side_bkr)
+                    dct_sbl_side_bkr = None
+                    for lssb in lst_sbl_side_bkr:
+                        if lssb.get("broker_id") == thr.get("broker_id"):
+                            dct_sbl_side_bkr = lssb
+                            break
 
-                        dct_sbl = None
-                        for sbl in dct_sbl_side_bkr.get("symbols"):
-                            if sbl.get("symbol") == thr.get("symbol"):
-                                dct_sbl = sbl
-                                break
+                    if dct_sbl_side_bkr is None:
+                        dct_sbl_side_bkr = {"broker_id": thr.get("broker_id"), "symbols": []}
+                        lst_sbl_side_bkr.append(dct_sbl_side_bkr)
 
-                        if dct_sbl is None:
-                            dct_sbl = {"symbol": thr.get("symbol"), "sides": []}
-                            dct_sbl_side_bkr.get("symbols").append(dct_sbl)
+                    dct_sbl = None
+                    for sbl in dct_sbl_side_bkr.get("symbols"):
+                        if sbl.get("symbol") == thr.get("symbol"):
+                            dct_sbl = sbl
+                            break
 
-                        side = thr.get("start_parameters").get("side")
-                        lst_sides = dct_sbl.get("sides", [])
-                        if side not in lst_sides:
-                            lst_sides.append(side)
+                    if dct_sbl is None:
+                        dct_sbl = {"symbol": thr.get("symbol"), "sides": []}
+                        dct_sbl_side_bkr.get("symbols").append(dct_sbl)
 
-                        if len(set(lst_sides)) > 1:
-                            raise Exception(
-                                "It's not possible to sell and buy the same symbol in the particular ORM->broker.")
+                    side = thr.get("start_parameters").get("side")
+                    lst_sides = dct_sbl.get("sides", [])
+                    if side not in lst_sides:
+                        lst_sides.append(side)
 
-                # processing...
-                for algo in lst_algos:
+                    if len(set(lst_sides)) > 1:
+                        raise Exception(
+                            "It's not possible to sell and buy the same symbol in the particular ORM->broker.")
 
-                    algo_id = algo.get("id", -1)
-                    lst_algos_prv, lst_algos_sel_prv, dct_algo_prv = \
-                        self._get_internal_provider_data("algo_providers", algo_id)
+            # processing...
+            for algo in lst_algos:
 
-                    # Starts the algorithm.
-                    # copy of the algo dictionary
-                    algo_name = f'thr_executor_{algo.get("name", "")}'
-                    if algo.get("enabled", False) and not dct_algo_prv.get('running', False):
-                        dct_algo_prv = eval(str(algo))
+                algo_id = algo.get("id", -1)
+                lst_algos_prv, lst_algos_sel_prv, dct_algo_prv = \
+                    self._get_internal_provider_data("algo_providers", algo_id)
 
-                        dct_backtest_file = {}
-                        with open(self.__backtest_filename, mode='r', encoding=self.__encoder) as json_file:
-                            dct_backtest_file.update(json.load(json_file))
+                # Starts the algorithm.
+                # copy of the algo dictionary
+                algo_name = f'thr_executor_{algo.get("name", "")}'
+                if algo.get("enabled", False) and not dct_algo_prv.get('running', False):
+                    dct_algo_prv = eval(str(algo))
 
-                        for bcktst in dct_backtest_file.get("backtests", []):
-                            if bcktst.get("algo_name") == algo.get("name", ""):
-                                lst_exec = bcktst.get("executions")
-                                lst_exec.sort(key=(lambda x: int(x.get("exec_date").replace("-", ""))))
-                                dct_algo_prv.get("stop_parameters")["backtest"] = lst_exec[-1]
-                                break
+                    dct_backtest_file = {}
+                    with open(self.__backtest_filename, mode='r', encoding=self.__encoder) as json_file:
+                        dct_backtest_file.update(json.load(json_file))
 
-                        for thread in dct_algo_prv.get("threads"):
-                            # It gets the marketdata required for the algorithm.
-                            bl_found = False
-                            for provider in configs.get("market_data_providers", []):
-                                lst_md_providers, lst_md_sel_providers, dct_md_prvd = \
-                                    self._get_internal_provider_data("market_data_providers", provider.get("id"))
+                    for bcktst in dct_backtest_file.get("lst_backtests", []):
+                        if bcktst.get("algo_name") == algo.get("name", ""):
+                            lst_exec = bcktst.get("executions")
+                            lst_exec.sort(key=(lambda x: int(x.get("exec_date").replace("-", ""))))
+                            dct_algo_prv.get("stop_parameters")["backtest"] = lst_exec[-1]
+                            break
 
-                                for dct_md_sbl in dct_md_prvd.get('symbols'):
-                                    if dct_md_sbl.get('symbol').upper() == thread.get('symbol').upper():
-                                        thread["market_data_instance"] = dct_md_sbl
-                                        bl_found = True
-                                        break
+                    for thread in dct_algo_prv.get("threads"):
+                        # It gets the marketdata required for the algorithm.
+                        bl_found = False
+                        for provider in configs.get("market_data_providers", []):
+                            lst_md_providers, lst_md_sel_providers, dct_md_prvd = \
+                                self._get_internal_provider_data("market_data_providers", provider.get("id"))
 
-                                if bl_found:
+                            for dct_md_sbl in dct_md_prvd.get('symbols'):
+                                if dct_md_sbl.get('symbol').upper() == thread.get('symbol').upper():
+                                    thread["market_data_instance"] = dct_md_sbl
+                                    bl_found = True
                                     break
 
-                            lst_oms_prov, lst_oms_sel_prov, dct_oms_prvd = \
-                                self._get_internal_provider_data("oms_providers", thread.get("oms_id", -1))
-
-                            if len(dct_oms_prvd) == 0:
+                            if bl_found:
                                 break
 
-                            thread["oms_instance"] = dct_oms_prvd
+                        lst_oms_prov, lst_oms_sel_prov, dct_oms_prvd = \
+                            self._get_internal_provider_data("oms_providers", thread.get("oms_id", -1))
 
-                        # Each algorithm will receive its own context to pe and check its orders:
-                        # Orders must take place in lst_oms_sel_prov->(oms)->orders->orders->send and every provider's
-                        # message received will be placed at sel_prov->(oms)->orders->orders->received.
-                        target = eval(f'{algo.get("algo_class")}('
-                                      f'name=algo_name, '
-                                      f'daemon=True, '
-                                      f'keep_running=self._keep_running, '
-                                      f'algo_cfg=dct_algo_prv)'
-                                      )
-                        self._lst_thread_pool.append({"name": algo_name, "level": level + 0.1, "pointer": target})
+                        if len(dct_oms_prvd) == 0:
+                            break
 
-                        target.start()
-                        dct_algo_prv['running'] = True
-                        lst_algos_prv.append(dct_algo_prv)
-                        self._logger.info(f"Initializing the algo name: {algo_name}...")
+                        thread["oms_instance"] = dct_oms_prvd
 
-                    # Stops the running algoritm.
-                    elif algo.get("running", False) and not algo.get("enabled", False):
-                        thr = list(filter(lambda x: x.get("name") == algo_name, self._lst_thread_pool))[0]
-                        if len(thr) > 0:
-                            thr.get("pointer", None).join()
-                            dct_algo_prv['running'] = False
-                            self._logger.info(f"The algo name: {thr.get('name')} was finalized.")
+                    # Each algorithm will receive its own context to pe and check its orders:
+                    # Orders must take place in lst_oms_sel_prov->(oms)->orders->orders->send and every provider's
+                    # message received will be placed at sel_prov->(oms)->orders->orders->received.
+                    target = eval(f'{algo.get("algo_class")}('
+                                  f'name=algo_name, '
+                                  f'daemon=True, '
+                                  f'keep_running=self._keep_running, '
+                                  f'algo_cfg=dct_algo_prv)'
+                                  )
+                    self._lst_thread_pool.append({"name": algo_name, "level": level + 0.1, "pointer": target})
+
+                    target.start()
+                    dct_algo_prv['running'] = True
+                    lst_algos_prv.append(dct_algo_prv)
+                    self._logger.info(f"Initializing the algo name: {algo_name}...")
+
+                # Stops the running algoritm.
+                elif algo.get("running", False) and not algo.get("enabled", False):
+                    thr = list(filter(lambda x: x.get("name") == algo_name, self._lst_thread_pool))[0]
+                    if len(thr) > 0:
+                        thr.get("pointer", None).join()
+                        dct_algo_prv['running'] = False
+                        self._logger.info(f"The algo name: {thr.get('name')} was finalized.")
 
                 time.sleep(self.__sleep_when_done)
 

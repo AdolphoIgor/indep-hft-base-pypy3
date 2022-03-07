@@ -1,6 +1,7 @@
 import telnetlib
 
 from api.io.network.connection import Connection
+from api.logger import logger
 
 
 class ConnectionTelnetCedro(Connection):
@@ -32,7 +33,8 @@ class ConnectionTelnetCedro(Connection):
 
             self._connected = len(self._conn.read_until(self.to_bytes('You are connected'))) > 0
 
-        except Exception:
+        except Exception as e:
+            logger.error(f"ConnectionTelnetCedro to host={self._host}, port={self._port} -> error={e}")
             self._conn = None
 
     def execute(self, msg: bytes):

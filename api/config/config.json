@@ -110,7 +110,7 @@
     },
     {
       "order": 5,
-      "enabled": false,
+      "enabled": true,
       "job": "Executor",
       "dateteime": "08:42:30",
       "threads": [
@@ -160,12 +160,8 @@
           {
             "type": "telnet",
             "name": "Crystal Data Provider",
-            "enabled": false,
+            "enabled": true,
             "hosts": [
-              {
-                "host": "localhost",
-                "port": 51234
-              },
               {
                 "host": "datafeed1.cedrotech.com",
                 "port": 81
@@ -177,19 +173,6 @@
             ],
             "username": "adolphoigor",
             "password": "102030"
-          },
-          {
-            "type": "ftp",
-            "name": "Tick by Tick",
-            "enabled": false,
-            "hosts": [
-              {
-                "host": "files.cedrotech.com",
-                "port": 21
-              }
-            ],
-            "username": "md_adolphorodrigues",
-            "password": "hQ28u7XA"
           }
         ],
         "configurator_class": "CrystalDataFeedProvider",
@@ -296,13 +279,13 @@
   "algos": [
     {
       "id": 0,
-      "name": "Long-VALE3|Short-PETR4",
+      "name": "Long-PETR4",
       "enabled": true,
       "training": true,
       "algo_class": "LFT",
       "threads": [
         {
-          "symbol": "VALE3",
+          "symbol": "PETR4",
           "instruments": [
             "T"
           ],
@@ -311,9 +294,24 @@
           "start_class": "Opening",
           "start_parameters": {
             "side": "B",
-            "order_qty": 10000
+            "order_qty": 2500
           }
-        },
+        }
+      ],
+      "stop_class": "PercTrailingStop",
+      "stop_parameters": {
+        "perc_trailing": 0.00,
+        "inc_trailing": 0.0,
+        "stop_limit": -500.00
+      }
+    },
+    {
+      "id": 1,
+      "name": "Short-PETR4",
+      "enabled": false,
+      "training": false,
+      "algo_class": "LFT",
+      "threads": [
         {
           "symbol": "PETR4",
           "instruments": [
@@ -324,20 +322,19 @@
           "start_class": "Opening",
           "start_parameters": {
             "side": "S",
-            "order_qty": 10000,
-            "perc_spread_order_at_market": 0.05
+            "order_qty": 2500
           }
         }
       ],
       "stop_class": "PercTrailingStop",
       "stop_parameters": {
-        "perc_trailing": 0.02,
+        "perc_trailing": 0.00,
         "inc_trailing": 0.0,
         "stop_limit": -500.00
       }
     },
     {
-      "id": 1,
+      "id": 2,
       "name": "Long-VALE3",
       "enabled": true,
       "training": true,
@@ -353,13 +350,433 @@
           "start_class": "Opening",
           "start_parameters": {
             "side": "B",
-            "order_qty": 10000
+            "order_qty": 2500
           }
         }
       ],
       "stop_class": "PercTrailingStop",
       "stop_parameters": {
-        "perc_trailing": 0.02,
+        "perc_trailing": 0.00,
+        "inc_trailing": 0.0,
+        "stop_limit": -500.00
+      }
+    },
+    {
+      "id": 3,
+      "name": "Short-VALE3",
+      "enabled": false,
+      "training": false,
+      "algo_class": "LFT",
+      "threads": [
+        {
+          "symbol": "VALE3",
+          "instruments": [
+            "T"
+          ],
+          "oms_id": 0,
+          "broker_id": 191,
+          "start_class": "Opening",
+          "start_parameters": {
+            "side": "S",
+            "order_qty": 2500
+          }
+        }
+      ],
+      "stop_class": "PercTrailingStop",
+      "stop_parameters": {
+        "perc_trailing": 0.00,
+        "inc_trailing": 0.0,
+        "stop_limit": -500.00
+      }
+    },
+    {
+      "id": 4,
+      "name": "Long-BBDC4",
+      "enabled": true,
+      "training": true,
+      "algo_class": "LFT",
+      "threads": [
+        {
+          "symbol": "BBDC4",
+          "instruments": [
+            "T"
+          ],
+          "oms_id": 0,
+          "broker_id": 191,
+          "start_class": "Opening",
+          "start_parameters": {
+            "side": "B",
+            "order_qty": 2500
+          }
+        }
+      ],
+      "stop_class": "PercTrailingStop",
+      "stop_parameters": {
+        "perc_trailing": 0.00,
+        "inc_trailing": 0.0,
+        "stop_limit": -500.00
+      }
+    },
+    {
+      "id": 5,
+      "name": "Short-BBDC4",
+      "enabled": false,
+      "training": false,
+      "algo_class": "LFT",
+      "threads": [
+        {
+          "symbol": "BBDC4",
+          "instruments": [
+            "T"
+          ],
+          "oms_id": 0,
+          "broker_id": 191,
+          "start_class": "Opening",
+          "start_parameters": {
+            "side": "S",
+            "order_qty": 2500
+          }
+        }
+      ],
+      "stop_class": "PercTrailingStop",
+      "stop_parameters": {
+        "perc_trailing": 0.00,
+        "inc_trailing": 0.0,
+        "stop_limit": -500.00
+      }
+    },
+    {
+      "id": 6,
+      "name": "Long-ITUB4",
+      "enabled": true,
+      "training": true,
+      "algo_class": "LFT",
+      "threads": [
+        {
+          "symbol": "ITUB4",
+          "instruments": [
+            "T"
+          ],
+          "oms_id": 0,
+          "broker_id": 191,
+          "start_class": "Opening",
+          "start_parameters": {
+            "side": "B",
+            "order_qty": 2500
+          }
+        }
+      ],
+      "stop_class": "PercTrailingStop",
+      "stop_parameters": {
+        "perc_trailing": 0.00,
+        "inc_trailing": 0.0,
+        "stop_limit": -500.00
+      }
+    },
+    {
+      "id": 7,
+      "name": "Short-ITUB4",
+      "enabled": false,
+      "training": false,
+      "algo_class": "LFT",
+      "threads": [
+        {
+          "symbol": "ITUB4",
+          "instruments": [
+            "T"
+          ],
+          "oms_id": 0,
+          "broker_id": 191,
+          "start_class": "Opening",
+          "start_parameters": {
+            "side": "S",
+            "order_qty": 2500
+          }
+        }
+      ],
+      "stop_class": "PercTrailingStop",
+      "stop_parameters": {
+        "perc_trailing": 0.00,
+        "inc_trailing": 0.0,
+        "stop_limit": -500.00
+      }
+    },
+    {
+      "id": 8,
+      "name": "Long-ITSA4",
+      "enabled": false,
+      "training": false,
+      "algo_class": "LFT",
+      "threads": [
+        {
+          "symbol": "ITSA4",
+          "instruments": [
+            "T"
+          ],
+          "oms_id": 0,
+          "broker_id": 191,
+          "start_class": "Opening",
+          "start_parameters": {
+            "side": "B",
+            "order_qty": 2500
+          }
+        }
+      ],
+      "stop_class": "PercTrailingStop",
+      "stop_parameters": {
+        "perc_trailing": 0.00,
+        "inc_trailing": 0.0,
+        "stop_limit": -500.00
+      }
+    },
+    {
+      "id": 9,
+      "name": "Short-ITSA4",
+      "enabled": false,
+      "training": false,
+      "algo_class": "LFT",
+      "threads": [
+        {
+          "symbol": "ITSA4",
+          "instruments": [
+            "T"
+          ],
+          "oms_id": 0,
+          "broker_id": 191,
+          "start_class": "Opening",
+          "start_parameters": {
+            "side": "S",
+            "order_qty": 2500
+          }
+        }
+      ],
+      "stop_class": "PercTrailingStop",
+      "stop_parameters": {
+        "perc_trailing": 0.00,
+        "inc_trailing": 0.0,
+        "stop_limit": -500.00
+      }
+    },
+    {
+      "id": 10,
+      "name": "Long-B3SA3",
+      "enabled": false,
+      "training": false,
+      "algo_class": "LFT",
+      "threads": [
+        {
+          "symbol": "B3SA3",
+          "instruments": [
+            "T"
+          ],
+          "oms_id": 0,
+          "broker_id": 191,
+          "start_class": "Opening",
+          "start_parameters": {
+            "side": "B",
+            "order_qty": 2500
+          }
+        }
+      ],
+      "stop_class": "PercTrailingStop",
+      "stop_parameters": {
+        "perc_trailing": 0.00,
+        "inc_trailing": 0.0,
+        "stop_limit": -500.00
+      }
+    },
+    {
+      "id": 11,
+      "name": "Short-B3SA3",
+      "enabled": false,
+      "training": false,
+      "algo_class": "LFT",
+      "threads": [
+        {
+          "symbol": "B3SA3",
+          "instruments": [
+            "T"
+          ],
+          "oms_id": 0,
+          "broker_id": 191,
+          "start_class": "Opening",
+          "start_parameters": {
+            "side": "S",
+            "order_qty": 2500
+          }
+        }
+      ],
+      "stop_class": "PercTrailingStop",
+      "stop_parameters": {
+        "perc_trailing": 0.00,
+        "inc_trailing": 0.0,
+        "stop_limit": -500.00
+      }
+    },
+    {
+      "id": 12,
+      "name": "Long-MGLU3",
+      "enabled": false,
+      "training": false,
+      "algo_class": "LFT",
+      "threads": [
+        {
+          "symbol": "MGLU3",
+          "instruments": [
+            "T"
+          ],
+          "oms_id": 0,
+          "broker_id": 191,
+          "start_class": "Opening",
+          "start_parameters": {
+            "side": "B",
+            "order_qty": 2500
+          }
+        }
+      ],
+      "stop_class": "PercTrailingStop",
+      "stop_parameters": {
+        "perc_trailing": 0.00,
+        "inc_trailing": 0.0,
+        "stop_limit": -500.00
+      }
+    },
+    {
+      "id": 13,
+      "name": "Short-MGLU3",
+      "enabled": false,
+      "training": false,
+      "algo_class": "LFT",
+      "threads": [
+        {
+          "symbol": "MGLU3",
+          "instruments": [
+            "T"
+          ],
+          "oms_id": 0,
+          "broker_id": 191,
+          "start_class": "Opening",
+          "start_parameters": {
+            "side": "S",
+            "order_qty": 2500
+          }
+        }
+      ],
+      "stop_class": "PercTrailingStop",
+      "stop_parameters": {
+        "perc_trailing": 0.00,
+        "inc_trailing": 0.0,
+        "stop_limit": -500.00
+      }
+    },
+    {
+      "id": 14,
+      "name": "Long-COGN3",
+      "enabled": false,
+      "training": false,
+      "algo_class": "LFT",
+      "threads": [
+        {
+          "symbol": "COGN3",
+          "instruments": [
+            "T"
+          ],
+          "oms_id": 0,
+          "broker_id": 191,
+          "start_class": "Opening",
+          "start_parameters": {
+            "side": "B",
+            "order_qty": 2500
+          }
+        }
+      ],
+      "stop_class": "PercTrailingStop",
+      "stop_parameters": {
+        "perc_trailing": 0.00,
+        "inc_trailing": 0.0,
+        "stop_limit": -500.00
+      }
+    },
+    {
+      "id": 15,
+      "name": "Short-COGN3",
+      "enabled": false,
+      "training": false,
+      "algo_class": "LFT",
+      "threads": [
+        {
+          "symbol": "COGN3",
+          "instruments": [
+            "T"
+          ],
+          "oms_id": 0,
+          "broker_id": 191,
+          "start_class": "Opening",
+          "start_parameters": {
+            "side": "S",
+            "order_qty": 2500
+          }
+        }
+      ],
+      "stop_class": "PercTrailingStop",
+      "stop_parameters": {
+        "perc_trailing": 0.00,
+        "inc_trailing": 0.0,
+        "stop_limit": -500.00
+      }
+    },
+    {
+      "id": 16,
+      "name": "Long-VIIA3",
+      "enabled": false,
+      "training": false,
+      "algo_class": "LFT",
+      "threads": [
+        {
+          "symbol": "VIIA3",
+          "instruments": [
+            "T"
+          ],
+          "oms_id": 0,
+          "broker_id": 191,
+          "start_class": "Opening",
+          "start_parameters": {
+            "side": "B",
+            "order_qty": 2500
+          }
+        }
+      ],
+      "stop_class": "PercTrailingStop",
+      "stop_parameters": {
+        "perc_trailing": 0.00,
+        "inc_trailing": 0.0,
+        "stop_limit": -500.00
+      }
+    },
+    {
+      "id": 17,
+      "name": "Short-VIIA3",
+      "enabled": false,
+      "training": false,
+      "algo_class": "LFT",
+      "threads": [
+        {
+          "symbol": "VIIA3",
+          "instruments": [
+            "T"
+          ],
+          "oms_id": 0,
+          "broker_id": 191,
+          "start_class": "Opening",
+          "start_parameters": {
+            "side": "S",
+            "order_qty": 2500
+          }
+        }
+      ],
+      "stop_class": "PercTrailingStop",
+      "stop_parameters": {
+        "perc_trailing": 0.00,
         "inc_trailing": 0.0,
         "stop_limit": -500.00
       }

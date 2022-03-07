@@ -14,7 +14,7 @@ class Job(Thread):
     def stop(self):
         self._keep_running = False
 
-    def _get_internal_provider_data(self, provider, provider_id):
+    def _get_internal_provider_data(self, provider, provider_id=""):
         """Selects from the provider's internal list of instances... """
         lst_providers = None
         for tprvd in self._lst_config_pool:
