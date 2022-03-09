@@ -34,57 +34,29 @@ class Bot(Thread):
     @staticmethod
     def _get_oms_broker_provider(oms, broker_id: int) -> dict:
         provider = None
-        for prov in oms.get("global_provider_lst_brokers_conn", None):
-            if prov.get("broker_id", -1) == broker_id:
+        for prov in oms:
+            if prov.get("id", -1) == broker_id:
                 provider = prov
                 break
+
         return provider
 
     @staticmethod
-    def _get_oms_thread_dct_orders(oms, thread_oms_id: int) -> dict:
-        orders = None
-        for oms_id in oms.get("orders", []):
-            if oms_id.get("thread_oms_id", -1) == thread_oms_id:
-                orders = oms_id.get("orders", {})
-                break
-        return orders
+    def _get_oms_thread_dct_orders(oms_broker_provider: dict, algo_name: str) -> dict:
+        return oms_broker_provider.get("algo_msg_types").get(algo_name)
 
     @staticmethod
-    def _get_oms_thread_dct_positions(oms, algo_id=-1, thread_oms_id=-1, thread_broker_id=-1):
-        lst_positions = None
-        for oms_id in oms.get("positions", []):
-            if oms_id.get("algo_id", -1) == algo_id:
-                lst_positions = oms_id
-                break
-
-        lst_oms_positions = None
-        for oms_id in oms.get("positions", []):
-            if oms_id.get("algo_id", -1) == algo_id and oms_id.get("thread_oms_id", -1) == thread_oms_id:
-                lst_positions.append(oms_id)
-                break
-
-        dct_broker_positions = None
-        for oms_id in oms.get("positions", []):
-            if oms_id.get("algo_id", -1) == algo_id and oms_id.get("thread_oms_id", -1) == thread_oms_id and \
-                    oms_id.get("thread_broker_id", -1) == thread_broker_id:
-                dct_broker_positions = oms_id
-                break
-
-        return lst_positions, lst_oms_positions, dct_broker_positions
+    def _get_oms_thread_dct_positions(oms_broker_provider: dict, algo_name: str):
+        return oms_broker_provider.get("'algo_positions'").get(algo_name)
 
     @staticmethod
-    def _execute_order(oms_broker_provider: dict, oms_thread_dct_orders: dict, dtc_order: dict) -> dict:
+    def _execute_order(oms_broker_provider: dict, dtc_order: dict) -> dict:
         dct_msg = oms_broker_provider.get("cls_ptr").execute(dtc_order)
-        oms_thread_dct_orders.get("sent", []).append(dct_msg)
         return dct_msg
 
-    def _execute_order_comp(self, oms, broker_id: int, thread_oms_id: int, dtc_order: dict) -> dict:
+    def _execute_order_comp(self, oms, broker_id: int, dtc_order: dict) -> dict:
         provider = self._get_oms_broker_provider(oms, broker_id)
-        orders = self._get_oms_thread_dct_orders(oms, thread_oms_id)
-
         dct_msg = provider.get("cls_ptr").execute(dtc_order)
-        orders.get("sent", []).append(dct_msg)
-
         return dct_msg
 
     @staticmethod
@@ -122,7 +94,7 @@ class AlgoBot(Bot):
         super().__init__(name=name, daemon=daemon, *args, **kwargs)
         self._state = Constants.POSITION_NEW
         self._algo_cfg = kwargs.get('algo_cfg', {})
-        self._oms = self._algo_cfg.get("oms_instance", None)
+        self._lst_oms = [thr.get("oms_instance", []) for thr in self._algo_cfg.get("threads")]
         self._shutdown = False
 
     def tick(self):
@@ -156,7 +128,7 @@ class AlgoBot(Bot):
             if self._keep_running:
                 with ThreadPoolExecutor(max_workers=8) as executor:
                     for item in lst_started:
-                        executor.submit(self._create_position, item[0], item[1], self._oms)
+                        executor.submit(self._create_position, item[0], item[1], self._lst_oms)
 
                 self._state = Constants.POSITION_OPENED
 
@@ -174,9 +146,8 @@ class AlgoBot(Bot):
                             sel_inst = inst.get("instrument", {})
                             break
 
-                    lst_positions, lst_oms_positions, dct_broker_position = \
-                        self._get_oms_thread_dct_positions(self._oms, self._algo_cfg.get("id"),
-                                                           thr.get("oms_id"), thr.get("broker_id"))
+                    oms_provider = self._get_oms_broker_provider(self._lst_oms, thr.get("broker_id", -1))
+                    dct_broker_position = self._get_oms_thread_dct_positions(oms_provider, self._algo_cfg.get("name"))
 
                     dct_broker_position["last_price"] = sel_inst.get("Ultimo", 0.0)
 
@@ -195,7 +166,7 @@ class AlgoBot(Bot):
 
             with ThreadPoolExecutor(max_workers=8) as executor:
                 for item in lst_started:
-                    executor.submit(self._create_position, item[0], item[1], self._oms)
+                    executor.submit(self._create_position, item[0], item[1], self._lst_oms)
 
             self._state = Constants.POSITION_STOPED
 
@@ -428,7 +399,7 @@ class AlgoBot(Bot):
         '''
 
         def prep_exec_at_market(i_dct_st_cfg, i_start_params, i_dtc_order) -> float:
-            sprd = i_dct_st_cfg.get("price") * i_start_params.get("perc_spread_order_at_market", 0.0)
+            sprd = round(i_dct_st_cfg.get("price") * i_start_params.get("perc_spread_order_at_market", 0.0), 2)
             return i_dct_st_cfg.get("price") + sprd if i_dtc_order['Side'] == 1 else i_dct_st_cfg.get("price") - sprd
 
         # Return every sent msg before a given message.
@@ -449,8 +420,8 @@ class AlgoBot(Bot):
         dtc_order['Price'] = prep_exec_at_market(dct_start_cfg, start_params, dtc_order)
 
         oms_provider = self._get_oms_broker_provider(oms, thr.get("broker_id", -1))
-        orders = self._get_oms_thread_dct_orders(oms, thr.get("id", -1))
-        dct_msg = self._execute_order(oms_provider, orders, dtc_order)
+        orders = self._get_oms_thread_dct_orders(oms_provider, self._algo_cfg.get("name"))
+        dct_msg = self._execute_order(oms_provider, dtc_order)
 
         lst_processed = []
         msg_ret = None
@@ -483,7 +454,7 @@ class AlgoBot(Bot):
                         if rec[1].get("ExecType") in ['1', 'F'] and rec[1].get("OrdStatus") == '1':
                             price = prep_exec_at_market(dct_start_cfg, start_params, dtc_order)
                             dtc_alt_order = self._edit_pending_order(basic_prov, dct_msg, price)
-                            self._execute_order(oms_provider, orders, dtc_alt_order)
+                            self._execute_order(oms_provider, dtc_alt_order)
                             lst_processed.append(rec[0])
 
                         # if the order came back rejected because the partial order was completely executed right
@@ -504,7 +475,7 @@ class AlgoBot(Bot):
                         if rec[1].get("ExecType") in lst_not_exec and rec[1].get("OrdStatus") in lst_not_exec:
 
                             dtc_alt_order = self._cancel_pending_order(basic_prov, dct_msg)
-                            self._execute_order(oms_provider, orders, dtc_alt_order)
+                            self._execute_order(oms_provider, dtc_alt_order)
 
                             if rec[0] not in lst_processed:
                                 lst_processed.append(rec[0])
@@ -528,7 +499,7 @@ class AlgoBot(Bot):
                             dtc_alt_order['OrderQty'] = rec[1].get("CumQty")
                             dtc_alt_order['Price'] = prep_exec_at_market(dct_start_cfg, start_params, rec)
 
-                            self._execute_order(oms_provider, orders, dtc_alt_order)
+                            self._execute_order(oms_provider, dtc_alt_order)
 
                             if rec[0] not in lst_processed:
                                 lst_processed.append(rec[0])

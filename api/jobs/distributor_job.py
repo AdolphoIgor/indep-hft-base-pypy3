@@ -77,10 +77,30 @@ class DistributorJob(Job):
         def __process_oms_distributor(i_dct_md_prvd, i_name, i_keep_running):
             queue = i_dct_md_prvd.get("global_provider_queue", None)
             decoder = i_dct_md_prvd.get("global_provider_decoder", None)
-            dct_admin_msg_types = i_dct_md_prvd.get("admin_msg_types", {})
-            dct_news_msg_types = i_dct_md_prvd.get("news_msg_types", {})
-            dct_algo_msg_types = i_dct_md_prvd.get("algo_msg_types", {})
-            dct_algo_positions = i_dct_md_prvd.get("algo_positions", {})
+
+            k_name = "admin_msg_types"
+            if k_name not in i_dct_md_prvd:
+                i_dct_md_prvd[k_name] = {}
+
+            dct_admin_msg_types = i_dct_md_prvd.get(k_name)
+
+            k_name = "news_msg_types"
+            if k_name not in i_dct_md_prvd:
+                i_dct_md_prvd[k_name] = {}
+
+            dct_news_msg_types = i_dct_md_prvd.get(k_name)
+
+            k_name = "algo_msg_types"
+            if k_name not in i_dct_md_prvd:
+                i_dct_md_prvd[k_name] = {}
+
+            dct_algo_msg_types = i_dct_md_prvd.get(k_name)
+
+            k_name = "algo_positions"
+            if k_name not in i_dct_md_prvd:
+                i_dct_md_prvd[k_name] = {}
+
+            dct_algo_positions = i_dct_md_prvd.get(k_name)
 
             while i_keep_running:
                 if queue.empty():
@@ -184,7 +204,6 @@ class DistributorJob(Job):
                 if not dct_oms_prvd.get("running", False) and \
                         dct_oms_prvd.get("global_provider_queue", None) is not None and \
                         dct_oms_prvd.get("global_provider_decoder", None) is not None:
-
                     prov = provider.get("name").replace(" ", "").lower()
                     name = f"thr_distributor_md_{provider.get('id')}_{prov}"
                     thr_ = threading.Thread(

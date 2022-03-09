@@ -28,12 +28,14 @@ class ExecutorJob(Job):
                 continue
 
             lst_md_prv, _, __ = self._get_internal_provider_data("market_data_providers")
-            if len(lst_md_prv) == 0:
+            lst_conn = [not prv.get('connected') for prv in lst_md_prv]
+            if len(lst_md_prv) == 0 or len(lst_conn) == 0 or all(lst_conn):
                 time.sleep(self.__sleep_when_done)
                 continue
 
-            lst_oms_prv, _, __ = self._get_internal_provider_data("market_data_providers")
-            if len(lst_oms_prv) == 0:
+            lst_oms_prv, _, __ = self._get_internal_provider_data("oms_providers")
+            lst_conn = [not prv.get('connected') for prv in lst_oms_prv]
+            if len(lst_oms_prv) == 0 or len(lst_conn) == 0 or all(lst_conn):
                 time.sleep(self.__sleep_when_done)
                 continue
 
@@ -134,9 +136,6 @@ class ExecutorJob(Job):
 
                         thread["oms_instance"] = dct_oms_prvd
 
-                    # Each algorithm will receive its own context to pe and check its orders:
-                    # Orders must take place in lst_oms_sel_prov->(oms)->orders->orders->send and every provider's
-                    # message received will be placed at sel_prov->(oms)->orders->orders->received.
                     target = eval(f'{algo.get("algo_class")}('
                                   f'name=algo_name, '
                                   f'daemon=True, '

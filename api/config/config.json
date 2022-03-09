@@ -281,7 +281,7 @@
       "id": 0,
       "name": "Long-PETR4",
       "enabled": true,
-      "training": true,
+      "training": false,
       "algo_class": "LFT",
       "threads": [
         {
@@ -290,11 +290,12 @@
             "T"
           ],
           "oms_id": 0,
-          "broker_id": 191,
+          "broker_id": 0,
           "start_class": "Opening",
           "start_parameters": {
             "side": "B",
-            "order_qty": 2500
+            "order_qty": 2500,
+            "perc_spread_order_at_market": 0.005
           }
         }
       ],
@@ -318,7 +319,7 @@
             "T"
           ],
           "oms_id": 0,
-          "broker_id": 191,
+          "broker_id": 0,
           "start_class": "Opening",
           "start_parameters": {
             "side": "S",
@@ -336,8 +337,8 @@
     {
       "id": 2,
       "name": "Long-VALE3",
-      "enabled": true,
-      "training": true,
+      "enabled": false,
+      "training": false,
       "algo_class": "LFT",
       "threads": [
         {
@@ -346,7 +347,7 @@
             "T"
           ],
           "oms_id": 0,
-          "broker_id": 191,
+          "broker_id": 0,
           "start_class": "Opening",
           "start_parameters": {
             "side": "B",
@@ -374,7 +375,7 @@
             "T"
           ],
           "oms_id": 0,
-          "broker_id": 191,
+          "broker_id": 0,
           "start_class": "Opening",
           "start_parameters": {
             "side": "S",
@@ -392,8 +393,8 @@
     {
       "id": 4,
       "name": "Long-BBDC4",
-      "enabled": true,
-      "training": true,
+      "enabled": false,
+      "training": false,
       "algo_class": "LFT",
       "threads": [
         {
@@ -402,7 +403,7 @@
             "T"
           ],
           "oms_id": 0,
-          "broker_id": 191,
+          "broker_id": 0,
           "start_class": "Opening",
           "start_parameters": {
             "side": "B",
@@ -430,7 +431,7 @@
             "T"
           ],
           "oms_id": 0,
-          "broker_id": 191,
+          "broker_id": 0,
           "start_class": "Opening",
           "start_parameters": {
             "side": "S",
@@ -448,8 +449,8 @@
     {
       "id": 6,
       "name": "Long-ITUB4",
-      "enabled": true,
-      "training": true,
+      "enabled": false,
+      "training": false,
       "algo_class": "LFT",
       "threads": [
         {
@@ -458,7 +459,7 @@
             "T"
           ],
           "oms_id": 0,
-          "broker_id": 191,
+          "broker_id": 0,
           "start_class": "Opening",
           "start_parameters": {
             "side": "B",
@@ -486,7 +487,7 @@
             "T"
           ],
           "oms_id": 0,
-          "broker_id": 191,
+          "broker_id": 0,
           "start_class": "Opening",
           "start_parameters": {
             "side": "S",
@@ -514,7 +515,7 @@
             "T"
           ],
           "oms_id": 0,
-          "broker_id": 191,
+          "broker_id": 0,
           "start_class": "Opening",
           "start_parameters": {
             "side": "B",
@@ -542,7 +543,7 @@
             "T"
           ],
           "oms_id": 0,
-          "broker_id": 191,
+          "broker_id": 0,
           "start_class": "Opening",
           "start_parameters": {
             "side": "S",
@@ -570,7 +571,7 @@
             "T"
           ],
           "oms_id": 0,
-          "broker_id": 191,
+          "broker_id": 0,
           "start_class": "Opening",
           "start_parameters": {
             "side": "B",
@@ -598,7 +599,7 @@
             "T"
           ],
           "oms_id": 0,
-          "broker_id": 191,
+          "broker_id": 0,
           "start_class": "Opening",
           "start_parameters": {
             "side": "S",
@@ -626,7 +627,7 @@
             "T"
           ],
           "oms_id": 0,
-          "broker_id": 191,
+          "broker_id": 0,
           "start_class": "Opening",
           "start_parameters": {
             "side": "B",
@@ -654,7 +655,7 @@
             "T"
           ],
           "oms_id": 0,
-          "broker_id": 191,
+          "broker_id": 0,
           "start_class": "Opening",
           "start_parameters": {
             "side": "S",
@@ -682,7 +683,7 @@
             "T"
           ],
           "oms_id": 0,
-          "broker_id": 191,
+          "broker_id": 0,
           "start_class": "Opening",
           "start_parameters": {
             "side": "B",
@@ -710,7 +711,7 @@
             "T"
           ],
           "oms_id": 0,
-          "broker_id": 191,
+          "broker_id": 0,
           "start_class": "Opening",
           "start_parameters": {
             "side": "S",
@@ -738,7 +739,7 @@
             "T"
           ],
           "oms_id": 0,
-          "broker_id": 191,
+          "broker_id": 0,
           "start_class": "Opening",
           "start_parameters": {
             "side": "B",
@@ -766,7 +767,7 @@
             "T"
           ],
           "oms_id": 0,
-          "broker_id": 191,
+          "broker_id": 0,
           "start_class": "Opening",
           "start_parameters": {
             "side": "S",

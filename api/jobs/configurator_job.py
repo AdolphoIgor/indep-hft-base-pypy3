@@ -147,11 +147,6 @@ class ConfiguratorJob(Job):
                                 dct_oms_prvd["global_provider_conn"].logout()
                                 dct_oms_prvd["global_provider_conn"] = None
                                 dct_oms_prvd["global_provider_queue"] = None
-                                dct_oms_prvd["lst_admin_msgs"].clear()
-                                dct_oms_prvd["lst_admin_msgs"] = None
-                                dct_oms_prvd["lst_senders"].clear()
-                                dct_oms_prvd["lst_senders"] = None
-
                                 dct_oms_prvd["connected"] = False
 
                                 self._logger.info(f"The connection to OMS {provider.get('name')} was terminated.")
@@ -200,8 +195,6 @@ class ConfiguratorJob(Job):
                                     if dct_oms_prvd["connected"]:
                                         dct_oms_prvd["global_provider_conn"] = oms_prov
                                         dct_oms_prvd["global_provider_queue"] = queue
-                                        dct_oms_prvd["lst_admin_msgs"] = []
-                                        dct_oms_prvd["lst_senders"] = []
                                         dct_oms_prvd["global_provider_decoder"] = oms_prov
 
                                         lst_oms_providers.append(dct_oms_prvd)
