@@ -1149,8 +1149,7 @@ class Constants:
                                 "required": False,
                                 "datatype": str,
                                 "comments": "Tipos de vencimentos a serem enviado.",
-                                "domain": [2, 4],
-                                "default": 0
+                                "domain": [2, 4]
                             },
                             {
                                 "tag": 836,
@@ -1742,7 +1741,8 @@ class Constants:
                                     "Good Till Cancel (GTC) 3 = Executa (mesmo que parcial) imediatamente ou "
                                     "Cancela (IOC) 4 = Executa por completo ou Cancela (FOK) 6 = Good Till Date ("
                                     "GTD) 7 = At The Close (ATC) A = Good For Auction (GFA).",
-                        "domain": ['0', '1', '2', '3', '4', '6', '7', 'A']
+                        "domain": ['0', '1', '2', '3', '4', '6', '7', 'A'],
+                        "default": 0
                     },
                     {
                         "tag": 126,
@@ -2019,7 +2019,7 @@ class Constants:
                     {
                         "tag": 529,
                         "name": "OrderRestrictions",
-                        "required": True,
+                        "required": False,
                         "datatype": str,
                         "comments": "Restrições relacionadas à ordem. Se mais de uma restrição se aplicar à "
                                     "ordem, esse campo poderá conter instruções múltiplas separadas por espaço."
@@ -2247,7 +2247,7 @@ class Constants:
                     {
                         "tag": 529,
                         "name": "OrderRestrictions",
-                        "required": True,
+                        "required": False,
                         "datatype": str,
                         "comments": "Restrições relacionadas à ordem. Se mais de uma restrição se aplicar à "
                                     "ordem, esse campo poderá conter instruções múltiplas separadas por espaço."
@@ -2969,14 +2969,13 @@ class Constants:
                 i_lst_ignore.append('MsgType')
 
             if i_item.get("name") not in i_lst_ignore:
-                if required_only and i_item.get("required", False):
+                if i_item.get("required", False):
                     i_dtc_template[i_item.get("name")] = \
                         i_item.get("datatype") if i_item.get("default", None) is None else i_item.get("default")
-                else:
-                    i_dtc_template[i_item.get("name")] = \
-                        "Not required " + str(i_item.get("datatype")) if i_item.get("default",
-                                                                                    None) is None else i_item.get(
-                            "default")
+
+                elif not required_only:
+                    i_dtc_template[i_item.get("name")] = "Not required " + str(i_item.get("datatype")) \
+                        if i_item.get("default", None) is None else i_item.get("default")
 
             if i_item.get("calculated", False) and i_item.get("name") not in i_lst_ignore:
                 i_dtc_template[i_item.get("name")] = "will be calculated"

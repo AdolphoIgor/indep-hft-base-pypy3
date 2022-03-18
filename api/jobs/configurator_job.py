@@ -143,7 +143,6 @@ class ConfiguratorJob(Job):
                         if dct_oms_prvd.get("connected", False) and not host.get("enabled"):
 
                             if dct_oms_prvd.get("connected", False):
-                                dct_oms_prvd["global_provider_decoder"] = None
                                 dct_oms_prvd["global_provider_conn"].logout()
                                 dct_oms_prvd["global_provider_conn"] = None
                                 dct_oms_prvd["global_provider_queue"] = None
@@ -173,8 +172,8 @@ class ConfiguratorJob(Job):
 
                                     str_cls = f"{provider.get('configurator_class')}(" \
                                               f"qfix_conn, " \
-                                              f"oms_id=conn.get('id'), " \
-                                              f"oms_name=conn.get('name'), " \
+                                              f"oms_id=provider.get('id'), " \
+                                              f"oms_name=provider.get('name'), " \
                                               f"begin_string=host.get('begin_string'), " \
                                               f"sender_comp_id=host.get('sender_comp_id'), " \
                                               f"target_comp_id=host.get('target_comp_id'), " \
@@ -195,7 +194,6 @@ class ConfiguratorJob(Job):
                                     if dct_oms_prvd["connected"]:
                                         dct_oms_prvd["global_provider_conn"] = oms_prov
                                         dct_oms_prvd["global_provider_queue"] = queue
-                                        dct_oms_prvd["global_provider_decoder"] = oms_prov
 
                                         lst_oms_providers.append(dct_oms_prvd)
 

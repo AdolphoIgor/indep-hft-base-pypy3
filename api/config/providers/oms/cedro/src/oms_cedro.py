@@ -205,6 +205,10 @@ class CedroOMSProvider(CedroOMSProviderBasic):
                     i_str_out = i_str_out + str(itm.get("tag")) + self._values_field_delimiter + \
                               str(i_kwargs.get(i_name)) + self._encode_field_delimiter
 
+                    subtags = itm.get("subtags", [])
+                    if subtags:
+                        i_str_out = i_str_out + get_encoded_str(subtags, i_kwargs)
+
             return i_str_out
 
         def get_checksum(str_message):
@@ -233,13 +237,13 @@ class CedroOMSProvider(CedroOMSProviderBasic):
             # designed to address items whitch it's value is not into the provided domain.
             lst_domain = i_l_itm.get("domain", [])
             str_val = i_kwargs.get(i_l_itm.get("name"))
-            if len(lst_domain) > 0 and str_val is not None and str_val not in lst_domain:
+            if len(lst_domain) > 0 and str_val is not None and i_l_itm.get("required") and str_val not in lst_domain:
                 raise PayloadItemNotAsExpected(
                     Constants.PAYLOAD_ITEM_INVALID.format(str(i_l_itm), "OUT-OF-DOMAIN"))
 
             # designed to address items whitch it's value has wrong size length.
             length = i_l_itm.get("lenght", -1)
-            if 0 < length < len(i_kwargs.get(i_l_itm.get("name"))):
+            if 0 < length < len(i_kwargs.get(i_l_itm.get("name"), "")):
                 raise PayloadItemNotAsExpected(
                     Constants.PAYLOAD_ITEM_INVALID.format(str(i_l_itm), "WRONG SIZE LENGHT"))
 
@@ -289,14 +293,23 @@ class CedroOMSProvider(CedroOMSProviderBasic):
         if token is not None:
             kwargs["Signature"] = token
             kwargs["SignatureLength"] = len(kwargs["Signature"])
+
         if len(algo_name) > 0:
             kwargs["SenderSubID"] = self._get_sender_id(algo_name)
+
         if kwargs.get("ClOrdID", None) is not None:
             kwargs["ClOrdID"] = self._get_next_cl_ord_id()
+
         if kwargs.get("PartyID", None) is not None:
             kwargs["PartyID"] = self._username
+
         if kwargs.get("SourceAddress", None) is not None:
             kwargs["SourceAddress"] = self._get_sender_id(algo_name)
+
+        lst_fields = ['BodyLength', 'CheckSum', 'SenderSubID']
+        for fld in lst_fields:
+            if fld in kwargs and kwargs.get(fld) == 'will be calculated':
+                kwargs.pop(fld)
 
         # getting the command ready to be sent to the provider.
         str_out = get_encoded_str(sel_df, kwargs)

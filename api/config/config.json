@@ -270,7 +270,6 @@
           }
         ],
         "configurator_class": "CedroOMSProvider",
-        "configurator_class_decoder": "CedroOMSProviderBasic",
         "encode_field_delimiter": "\u0001",
         "values_field_delimiter": "="
       }

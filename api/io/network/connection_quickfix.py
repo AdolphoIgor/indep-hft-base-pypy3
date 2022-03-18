@@ -74,7 +74,7 @@ class QuickFixGenApplication(fix.Application):
         try:
             cl_ord_id = self.get_field_value(fix.ClOrdID(), message)
             if cl_ord_id is not None:
-                self._cl_ord_id = cl_ord_id
+                self._cl_ord_id = int(cl_ord_id)
 
         except fix.FieldNotFound:
             pass
