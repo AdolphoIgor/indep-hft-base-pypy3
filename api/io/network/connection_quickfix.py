@@ -12,7 +12,7 @@ class QuickFixGenApplication(fix.Application):
         This is also the actual producer class for messages comming from OMS providers using FIX protocol.
     """
 
-    def __init__(self, session, queue, delimiter="\u0001"):
+    def __init__(self, session, queue, delimiter="\u0001", dict_file=""):
         super().__init__()
         logger.name = Constants.SOFTWARE_NAME
 
@@ -26,6 +26,7 @@ class QuickFixGenApplication(fix.Application):
         self._init_msg_seq_num = None
         self._accep_msg_seq_num = None
         self._cl_ord_id = None
+        self._dict_file = dict_file
 
     def __del__(self):
         self._session_id = None
@@ -48,11 +49,10 @@ class QuickFixGenApplication(fix.Application):
         else:
             return None
 
-    @staticmethod
-    def str_msg_to_fix_msg(message) -> fix.Message:
+    def str_msg_to_fix_msg(self, message) -> fix.Message:
         if type(message) is str:
-            msg = fix.Message()
-            msg.setString(message)
+            ddict = fix.DataDictionary(self._dict_file)
+            msg = fix.Message(message, ddict)
             message = msg
 
         return message
@@ -165,10 +165,11 @@ class ConnectionQuickFix(Connection):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._settings_file = kwargs.get("settings_file")
+        self._dictionary_file = kwargs.get("dictionary_file")
         self._queue = kwargs.get("global_queue")
         self._delimiter = kwargs.get("delimiter")
 
-        self._application = QuickFixGenApplication(fix.Session, self._queue, self._delimiter)
+        self._application = QuickFixGenApplication(fix.Session, self._queue, self._delimiter, self._dictionary_file)
         settings = fix.SessionSettings(self._settings_file)
         store_factory = fix.FileStoreFactory(settings)
         log_factory = fix.FileLogFactory(settings)

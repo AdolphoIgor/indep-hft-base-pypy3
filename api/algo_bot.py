@@ -78,7 +78,6 @@ class Bot(Thread):
         dct_order['OrdType'] = 'K'
         dct_order['NoPartyID'] = 1
         dct_order['PartyID'] = oms_provider.get("sender_comp_id")
-        dct_order['PartyRole'] = 36
         dct_order['AllocAccount'] = thr.get("broker_id", -1)
         start_params = thr.get("start_parameters", {})
         dct_order['Side'] = 1 if start_params.get("side", None) == "B" else 2
@@ -340,10 +339,12 @@ class AlgoBot(Bot):
         basic_prov = oms_provider.get("global_provider_conn", None)
         start_params = thr.get("start_parameters", {})
 
-        dtc_order = self._create_position_order(basic_prov, thr, oms_provider)
-        dtc_order['Price'] = prep_exec_at_market(dct_start_cfg, start_params, dtc_order)
+        dct_order = self._create_position_order(basic_prov, thr, oms_provider)
 
-        dct_msg = basic_prov.execute(**dtc_order)
+        if not dct_order.get('OrdType') == 'K':
+            dct_order['Price'] = prep_exec_at_market(dct_start_cfg, start_params, dct_order)
+
+        dct_msg = basic_prov.execute(**dct_order)
 
         lst_processed = []
         msg_ret = None

@@ -1,3 +1,4 @@
+import socket
 from datetime import datetime, date, time, timedelta
 
 from api.config.providers.oms.cedro.src.constants import Constants as CrystalOMSConstants
@@ -288,6 +289,7 @@ class CedroOMSProvider(CedroOMSProviderBasic):
         kwargs["ApplicationName"] = Constants.SHORT_SOFTWARE_NAME
         kwargs["ApplicationVersion"] = Constants.SOFTWARE_VERSION
         kwargs["OrderStrategy"] = "DAYTRADE"
+        kwargs["SourceAddress"] = socket.gethostbyname(socket.gethostname())
 
         token = self._oms_connection.get_token()
         if token is not None:
@@ -302,9 +304,6 @@ class CedroOMSProvider(CedroOMSProviderBasic):
 
         if kwargs.get("PartyID", None) is not None:
             kwargs["PartyID"] = self._username
-
-        if kwargs.get("SourceAddress", None) is not None:
-            kwargs["SourceAddress"] = self._get_sender_id(algo_name)
 
         lst_fields = ['BodyLength', 'CheckSum', 'SenderSubID']
         for fld in lst_fields:

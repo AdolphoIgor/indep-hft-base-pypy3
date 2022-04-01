@@ -166,6 +166,7 @@ class ConfiguratorJob(Job):
                                     qfix_conn = ConnectionFactory.get_connection(
                                         conn_type=ConnectionFactory.CONNECTION_TYPE.get("QUICKFIX"),
                                         settings_file=host.get("settings_file"),
+                                        dictionary_file=host.get("dictionary_file"),
                                         global_queue=queue,
                                         delimiter=provider.get('encode_field_delimiter', '')
                                     )

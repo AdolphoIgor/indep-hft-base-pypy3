@@ -883,14 +883,6 @@ class Constants:
                         "domain": [1, 7, 8]
                     },
                     {
-                        "tag": 44,
-                        "name": "Price",
-                        "required": False,
-                        "datatype": float,
-                        "comments": "Preço sugerido por contrato. Não obrigatório apenas quando OrdType = K.",
-                        "domain": ["K"]
-                    },
-                    {
                         "tag": 99,
                         "name": "StopPx",
                         "required": False,
@@ -898,6 +890,13 @@ class Constants:
                         "comments": "Preço de Stop para uma ordem Stop Limit ou Start. Obrigatório apenas quando "
                                     "OrdType = 4 ou S.",
                         "domain": ['4', 'S']
+                    },
+                    {
+                        "tag": 44,
+                        "name": "Price",
+                        "required": False,
+                        "datatype": float,
+                        "comments": "Preço sugerido por contrato."
                     },
                     {
                         "tag": 10306,
@@ -975,22 +974,23 @@ class Constants:
                     {
                         "tag": 78,
                         "name": "NoAllocs",
-                        "required": False,
-                        "datatype": str,
-                        "comments": "Código da corretora de destino.",
+                        "required": True,
+                        "datatype": int,
+                        "comments": "Número de contas para alocação pré-negociação. Deve ser sempre 1, sendo que a "
+                                    "alocação é permitida para apenas um cliente.",
+                        "default": 1,
                         "subtags": [
                             {
                                 "tag": 79,
                                 "name": "AllocAccount",
-                                "required": False,
+                                "required": True,
                                 "datatype": str,
-                                "comments": "Código da conta. Obrigatório caso o NoAllocs > 0.",
-                                "domain": [0]
+                                "comments": "Código da conta."
                             },
                             {
                                 "tag": 661,
                                 "name": "AllocAcctIDSource",
-                                "required": False,
+                                "required": True,
                                 "datatype": int,
                                 "comments": "Fonte da conta. Valor aceito: 99 – Outro (custom or proprietary code)",
                                 "default": 99
@@ -1029,7 +1029,7 @@ class Constants:
                                 "datatype": int,
                                 "comments": "Identifica o tipo do participante. Valores aceitos: 12 = Executing "
                                             "Trader 36 = Entering Trader 40 = Transfer to Firm",
-                                "domain": [12, 36, 40]
+                                "default": 36
                             }
                         ]
                     },
