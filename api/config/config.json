@@ -264,7 +264,8 @@
                 "username": "adolpho.igor",
                 "password": "CedroPwd123",
                 "enabled": true,
-                "settings_file": "api/config/quickfix_settings_homol.cfg"
+                "settings_file": "api/config/quickfix_settings_homol.cfg",
+                "dictionary_file": "api/config/FIX44_homol.xml"
               }
             ]
           }
@@ -289,7 +290,7 @@
             "T"
           ],
           "oms_id": 0,
-          "broker_id": 0,
+          "broker_id": 9900041824,
           "start_class": "Opening",
           "start_parameters": {
             "side": "B",
