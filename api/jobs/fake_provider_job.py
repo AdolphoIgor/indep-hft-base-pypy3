@@ -10,31 +10,37 @@ class FakeProviderJob(Job):
 
     def __init__(self, logger, dict_configs, lst_config_pool, lst_thread_pool, **kwargs):
         super().__init__(logger, dict_configs, lst_config_pool, lst_thread_pool)
-        self.__destination_path = kwargs.get("destination_path")
-        self.__encoder = kwargs.get("encoder")
-        self.__sleep_when_done = kwargs.get("sleep_when_done")
+        self._destination_path = kwargs.get("destination_path")
+        self._encoder = kwargs.get("encoder")
+        self._sleep_when_done = kwargs.get("sleep_when_done")
+        self._connections = []
+        self._server = None
+        
+    def __del__(self):
+        for connection in self._connections:
+            connection.close()
 
+        self._server.close()
+        
     def run(self) -> None:
         self._logger.info("Initializing the Fake Provider...")
-
-        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server.setblocking(False)
-        server.bind(('127.0.0.1', 51234))
-        server.listen(5)
+        self._server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._server.setblocking(False)
+        self._server.bind(('127.0.0.1', 51234))
+        self._server.listen(5)
         seed(0.5)
 
         user, pwd, cmd = "", "", ""
-        connections = []
         try:
             while self._keep_running:
                 try:
-                    connection, address = server.accept()
+                    connection, address = self._server.accept()
                     connection.setblocking(False)
-                    connections.append(connection)
+                    self._connections.append(connection)
                 except BlockingIOError:
                     pass
 
-                for connection in connections:
+                for connection in self._connections:
                     connection.send(b'\r\nUsername:')
 
                     while len(user) == 0:
@@ -72,13 +78,13 @@ class FakeProviderJob(Job):
                             continue
 
                     try:
-                        with open(self.__destination_path, 'r', encoding=self.__encoder) as f:
+                        with open(self._destination_path, 'r', encoding=self._encoder) as f:
 
                             for line in f.readlines():
                                 if not self._keep_running:
                                     break
 
-                                connection.send(bytes(line, self.__encoder))
+                                connection.send(bytes(line, self._encoder))
                                 time.sleep(random())
 
                     except BrokenPipeError:
@@ -88,11 +94,11 @@ class FakeProviderJob(Job):
         except BrokenPipeError:
             pass
 
-        for connection in connections:
+        for connection in self._connections:
             connection.close()
 
-        server.close()
+        self._server.close()
 
-        time.sleep(self.__sleep_when_done)
+        time.sleep(self._sleep_when_done)
 
         self._logger.info("Fake Provider was finalized.")

@@ -25,15 +25,14 @@ class QuickFixGenApplication(fix.Application):
 
         self._init_msg_seq_num = None
         self._accep_msg_seq_num = None
-        self._cl_ord_id = None
-        self._dict_file = dict_file
+        self._data_dict_file = fix.DataDictionary(dict_file)
 
     def __del__(self):
         self._session_id = None
 
     def _str(self, msg):
         """ Convert a FIX message to a readable string. """
-        msg = msg.toString()
+        msg = msg.toString().encode('utf-8', 'surrogateescape').decode('latin_1')
         return msg if self._delimiter == "\u0001" else msg.replace("\u0001", self._delimiter)
 
     def get_field_value(self, fobj, msg):
@@ -51,9 +50,7 @@ class QuickFixGenApplication(fix.Application):
 
     def str_msg_to_fix_msg(self, message) -> fix.Message:
         if type(message) is str:
-            ddict = fix.DataDictionary(self._dict_file)
-            msg = fix.Message(message, ddict)
-            message = msg
+            message = fix.Message(message, self._data_dict_file)
 
         return message
 
@@ -66,15 +63,6 @@ class QuickFixGenApplication(fix.Application):
             msg_seq_num = self.get_field_value(fix.MsgSeqNum(), message)
             if msg_seq_num is not None:
                 self._init_msg_seq_num = msg_seq_num
-
-        except fix.FieldNotFound:
-            pass
-
-    def _process_cl_ord_id(self, message):
-        try:
-            cl_ord_id = self.get_field_value(fix.ClOrdID(), message)
-            if cl_ord_id is not None:
-                self._cl_ord_id = int(cl_ord_id)
 
         except fix.FieldNotFound:
             pass
@@ -103,12 +91,21 @@ class QuickFixGenApplication(fix.Application):
         self._token = None
         self._init_msg_seq_num = None
         self._accep_msg_seq_num = None
-        self._cl_ord_id = None
         logger.info(f"onLogout - Session: {session_id}")
 
     def toAdmin(self, message, session_id):
+        msg_type = fix.MsgType()
+        message.getHeader().getField(msg_type)
+        msg_type = msg_type.getValue()
+        if msg_type == fix.MsgType_Logon:
+            username = fix.Username('adolpho.igor')
+            password = fix.Password('CedroPwd123')
+
+            message.setField(username)
+            message.setField(password)
+            message.setField(fix.StringField(9933, "INDEP-SOFTWARE"))
+
         self._process_msg_seq_num(message)
-        self._process_cl_ord_id(message)
 
         msg = self._str(message)
         if self.is_message_to_discard(message):
@@ -118,7 +115,6 @@ class QuickFixGenApplication(fix.Application):
 
     def toApp(self, message, session_id):
         self._process_msg_seq_num(message)
-        self._process_cl_ord_id(message)
 
         msg = self._str(message)
         if self.is_message_to_discard(message):
@@ -157,70 +153,45 @@ class QuickFixGenApplication(fix.Application):
     def get_msg_seq_num(self):
         return self._init_msg_seq_num, self._accep_msg_seq_num
 
-    def get_cl_ord_id(self):
-        return self._cl_ord_id
-
 
 class ConnectionQuickFix(Connection):
     def __init__(self, **kwargs):
+        self._application = None
+        self._settings_file = kwargs.get("settings_file", None)
+        self._dictionary_file = kwargs.get("dictionary_file", None)
+        self._queue = kwargs.get("global_queue", None)
+        self._delimiter = kwargs.get("delimiter", None)
         super().__init__(**kwargs)
-        self._settings_file = kwargs.get("settings_file")
-        self._dictionary_file = kwargs.get("dictionary_file")
-        self._queue = kwargs.get("global_queue")
-        self._delimiter = kwargs.get("delimiter")
-
-        self._application = QuickFixGenApplication(fix.Session, self._queue, self._delimiter, self._dictionary_file)
-        settings = fix.SessionSettings(self._settings_file)
-        store_factory = fix.FileStoreFactory(settings)
-        log_factory = fix.FileLogFactory(settings)
-        self.set_connection(fix.SocketInitiator(self._application, store_factory, settings, log_factory))
 
     def is_connected(self):
-        self._connected = self._application.is_connected()
-        return self._connected
+        return self._application.is_connected()
 
     def disconnect(self):
-        initiator = self.get_connection()
-        if initiator is not None:
-            initiator.stop()
+        if self._connected:
+            self.get_connection().stop()
 
         self._connected = False
 
     def connect(self, **kwargs):
-        message = kwargs.get("message", None)
-        if message is None:
-            return
+        self._application = QuickFixGenApplication(fix.Session, self._queue, self._delimiter, self._dictionary_file)
+        settings = fix.SessionSettings(self._settings_file)
+        store_factory = fix.FileStoreFactory(settings)
+        log_factory = fix.FileLogFactory(settings)
+        initiator = fix.SocketInitiator(self._application, store_factory, settings, log_factory)
 
-        try:
-            msgtype_field = self._application.get_field_value(fix.MsgType(), message)
-            if msgtype_field is None or msgtype_field != "A":
-                return
-
-            if msgtype_field == "A" and self._application.is_connected():
-                return
-
-        except fix.FieldNotFound:
-            return
-
-        initiator = self.get_connection()
         while True:
-            if self.is_connected():
-                break
-
             initiator.start()
-            self._application.send_message(message)
-            time.sleep(2)
-            if self.is_connected():
+            time.sleep(1)
+            self._connected = self.is_connected()
+            if self._connected:
+                self.set_connection(initiator)
                 break
 
-            time.sleep(10)
-
-            if not self.is_connected():
-                initiator.stop()
+            self.disconnect()
 
     def execute(self, message):
-        if self._application is None:
-            return False
+        if not self._connected:
+            self.connect()
 
         self._application.send_message(message)
 
@@ -229,6 +200,3 @@ class ConnectionQuickFix(Connection):
 
     def get_msg_seq_num(self):
         return self._application.get_msg_seq_num()
-
-    def get_cl_ord_id(self):
-        return self._application.get_cl_ord_id()

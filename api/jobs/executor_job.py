@@ -20,6 +20,12 @@ class ExecutorJob(Job):
         """
         self._logger.info("Initializing the Executor...")
 
+        dct_backtest_file = {}
+        with open(self.__backtest_filename, mode='r', encoding=self.__encoder) as json_file:
+            dct_backtest_file.update(json.load(json_file))
+
+        level = None
+        configs = None
         while self._keep_running:
 
             configs = self._dict_configs.get("configs", {})
@@ -39,23 +45,21 @@ class ExecutorJob(Job):
                 time.sleep(self.__sleep_when_done)
                 continue
 
-            level = None
             lst_scheduling = self._dict_configs.get('scheduling')
             for sch in lst_scheduling:
                 if sch.get("job", None) == "Executor":
                     level = float(f'{sch.get("order")}.0')
                     break
 
-            if level is None:
+            if level is not None:
                 break
 
-            lst_algos = self._dict_configs.get("algos", [])
+        while self._keep_running:
+            lst_enabled_algos = [algo for algo in self._dict_configs.get("algos", []) if algo.get("enabled", False)]
 
             # Prevents two opposed operations (Buy and Sell) for the same symbol in a particular broker.
             lst_sbl_side_bkr = []
-            for algo in lst_algos:
-                if not algo.get("enabled", False):
-                    continue
+            for algo in lst_enabled_algos:
 
                 for thr in algo.get("threads", []):
 
@@ -89,7 +93,7 @@ class ExecutorJob(Job):
                             "It's not possible to sell and buy the same symbol in the particular ORM->broker.")
 
             # processing...
-            for algo in lst_algos:
+            for algo in lst_enabled_algos:
 
                 algo_id = algo.get("id", -1)
                 lst_algos_prv, lst_algos_sel_prv, dct_algo_prv = \
@@ -98,12 +102,8 @@ class ExecutorJob(Job):
                 # Starts the algorithm.
                 # copy of the algo dictionary
                 algo_name = f'thr_executor_{algo.get("name", "")}'
-                if algo.get("enabled", False) and not dct_algo_prv.get('running', False):
+                if not dct_algo_prv.get('running', False):
                     dct_algo_prv = eval(str(algo))
-
-                    dct_backtest_file = {}
-                    with open(self.__backtest_filename, mode='r', encoding=self.__encoder) as json_file:
-                        dct_backtest_file.update(json.load(json_file))
 
                     for bcktst in dct_backtest_file.get("lst_backtests", []):
                         if bcktst.get("algo_name") == algo.get("name", ""):
@@ -136,6 +136,7 @@ class ExecutorJob(Job):
 
                         thread["oms_instance"] = dct_oms_prvd
 
+                    dct_algo_prv['algo_name'] = algo_name
                     target = eval(f'{algo.get("algo_class")}('
                                   f'name=algo_name, '
                                   f'daemon=True, '
@@ -149,24 +150,47 @@ class ExecutorJob(Job):
                     lst_algos_prv.append(dct_algo_prv)
                     self._logger.info(f"Initializing the algo name: {algo_name}...")
 
-                # Stops the running algoritm.
-                elif algo.get("running", False) and not algo.get("enabled", False):
-                    thr = list(filter(lambda x: x.get("name") == algo_name, self._lst_thread_pool))[0]
-                    if len(thr) > 0:
-                        thr.get("pointer", None).join()
-                        dct_algo_prv['running'] = False
-                        self._logger.info(f"The algo name: {thr.get('name')} was finalized.")
+                    time.sleep(self.__sleep_when_done)
+
+            lst_disabl_algos = [algo for algo in self._dict_configs.get("algos", [])
+                                if algo.get("running", False) and not algo.get("enabled", False)]
+
+            # Stops the running algoritm by a change in config.json.
+            for algo in lst_disabl_algos:
+                lst_algos_prv, lst_algos_sel_prv, dct_algo_prv = \
+                    self._get_internal_provider_data("algo_providers", algo.get("id", -1))
+
+                algo_name = f'thr_executor_{algo.get("name", "")}'
+                thr = list(filter(lambda x: x.get("name") == algo_name, self._lst_thread_pool))[0]
+                if len(thr) > 0:
+                    thr.get("pointer", None).join()
+                    dct_algo_prv['running'] = False
+                    self._logger.info(f"The algo name: {thr.get('name')} was finalized.")
 
                 time.sleep(self.__sleep_when_done)
 
-            else:
-                lst_thr = list(filter(lambda x: x.get("level") == 5.1, self._lst_thread_pool))
-                for thr in lst_thr:
-                    thr.get("pointer", None).join()
-                    self._logger.info(f"The algo name: {thr.get('name')} was finalized.")
+            # Cheching upon finalized threads
+            lst_thr = list(filter(lambda x: x.get("level") == 5.1 and not x.get("pointer").isAlive(),
+                                  self._lst_thread_pool))
+            for thr in lst_thr:
+                thr.get("pointer", None).join()
+                prv_name = "algo_providers"
+                thr_name = thr.get("name")
+                lst_algos_prv, _, dct_algo_prv = self._get_internal_provider_data(prv_name, provider_algo_name=thr_name)
 
-                prdr_name = "algo_providers"
-                lst_algos_prv, lst_algos_sel_prv, dct_algo_prv = self._get_internal_provider_data(prdr_name, -1)
-                lst_algos_prv.clear()
+                if dct_algo_prv is None:
+                    break
+
+                for algo in self._dict_configs.get("algos", []):
+                    if algo.get('name') == dct_algo_prv.get('name'):
+                        algo['enabled'] = False
+                        break
+
+                lst_algos_prv.remove(dct_algo_prv)
+                self._lst_thread_pool.remove(thr)
+
+                self._logger.info(f"The algo name: {thr_name} was finalized.")
+
+                time.sleep(self.__sleep_when_done)
 
         self._logger.info("Executor was finalized.")

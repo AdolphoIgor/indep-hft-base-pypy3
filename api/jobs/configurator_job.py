@@ -12,10 +12,25 @@ class ConfiguratorJob(Job):
 
     def __init__(self, logger, dict_configs, lst_config_pool, lst_thread_pool, **kwargs):
         super().__init__(logger, dict_configs, lst_config_pool, lst_thread_pool)
-        self.__encoder = kwargs.get("encoder")
-        self.__sleep_when_done = kwargs.get("sleep_when_done")
-        self.__log_market_data_cfg_path = kwargs.get("log_market_data_cfg_path")
-        self.__log_oms_cfg_path = kwargs.get("log_oms_cfg_path")
+        self._encoder = kwargs.get("encoder")
+        self._sleep_when_done = kwargs.get("sleep_when_done")
+        self._log_market_data_cfg_path = kwargs.get("log_market_data_cfg_path")
+        self._log_oms_cfg_path = kwargs.get("log_oms_cfg_path")
+
+    def __del__(self):
+        configs = self._dict_configs.get("configs", {})
+        lst_prov = ["market_data_providers", "oms_providers"]
+        for prdr_name in lst_prov:
+            for provider in configs.get(prdr_name, []):
+                for conn in provider.get("connections", {}):
+                    __, _, dct_prvd = self._get_internal_provider_data(prdr_name, provider.get("id"))
+                    if conn.get("type").lower() == "cedro_quickfix":
+                        dct_prvd["global_provider_conn"].logout()
+
+                    elif conn.get("type").lower() == "telnet":
+                        dct_prvd["global_provider_conn"].disconnect()
+
+                    self._logger.info(f"The connection {provider.get('name')} was closed.")
 
     def run(self) -> None:
         """
@@ -28,7 +43,7 @@ class ConfiguratorJob(Job):
 
             configs = self._dict_configs.get("configs", {})
             if not configs.get("online", False):
-                time.sleep(self.__sleep_when_done)
+                time.sleep(self._sleep_when_done)
                 continue
 
             prdr_name = "market_data_providers"
@@ -115,8 +130,8 @@ class ConfiguratorJob(Job):
                     time.sleep(0.01)
 
             ''' Writes the current configuration in a report file. '''
-            f_path = f'{self.__log_market_data_cfg_path}{datetime.now().strftime("%Y%m%d")}_marketdata_log_config.txt'
-            with open(f_path, 'a', encoding=self.__encoder) as f:
+            f_path = f'{self._log_market_data_cfg_path}{datetime.now().strftime("%Y%m%d")}_marketdata_log_config.txt'
+            with open(f_path, 'a', encoding=self._encoder) as f:
                 f.truncate(0)
                 f.seek(0)
                 dt = datetime.now().strftime("%Y%m%d %H%M%S.%f")
@@ -186,10 +201,6 @@ class ConfiguratorJob(Job):
                                               f")"
 
                                     oms_prov = eval(str_cls)
-                                    oms_prov.logon()
-                                    # var_con = oms_prov.is_connected()
-                                    # oms_prov.execute(**{"MsgType": "5", "Text": "LOGOUT REQUESTED BY CLIENT."})
-                                    # oms_prov.logout()
 
                                     dct_oms_prvd["connected"] = oms_prov.is_connected()
                                     if dct_oms_prvd["connected"]:
@@ -205,14 +216,14 @@ class ConfiguratorJob(Job):
                             time.sleep(0.01)
 
             ''' Writes the current configuration in a report file. '''
-            f_path = f'{self.__log_oms_cfg_path}{datetime.now().strftime("%Y%m%d")}_oms_log_config.txt'
-            with open(f_path, 'a', encoding=self.__encoder) as f:
+            f_path = f'{self._log_oms_cfg_path}{datetime.now().strftime("%Y%m%d")}_oms_log_config.txt'
+            with open(f_path, 'a', encoding=self._encoder) as f:
                 f.truncate(0)
                 f.seek(0)
                 dt = datetime.now().strftime("%Y%m%d %H%M%S.%f")
                 f.write(f"'{dt}': {str(self._dict_configs)}\r\n")
                 f.write(f"'{dt}': {str(lst_oms_providers)}\r\n")
 
-            time.sleep(self.__sleep_when_done)
+            time.sleep(self._sleep_when_done)
 
         self._logger.info("Configurator was finalized.")

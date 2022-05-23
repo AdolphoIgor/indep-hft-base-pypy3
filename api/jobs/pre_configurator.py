@@ -13,6 +13,16 @@ class PreConfiguratorJob(Job):
         self.__config_file_path = kwargs.get("config_file_path")
         self.__config_cmd_file_path = kwargs.get("config_cmd_file_path")
 
+    def __del__(self):
+        self._update_config_cmd()
+
+    def _update_config_cmd(self):
+        """ Making sure that the config file will be updated. """
+        with open(self.__config_cmd_file_path, mode='w', encoding=self.__encoder) as f:
+            f.truncate(0)
+            f.seek(0)
+            json.dump(self._dict_configs, f, ensure_ascii=True, indent=2)
+
     def run(self) -> None:
         """
             The pre-configurator has to keep up to date the content of the variable self._dict_configs so every other
@@ -34,12 +44,9 @@ class PreConfiguratorJob(Job):
                 with open(self.__config_cmd_file_path, mode='r', encoding=self.__encoder) as json_file:
                     self._dict_configs.update(json.load(json_file))
 
-            ''' Updates the control config... '''
-            with open(self.__config_cmd_file_path, mode='w', encoding=self.__encoder) as f:
-                f.truncate(0)
-                f.seek(0)
-                json.dump(self._dict_configs, f, ensure_ascii=True, indent=2)
-
             time.sleep(self.__sleep_when_done)
+
+            ''' Updates the control config... '''
+            self._update_config_cmd()
 
         self._logger.info("Pre-Configurator was finalized.")

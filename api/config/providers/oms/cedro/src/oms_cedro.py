@@ -1,4 +1,5 @@
 import socket
+import time as ttime
 from datetime import datetime, date, time, timedelta
 
 from api.config.providers.oms.cedro.src.constants import Constants as CrystalOMSConstants
@@ -149,11 +150,14 @@ class CedroOMSProvider(CedroOMSProviderBasic):
             msg_seq_number = 0
         return msg_seq_number + 1
 
-    def _get_next_cl_ord_id(self) -> int:
+    @staticmethod
+    def _get_next_cl_ord_id() -> str:
+        """
         cl_ord_id = self._oms_connection.get_cl_ord_id()
         if cl_ord_id is None:
             cl_ord_id = 0
-        return cl_ord_id + 1
+        """
+        return str(ttime.time()).replace(".", "")
 
     def get_connection(self):
         return self._oms_connection
@@ -165,34 +169,11 @@ class CedroOMSProvider(CedroOMSProviderBasic):
         if not self.is_connected():
             self.logon()
 
-        self._oms_connection.execute(self.encode(**kwargs))
+        self._oms_connection.execute(self.encode(kwargs))
+        return kwargs
 
-    def logon(self) -> bool:
-        if not self.is_connected():
-            order = {
-                "MsgType": "A",
-                "Username": self._username,
-                "Password": self._password
-            }
-
-            self._oms_connection.connect(message=self.encode(**order))
-
-        return self._oms_connection.is_connected()
-
-    def logout(self):
-        if self.is_connected():
-            order = {
-                "MsgType": "5",
-                "Text": "LOGOUT REQUESTED BY CLIENT."
-            }
-
-            self._oms_connection.execute(self.encode(**order))
-
-    def encode(self, algo_name="", **kwargs) -> str:
-        """
-            :param algo_name: Will be the iaentity of the message's sender. If it's not provided, will return a id
-                composed with "OMS_NAME+DELIMITER+BROKER_NAME" which is enough to identify orders such as LOGON/LOGOUT.
-            :param kwargs:
+    def encode(self, kwargs: dict) -> str:
+        """ :param kwargs:
             :return: the encoded message in a byte-string format.
         """
         def prepare_date_fields(str_date_value) -> str:
@@ -250,6 +231,7 @@ class CedroOMSProvider(CedroOMSProviderBasic):
 
             return True
 
+        algo_name = kwargs.get("algo_name", "")
         msg_type = str(kwargs.get("MsgType", ""))
         if len(msg_type) == 0:
             raise LayoutRequiredFildNotProvided(Constants.LAYOUT_ITEM_NOT_PROVIDED)
@@ -297,7 +279,7 @@ class CedroOMSProvider(CedroOMSProviderBasic):
             kwargs["SignatureLength"] = len(kwargs["Signature"])
 
         if len(algo_name) > 0:
-            kwargs["SenderSubID"] = self._get_sender_id(algo_name)
+            kwargs["OrderTag"] = algo_name
 
         if kwargs.get("ClOrdID", None) is not None:
             kwargs["ClOrdID"] = self._get_next_cl_ord_id()
@@ -323,4 +305,3 @@ class CedroOMSProvider(CedroOMSProviderBasic):
         str_out += '10=' + get_checksum(str_out) + self._encode_field_delimiter
 
         return str_out
-

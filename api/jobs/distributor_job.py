@@ -76,7 +76,7 @@ class DistributorJob(Job):
 
         def __process_oms_distributor(i_dct_md_prvd, i_name, i_keep_running):
             queue = i_dct_md_prvd.get("global_provider_queue", None)
-            decoder = i_dct_md_prvd.get("global_provider_decoder", None)
+            oms_conn = i_dct_md_prvd.get("global_provider_conn", None)
 
             k_name = "admin_msg_types"
             if k_name not in i_dct_md_prvd:
@@ -107,7 +107,7 @@ class DistributorJob(Job):
                     time.sleep(0.5)
                     continue
 
-                lst_msgs = decoder.decode(queue.get())
+                lst_msgs = oms_conn.decode(queue.get())
                 for msg in lst_msgs:
 
                     msg_type = msg.get("MsgType", "")
@@ -117,15 +117,32 @@ class DistributorJob(Job):
                     elif msg_type in ["B", "U2"]:
                         dct_news_msg_types[msg_type] = msg
 
-                    elif msg_type in ["8", "9", "D", "F", "G", "J", "S"]:
-                        sender_sub_id = msg.get("SenderSubID", "")
-                        if sender_sub_id not in dct_algo_msg_types:
-                            dct_algo_msg_types[sender_sub_id] = []
+                    elif msg_type in ["9", "D", "F", "G", "J", "S"]:
+                        order_tag = msg.get("OrderTag", "")
+                        if order_tag not in dct_algo_msg_types:
+                            dct_algo_msg_types[order_tag] = []
 
-                        dct_algo_msg_types.get(sender_sub_id).append(msg)
+                        dct_algo_msg_types.get(order_tag).append(msg)
 
-                        if sender_sub_id not in dct_algo_positions:
-                            dct_algo_positions[sender_sub_id] = {}
+                        if order_tag not in dct_algo_positions:
+                            dct_algo_positions[order_tag] = {}
+
+                    elif msg_type in ["", "8"]:
+                        order_tag = None
+                        cl_ord_id = msg.get("ClOrdID", "")
+                        for _, v in dct_algo_msg_types.items():
+                            for dct in v:
+                                if dct.get('ClOrdID') == cl_ord_id and dct.get('MsgType') in ["D"]:
+                                    order_tag = dct.get("OrderTag", "")
+                                    break
+
+                            if order_tag is not None:
+                                break
+
+                        if order_tag not in dct_algo_msg_types:
+                            dct_algo_msg_types[order_tag] = []
+
+                        dct_algo_msg_types.get(order_tag).append(msg)
 
                 time.sleep(0.1)
             self._logger.info(f"Thread {i_name} was finalized.")
@@ -202,8 +219,8 @@ class DistributorJob(Job):
                         continue
 
                 if not dct_oms_prvd.get("running", False) and \
-                        dct_oms_prvd.get("global_provider_queue", None) is not None and \
-                        dct_oms_prvd.get("global_provider_decoder", None) is not None:
+                        dct_oms_prvd.get("global_provider_queue", None) is not None:
+
                     prov = provider.get("name").replace(" ", "").lower()
                     name = f"thr_distributor_md_{provider.get('id')}_{prov}"
                     thr_ = threading.Thread(

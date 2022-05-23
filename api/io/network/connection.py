@@ -15,15 +15,11 @@ class Connection:
 
     def get_connection(self):
         """ Return the current connection."""
-        if not self.is_connected:
-            self.connect()
-
         return self._conn
 
     def set_connection(self, conn):
         """ Return the current connection."""
-        if self.is_connected:
-            self._conn = conn
+        self._conn = conn
 
     def is_connected(self):
         """ Verifies if the client is connected. """
@@ -43,6 +39,3 @@ class Connection:
 
     def get_msg_seq_num(self):
         """ Every subclass must provide a way to recoveer the message sequence number of the messages. """
-
-    def get_cl_ord_id(self):
-        """ Every subclass must provide a way to recoveer the order id of the every order to be sent. """

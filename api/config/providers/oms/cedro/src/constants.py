@@ -75,7 +75,7 @@ class Constants:
                     "name": "SenderSubID",
                     "required": False,
                     "datatype": str,
-                    "calculated": True,
+                    "calculated": False,
                     "comments": "Identificador para o login interno da sessão. Utilizado nos casos em que a "
                                 "sessão é utilizada por vários usuários."
                 },
@@ -152,7 +152,7 @@ class Constants:
                     "required": False,
                     "datatype": str,
                     "comments": "Mercado ao qual o instrumento pertence. “XBMF” = BM&F.",
-                    "default": "XBMF"
+                    "default": "XBSP"
                 },
                 {
                     "tag": 541,
@@ -1212,7 +1212,7 @@ class Constants:
                 ]
             },
             {
-                "MsgType": "S",
+                "MsgType": "s",
                 "type": "New Order Cross",
                 "msg_body_required": ["header", "footer"],
                 "tags": [
@@ -2936,6 +2936,762 @@ class Constants:
                     }
                 ]
             },
+            {
+                "MsgType": "AN",
+                "type": "Request for Positions",
+                "msg_body_required": ["header", "footer"],
+                "tags": [
+                    {
+                        "tag": 710,
+                        "name": "PosReqID",
+                        "required": True,
+                        "datatype": str,
+                        "comments": "Identificador único da requisição do portifólio da conta."
+                    },
+                    {
+                        "tag": 724,
+                        "name": "PosReqType",
+                        "required": True,
+                        "datatype": int,
+                        "comments": "Tipo da requisição. Valores possíveis: 0 = Positions.",
+                        "default": 0
+                    },
+                    {
+                        "tag": 263,
+                        "name": "SubscriptionRequestType",
+                        "required": True,
+                        "datatype": str,
+                        "comments": "Forma de atualização. Valores possíveis: 0 = Snapshot, "
+                                    "1 = Snapshot Update, 2 = Unsubscribe.",
+                        "domain": ['0', '1', '2']
+                    },
+                    {
+                        "tag": 10552,
+                        "name": "OpenQtyFilter",
+                        "required": False,
+                        "datatype": str,
+                        "comments": "Filtro de quantidades em aberto. Valores possíveis: 0 = Quantidades em aberto, "
+                                    "1 = Somente executadas.",
+                        "domain": ['0', '1']
+                    },
+                    {
+                        "tag": 453,
+                        "name": "NoPartyID",
+                        "required": True,
+                        "datatype": int,
+                        "comments": "Repeating group que contém o identificador do usuário que fez a requisição. "
+                                    "Deve ter valor 1.",
+                        "default": 1,
+                        "subtags": [
+                            {
+                                "tag": 448,
+                                "name": "PartyID",
+                                "required": True,
+                                "datatype": str,
+                                "comments": "Identificador do usuário que fez a requisição."
+                            },
+                            {
+                                "tag": 447,
+                                "name": "PartyIDSource",
+                                "required": True,
+                                "datatype": str,
+                                "comments": "Identifica a origem do PartyID. O único valor aceito é: "
+                                            "D = Proprietary/Custom code",
+                                "default": 'D'
+                            },
+                            {
+                                "tag": 452,
+                                "name": "PartyRole",
+                                "required": True,
+                                "datatype": int,
+                                "comments": "Identifica o tipo do participante. Valores aceitos: 3 = ClientID",
+                                "default": 3
+                            }
+                        ]
+                    },
+                    {
+                        "tag": 1,
+                        "name": "Account",
+                        "required": True,
+                        "datatype": str,
+                        "comments": "Identificador da conta. Valores possíveis: 1 = AccountCustomer",
+                        "domain": '1'
+                    },
+                    {
+                        "tag": 1301,
+                        "name": "MarketID",
+                        "required": False,
+                        "datatype": str,
+                        "comments": "Identificador do mercado. Valores possíveis: XBSP = BOVESPA",
+                        "domain": 'XBSP'
+                    },
+                    {
+                        "tag": 715,
+                        "name": "ClearingBusinessDate",
+                        "required": True,
+                        "datatype": "datetime.strptime('{0}', '%Y%m%d').date()",
+                        "comments": "Data de referência"
+                    },
+                    {
+                        "tag": 60,
+                        "name": "TransactTime",
+                        "required": True,
+                        "datatype": "datetime.strptime('{0}', '%Y%m%d-%H%M%S %f').time()",
+                        "calculated": True,
+                        "comments": "Data/Hora da criação da ordem."
+                    },
+                    {
+                        "tag": 11123,
+                        "name": "FilterType",
+                        "required": False,
+                        "datatype": int,
+                        "comments": "Indica busca apenas de custódia inicial."
+                    }
+                ]
+            },
+            {
+                "MsgType": "AP",
+                "type": "Position Report",
+                "msg_body_required": ["header", "footer"],
+                "tags": [
+                    {
+                        "tag": 721,
+                        "name": "PosMainRptID",
+                        "required": True,
+                        "datatype": str,
+                        "comments": "Identificador único do relatório de posições."
+                    },
+                    {
+                        "tag": 710,
+                        "name": "PosReqID",
+                        "required": False,
+                        "datatype": str,
+                        "comments": "Identificador único da requisição do portifólio da conta."
+                    },
+                    {
+                        "tag": 727,
+                        "name": "TotalNumPosReports",
+                        "required": True,
+                        "datatype": int,
+                        "comments": "Total de relatórios a serem enviados.",
+                        "default": 0
+                    },
+                    {
+                        "tag": 728,
+                        "name": "PosReqResult",
+                        "required": True,
+                        "datatype": int,
+                        "comments": "Resultado da requisição. Valores possíveis: 0 = Requisição válida, "
+                                    "1 = Requisição inválida ou não suportada, 2 = Nenhuma posição encontrada, "
+                                    "3 = Não autorizado, 4 = Não suportado, 5 = Conta não encontrada, 99 = Outro",
+                        "domain": [0, 1, 2, 3, 4, 5, 99]
+                    },
+                    {
+                        "tag": 715,
+                        "name": "ClearingBusinessDate",
+                        "required": True,
+                        "datatype": "datetime.strptime('{0}', '%Y%m%d').date()",
+                        "comments": "Data de referência.",
+                        "domain": ['0', '1']
+                    },
+                    {
+                        "tag": 453,
+                        "name": "NoPartyID",
+                        "required": True,
+                        "datatype": int,
+                        "comments": "Repeating group que contém o identificador do usuário que fez a requisição. "
+                                    "Deve ter valor 1.",
+                        "default": 1,
+                        "subtags": [
+                            {
+                                "tag": 448,
+                                "name": "PartyID",
+                                "required": True,
+                                "datatype": str,
+                                "comments": "Identificador do usuário que fez a requisição."
+                            },
+                            {
+                                "tag": 447,
+                                "name": "PartyIDSource",
+                                "required": True,
+                                "datatype": str,
+                                "comments": "Identifica a origem do PartyID. O único valor aceito é: "
+                                            "D = Proprietary/Custom code",
+                                "default": 'D'
+                            },
+                            {
+                                "tag": 452,
+                                "name": "PartyRole",
+                                "required": True,
+                                "datatype": int,
+                                "comments": "Identifica o tipo do participante. Valores aceitos: 3 = ClientID",
+                                "default": 3
+                            }
+                        ]
+                    },
+                    {
+                        "tag": 1,
+                        "name": "Account",
+                        "required": True,
+                        "datatype": str,
+                        "comments": "Identificador da conta. Valores possíveis: 1 = AccountCustomer",
+                        "domain": '1'
+                    },
+                    {
+                        "tag": 1301,
+                        "name": "MarketID",
+                        "required": True,
+                        "datatype": str,
+                        "comments": "Identificador do mercado."
+                    },
+                    {
+                        "tag": 581,
+                        "name": "AccountType",
+                        "required": True,
+                        "datatype": int,
+                        "comments": "Tipo da conta. Valores possíveis: 1 = AccountCustomer.",
+                        "default": 1
+                    },
+                    {
+                        "tag": 10094,
+                        "name": "TotalPurchaseValue",
+                        "required": False,
+                        "datatype": float,
+                        "comments": "Valor total de compra execudada."
+                    },
+                    {
+                        "tag": 10095,
+                        "name": "TotalNotExecPurchaseValue",
+                        "required": False,
+                        "datatype": float,
+                        "comments": "Valor total de compra em aberto."
+                    },
+                    {
+                        "tag": 10096,
+                        "name": "TotalSaleValue",
+                        "required": False,
+                        "datatype": float,
+                        "comments": "Valor total de venda executada."
+                    },
+                    {
+                        "tag": 10097,
+                        "name": "TotalNotExecSaleValue",
+                        "required": False,
+                        "datatype": float,
+                        "comments": "Valor total de venda em aberto."
+                    },
+                    {
+                        "msg": "ident",
+                        "obs": "Aqui entra o bloco ident..."
+                    },
+                    {
+                        "tag": 730,
+                        "name": "SettlPrice",
+                        "required": False,
+                        "datatype": float,
+                        "comments": "Preço médio de compra quando a custódia é positiva, ou preço médio de venda "
+                                    "quando a custódia é negativa. Obrigatório quando PosReqResult for igual a 0."
+                    },
+                    {
+                        "tag": 731,
+                        "name": "SettlPriceType",
+                        "required": False,
+                        "datatype": int,
+                        "comments": "Tipo do preço médio. Valores possíveis: 1 = Final Obrigatório quando "
+                                    "PosReqResult for igual a 0. "
+                    },
+                    {
+                        "tag": 734,
+                        "name": "PriorSettlPrice",
+                        "required": False,
+                        "datatype": float,
+                        "comments": "Preço médio anterior de compra quando a custódia é positiva, ou preço médio "
+                                    "anterior de venda quando a custódia é negativa. Obrigatório quando PosReqResult "
+                                    "for igual a 0."
+                    },
+                    {
+                        "tag": 702,
+                        "name": "NoPositions",
+                        "required": False,
+                        "datatype": int,
+                        "comments": "Número de posições.",
+                        "subtags": [
+                            {
+                                "tag": 703,
+                                "name": "PosType",
+                                "required": False,
+                                "datatype": str,
+                                "comments": "Identificador do tipo de quantidade retornada. Valores possíveis: SOD = "
+                                            "Quantidade do início do dia, CRQ = Quantidade corrente, EPQ = Quantidade "
+                                            "comprada executada, ESQ = Quantidade vendida executada, "
+                                            "EPRRQ = Quantidade comprada executada de repasse recebido, "
+                                            "ESRRQ = Quantidade vendida executada de repasse recebido, "
+                                            "NEPQ = Quantidade comprada não executada, NESQ = Quantidade vendida não "
+                                            "executada, BSV = Quantidade bloqueada, D0Q = Quantidade D0, "
+                                            "D1Q = Quantidade D1, D2Q = Quantidade D2, D3Q = Quantidade D3, "
+                                            "BTC = Quantidade Tomada de BTC, GBTC = Quantidade Doada de BTC, "
+                                            "FBTC = Quantidade de BTC Livre, TMSQ = Quantidade de Liquidação de "
+                                            "Termo, OPTQ = Quantidade aberta executada(net), OPDQ = Quantidade aberta "
+                                            "executada em daytrade, OPCQ = Quantidade aberta executada em custódia, "
+                                            "BAVP = Preço médio de compra, SAVP = Preço médio de venda, "
+                                            "WWQTY = Quantidade na carteira de garantia, QCEX = Quantidade executada "
+                                            "comprada daytrade, QVEX = Quantidade executada vendida daytrade, "
+                                            "QTCA = Quantidade não executada de compra daytrade, QTVA = Quantidade "
+                                            "não executada de venda daytrade.",
+                                "domain": ['SOD', 'CRQ', 'EPQ', 'ESQ', 'EPRRQ', 'ESRRQ', 'NEPQ', 'NESQ', 'BSV', 'D0Q',
+                                           'D1Q', 'D2Q', 'D3Q', 'BTC', 'GBTC', 'FBTC', 'TMSQ', 'OPTQ', 'OPDQ', 'OPCQ',
+                                           'BAVP', 'SAVP', 'WWQTY', 'QCEX', 'QVEX', 'QTCA', 'QTVA']
+                            },
+                            {
+                                "tag": 704,
+                                "name": "LongQty",
+                                "required": False,
+                                "datatype": int,
+                                "comments": "Quantidade do tipo especificado."
+                            }
+                        ]
+                    },
+                    {
+                        "tag": 753,
+                        "name": "NoPosAmt",
+                        "required": False,
+                        "datatype": int,
+                        "comments": "Número de valores.",
+                        "subtags": [
+                            {
+                                "tag": 707,
+                                "name": "PosAmtType",
+                                "required": False,
+                                "datatype": str,
+                                "comments": "Identificador do tipo de valor retornado. Valores possíveis: CIP = Preço "
+                                            "corrente do instrumento, PCP = Preço de fechamento do dia anterior, "
+                                            "VADJ = Valor do montante ajustado, TPV =Montante total de compra, "
+                                            "TSV = Montante total de venda, CVA= Montante do valor corrente, "
+                                            "OPLX = L/P aberto, CLPLX = L/P fechado, OAVT = Preço médio aberto do "
+                                            "dia, BRKV = Ponto de equilibrio.",
+                                "domain": ['CIP', 'PCP', 'VADJ', 'TPV', 'TSV', 'CVA', 'OPLX', 'CLPLX', 'OAVT', 'BRKV']
+                            },
+                            {
+                                "tag": 708,
+                                "name": "PosAmt",
+                                "required": False,
+                                "datatype": str,
+                                "comments": "Valor do tipo especificado."
+                            }
+                        ]
+                    },
+                    {
+                        "tag": 10098,
+                        "name": "LastTradeDateTime",
+                        "required": False,
+                        "datatype": "datetime.strptime('{0}', '%Y%m%d').date()",
+                        "comments": "Data/hora da última negociação."
+                    },
+                    {
+                        "tag": 20056,
+                        "name": "CurrentQty",
+                        "required": False,
+                        "datatype": float,
+                        "comments": "Quantidade atual."
+                    },
+                    {
+                        "tag": 10144,
+                        "name": "OpenBuyQty",
+                        "required": False,
+                        "datatype": int,
+                        "comments": "Quantidade aberta de compra."
+                    },
+                    {
+                        "tag": 10146,
+                        "name": "OpenSellQty",
+                        "required": False,
+                        "datatype": int,
+                        "comments": "Quantidade aberta de venda."
+                    },
+                    {
+                        "tag": 20049,
+                        "name": "BlockedSellQty",
+                        "required": False,
+                        "datatype": float,
+                        "comments": "Quantidade de venda bloqueada."
+                    },
+                    {
+                        "tag": 10379,
+                        "name": "QuotationForm",
+                        "required": False,
+                        "datatype": int,
+                        "comments": "Forma de cotação do ativo."
+                    },
+                    {
+                        "tag": 10700,
+                        "name": "BTCSettlPrice",
+                        "required": False,
+                        "datatype": float,
+                        "comments": "Preço Médio da posição tomadade BTC."
+                    },
+                    {
+                        "tag": 10701,
+                        "name": "BTCSettlPrice",
+                        "required": False,
+                        "datatype": float,
+                        "comments": "Preço Médio da posição doada de BTC."
+                    },
+                    {
+                        "tag": 10188,
+                        "name": "LeveragebleQuote",
+                        "required": False,
+                        "datatype": bool,
+                        "comments": "Indica se o ativo está alavancado na lista de papéis alavancados."
+                    },
+                    {
+                        "tag": 11197,
+                        "name": "IsAggregateOnLeverage",
+                        "required": False,
+                        "datatype": bool,
+                        "comments": "Não calcular custódia desagiada/leverage quando tiver valor."
+                    }
+                ]
+            },
+            {
+                "MsgType": "U67",
+                "type": "Financial Account Information Request",
+                "msg_body_required": ["header", "footer"],
+                "tags": [
+                    {
+                        "tag": 10318,
+                        "name": "FinancialAccountReqID",
+                        "required": True,
+                        "datatype": str,
+                        "comments": "Identificador único da requisição de Financial Account. Deve ser único por dia "
+                                    "ou sessão e definido pelo iniciador. "
+                    },
+                    {
+                        "tag": 1,
+                        "name": "Account",
+                        "required": True,
+                        "datatype": str,
+                        "comments": "Identificador da conta."
+                    },
+                    {
+                        "tag": 1301,
+                        "name": "MarketID",
+                        "required": True,
+                        "datatype": str,
+                        "comments": "Identificador do mercado.",
+                        "domain": ['XBMF', 'XBSP']
+                    },
+                    {
+                        "tag": 263,
+                        "name": "SubscriptionRequestType",
+                        "required": True,
+                        "datatype": str,
+                        "comments": "Forma de atualização. Valores possíveis: 0 = Snapshot, 1 = Snapshot Update, "
+                                    "2 = Unsubscribe. ",
+                        "domain": ['0', '1', '2']
+                    },
+                    {
+                        "tag": 453,
+                        "name": "NoPartyID",
+                        "required": True,
+                        "datatype": int,
+                        "comments": "Repeating group que contém o identificador do usuário que fez a requisição. "
+                                    "Deve ter valor 1.",
+                        "default": 1,
+                        "subtags": [
+                            {
+                                "tag": 448,
+                                "name": "PartyID",
+                                "required": True,
+                                "datatype": str,
+                                "comments": "Identificador do usuário que fez a requisição."
+                            },
+                            {
+                                "tag": 447,
+                                "name": "PartyIDSource",
+                                "required": True,
+                                "datatype": str,
+                                "comments": "Identifica a origem do PartyID. O único valor aceito é: "
+                                            "D = Proprietary/Custom code",
+                                "default": 'D'
+                            },
+                            {
+                                "tag": 452,
+                                "name": "PartyRole",
+                                "required": True,
+                                "datatype": int,
+                                "comments": "Identifica o tipo do participante. Valores aceitos: 3 = ClientID",
+                                "default": 3
+                            }
+                        ]
+                    },
+                    {
+                        "tag": 10612,
+                        "name": "BalanceComposition",
+                        "required": False,
+                        "datatype": int,
+                        "comments": "Campo que indica se deverá retornar somente os saldos iniciais de cada conta "
+                                    "ligada à conta financeira. Valores aceitos: 0 = All.",
+                        "default": 0
+                    },
+                    {
+                        "tag": 11123,
+                        "name": "FilterType",
+                        "required": False,
+                        "datatype": int,
+                        "calculated": True,
+                        "comments": "Indica busca apenas por dados reduzidos."
+                    }
+                ]
+            },
+            {
+                "MsgType": "U68",
+                "type": "Financial Account Information Report",
+                "msg_body_required": ["header", "footer"],
+                "tags": [
+                    {
+                        "tag": 10318,
+                        "name": "FinancialAccountReqID",
+                        "required": True,
+                        "datatype": str,
+                        "comments": "Eco do identificador único da requisição de financial account."
+                    },
+                    {
+                        "tag": 1301,
+                        "name": "MarketID",
+                        "required": True,
+                        "datatype": str,
+                        "comments": "Identificador do mercado. Valores possíveis: XBMF = BM&F, XBSP = BOVESPA",
+                        "domain": ['XBMF', 'XBSP']
+                    },
+                    {
+                        "tag": 1,
+                        "name": "Account",
+                        "required": True,
+                        "datatype": str,
+                        "comments": "Identificador da conta.",
+                        "domain": '1'
+                    },
+                    {
+                        "tag": 10263,
+                        "name": "FinancialAccount",
+                        "required": False,
+                        "datatype": str,
+                        "comments": "Identificador da conta financeira."
+                    },
+                    {
+                        "tag": 10331,
+                        "name": "GroupID",
+                        "required": False,
+                        "datatype": str,
+                        "comments": "Identificador do grupo ao qual à conta financeira pertence."
+                    },
+                    {
+                        "tag": 453,
+                        "name": "NoPartyID",
+                        "required": False,
+                        "datatype": int,
+                        "comments": "Repeating group que contém o identificador do usuário que fez a requisição. "
+                                    "Deve ter valor 1.",
+                        "default": 1,
+                        "subtags": [
+                            {
+                                "tag": 448,
+                                "name": "PartyID",
+                                "required": True,
+                                "datatype": str,
+                                "comments": "Identificador do usuário que fez a requisição."
+                            },
+                            {
+                                "tag": 447,
+                                "name": "PartyIDSource",
+                                "required": True,
+                                "datatype": str,
+                                "comments": "Identifica a origem do PartyID. O único valor aceito é: "
+                                            "D = Proprietary/Custom code",
+                                "default": 'D'
+                            },
+                            {
+                                "tag": 452,
+                                "name": "PartyRole",
+                                "required": True,
+                                "datatype": int,
+                                "comments": "Identifica o tipo do participante. Valores aceitos: 3 = ClientID",
+                                "default": 3
+                            }
+                        ]
+                    },
+                    {
+                        "tag": 10319,
+                        "name": "FinancialAccountRejReason",
+                        "required": False,
+                        "datatype": int,
+                        "comments": "Motivo da rejeição. Valores possíveis: 0 = Requisição inconsistente, 1 = Sem "
+                                    "permissão, 2 = Usuário não encontrado, 3 = Account inválido, 4 = Outro ("
+                                    "Descrição no campo Text 58).",
+                        "domain": [0, 1, 2, 3, 4]
+                    },
+                    {
+                        "tag": 58,
+                        "name": "Text",
+                        "required": False,
+                        "datatype": str,
+                        "comments": "Texto descrevendo o motivo da rejeição, caso seja necessário."
+                    },
+                    {
+                        "tag": 753,
+                        "name": "NoPosAmt",
+                        "required": False,
+                        "datatype": int,
+                        "comments": "Número de posições.",
+                        "subtags": [
+                            {
+                                "tag": 707,
+                                "name": "PosAmtType",
+                                "required": True,
+                                "datatype": str,
+                                "comments": "Identificador do tipo de valor retornado. Valores possíveis: IPRBA = "
+                                            "ProjectBalance', INBA = InitialBalance', CED0 = CreditEntryDay0', "
+                                            "CED1 = CreditEntryDay1', CED2 = CreditEntryDay2', "
+                                            "CED3 = CreditEntryDay3', DED0 = DebitEntryDay0', DED1 = DebitEntryDay1', "
+                                            "DED2 = DebitEntryDay2', DED3 = DebitEntryDay3', LEVE = Leverage', "
+                                            "FNLE = FinancialLeverage', OVCR = OverdraftCredit', "
+                                            "DFAT = DailyFinancialActivities', AVBA = AvailableBalance', "
+                                            "CHLT = CashLimit', OPLT = OptionLimit', "
+                                            "NEPA = NotExecutedPurchaseAmmount', NESA = NotExecutedSellAmmount', "
+                                            "BCKA = BlockedAmmount', OVAM = OverdraftAmmount', "
+                                            "POVA = PotencialOverdraftAmmount', BCMB = BalanceCashMarketBovespa', "
+                                            "BCMF  = BalanceCashMarketBMF', BUOP = BalanceUncoveredOperation', "
+                                            "BOPT = BalanceOptions', OVLT = OverdraftLimit', "
+                                            "BSCC = BovespaCashOperationCredit', "
+                                            "BSOC = BovespaOptionOperationCredit', BMFC = BMFOperationCredit', "
+                                            "BMBM = BMFBlockedMargin', ADD0 = AdjustDay0', ADD1 = AdjustDay1', "
+                                            "BEBM = BMFExecutedBlockedMargin', BNBM = BMFNotExecutedBlockedMargin', "
+                                            "BNEP = BMFNotExecutedPurchaseAmmount', "
+                                            "BNES = BMFNotExecutedSellAmmount', OPAM = OpenedPurchaseAmmount', "
+                                            "OSAM = OpenedSellAmmount', BOPF = BalanceOptionsOrFuture', "
+                                            "BMFL = BMFLimit', BUNM = BMFUnblockedMargin', DLMG = DownLockMargin', "
+                                            "INTR = Interest', IOFV = Iof', AIOF = AdditionalIof', "
+                                            "LVPP = LeveragePercentageProjected', TSPV = TotalStockPortfolioValue', "
+                                            "TOPV = TotalOptionPortfolioValue', TBPV = TotalBmfPortfolioValue', "
+                                            "FOOA = FilledOverdraftOptionAmmount', "
+                                            "NOOA = NotExecutedOverdraftOptionAmmount', CHOP = Cash OpenPurchases', "
+                                            "OPOP = OptionsOpenPurchases', CHOS = CashOpenSells', "
+                                            "OPOS = OptionsOpenSells', CHEP = CashExecutedPurchases', "
+                                            "OPEP = OptionsExecutedPurchases', CHES = CashExecutedSells', "
+                                            "OPES = OptionsExecutedSells', CHPL = CashPurchaseLimit', "
+                                            "OPPL = OptionsPurchaseLimit', CHSL = CashSellLimit', "
+                                            "OPSL = OptionsSellLimit', CHPA = CashPurchaseAmmount', "
+                                            "CHSA = CashSellAmmount', OPPA = OptionsPurchaseAmmount', "
+                                            "OPSA = OptionsSellAmmount', INPRBA = InitialProjectedBalance', "
+                                            "INLT = InitialLimit', INLTB = InitialLimitBmf', "
+                                            "INSPV = InitialStockPortfolioValue', "
+                                            "INOPV = InitialOptionsPortfolioValue', "
+                                            "INBPV = InitialBmfPortfolioValue', OPL = OpenProfitLoss', "
+                                            "CLPL = ClosedProfitLoss', INEQ = InitialEquity', INEQAC = initialEquity "
+                                            "na zeragem automatica', TOEQ = TotalEquity', GNMA = GeneralMargin', "
+                                            "OPMA = OptionsMargin', IPOB = IpoBlocked', LILO = LeverageOptionsLimit', "
+                                            "BMCL = BMFCashLimit', BSOPCR = BSLimitOperationCredit', "
+                                            "TRDI = TreasuryDirect', INFU = InvestmentFunds', CLFU = ClubsAndFunds', "
+                                            "TOSPV = TotalOnlineStockPortfolioValue', "
+                                            "TOOPV = TotalOnlineOptionsPortfolioValue', "
+                                            "CESD1 = StartCreditEntryDay1', CESD2 = StartCreditEntryDay2', "
+                                            "DESD1 = StartDebitEntryDay1', DESD2 = StartDebitEntryDay2', "
+                                            "CHLL = CashLeveragedLimit', OPLL = OptionsLeveragedLimit', "
+                                            "BMFLL = BmfLeveragedLimit', UNQL = UniqueLimit', "
+                                            "BLVL = BlockedValueLimit', OPLDT = OpenProfitLossDayTrade', "
+                                            "CPLDT = ClosedProfitLossDayTrade', BPOM = BmfPurchaseOpenMargin', "
+                                            "BPEM = BmfPurchaseExecutedMargin', BSOM = BmfSellOpenMargin', "
+                                            "BSEM = BmfSellExecutedMargin', BMFPL = BmfPurchaseLimit', "
+                                            "BMFSL = BmfSellLimit', BMFPA = BmfPurchaseAmmount', "
+                                            "BMFSA = BmfSellAmmount', BPAD = BmfPositionAdjust', "
+                                            "BTAD = BmfTradingAdjust', DTAD = DayTradeAdjustment', "
+                                            "INFUC = FixedIncomeConsidered', CLFUC = ClubsConsidered', "
+                                            "TOBPV = TotalOnlineBmfPortfolioValue', FNDS = Funds', "
+                                            "FNDSC = FundsConsidered', DVDS = Dividends', BSPWT = XbspWarrantyTotal', "
+                                            "BMFWT = XbmfWarrantyTotal', BMFMA = XbmfMarginAvailable', "
+                                            "BGBMF = BrokerageXbmf', BGBSP = BrokerageXbsp', TAX = Taxes', "
+                                            "EMOL = Emolument', ACMT = AccountMarginTotal', "
+                                            "ACMU = AccountMarginUsed', OPLVG = QuoteOptionLeverage', "
+                                            "EQLVG = EquityLeveraged', D1CDT = D1CreditDaytrade', "
+                                            "D1DDT = D1DebitDaytrade', D3CDT = D3CreditDaytrade', "
+                                            "D3DDT = D3DebitDaytrade', D1CPO = D1CreditPosition', "
+                                            "D1DPO = D1DebitPosition', D3CPO = D3CreditPosition', "
+                                            "D3DPO = D3DebitPosition', NPA = NegativePositionAmount', "
+                                            "NOPA = NegativeOptPositionAmount', CRDL = CreditLimit', "
+                                            "WREQ = WarrantyRequired', WDEP = WarrantyDeposited', REFIA = fixed "
+                                            "income application used', FUNDA = Aplicações em fundos utilizado', "
+                                            "TEDIA = Aplicações em tesouro direto utilizado', TOEQM =  Patrimônio "
+                                            "Online + Margem cheia', BPESM =  Compras executadas BMF com Margem "
+                                            "cheia', BSESM = Vendas executadas BMF com Margem cheia', CUPL = Lucro ou "
+                                            "perda da custodia', RQDM = Margem requerida daytrade', CBMA = Devolver "
+                                            "margem teórica máxima BMF ao encerrar uma posição', BRKV = Ponto de "
+                                            "equilíbrio para saída de posição', CLPLO = Lucro ou perda fechados da "
+                                            "operação', PREV = PrevidênciaPREVC = Previdência considerada', "
+                                            "TRDIC = Tesouro direto considerado', OOAC = Valor em dinheiro a ser "
+                                            "retirado do prêmio, ordem aberta no book para opção', OMUL = Devolver "
+                                            "margem teórica máxima BTC-T ao encerrar uma posição', VTAP = Valor em "
+                                            "trânsito para aplicações.",
+                                "domain": ['PRBA', 'INBA', 'CED0', 'CED1', 'CED2', 'CED3', 'DED0', 'DED1', 'DED2',
+                                           'DED3', 'LEVE', 'FNLE', 'OVCR', 'DFAT', 'AVBA', 'CHLT', 'OPLT', 'NEPA',
+                                           'NESA', 'BCKA', 'OVAM', 'POVA', 'BCMB', 'BCMF', 'BUOP', 'BOPT', 'OVLT',
+                                           'BSCC', 'BSOC', 'BMFC', 'BMBM', 'ADD0', 'ADD1', 'BEBM', 'BNBM', 'BNEP',
+                                           'BNES', 'OPAM', 'OSAM', 'BOPF', 'BMFL', 'BUNM', 'DLMG', 'INTR', 'IOFV',
+                                           'AIOF', 'LVPP', 'TSPV', 'TOPV', 'TBPV', 'FOOA', 'NOOA', 'CHOP', 'OPOP',
+                                           'CHOS', 'OPOS', 'CHEP', 'OPEP', 'CHES', 'OPES', 'CHPL', 'OPPL', 'CHSL',
+                                           'OPSL', 'CHPA', 'CHSA', 'OPPA', 'OPSA', 'INPRBA', 'INLT', 'INLTB', 'INSPV',
+                                           'INOPV', 'INBPV', 'OPL', 'CLPL', 'INEQ', 'INEQAC', 'TOEQ', 'GNMA', 'OPMA',
+                                           'IPOB', 'LILO', 'BMCL', 'BSOPCR', 'TRDI', 'INFU', 'CLFU', 'TOSPV', 'TOOPV',
+                                           'CESD1', 'CESD2', 'DESD1', 'DESD2', 'CHLL', 'OPLL', 'BMFLL', 'UNQL', 'BLVL',
+                                           'OPLDT', 'CPLDT', 'BPOM', 'BPEM', 'BSOM', 'BSEM', 'BMFPL', 'BMFSL', 'BMFPA',
+                                           'BMFSA', 'BPAD', 'BTAD', 'DTAD', 'INFUC', 'CLFUC', 'TOBPV', 'FNDS', 'FNDSC',
+                                           'DVDS', 'BSPWT', 'BMFWT', 'BMFMA', 'BGBMF', 'BGBSP', 'TAX', 'EMOL', 'ACMT',
+                                           'ACMU', 'OPLVG', 'EQLVG', 'D1CDT', 'D1DDT', 'D3CDT', 'D3DDT', 'D1CPO',
+                                           'D1DPO', 'D3CPO', 'D3DPO', 'NPA', 'NOPA', 'CRDL', 'WREQ', 'WDEP', 'REFIA',
+                                           'FUNDA', 'TEDIA', 'TOEQM', 'BPESM', 'BSESM', 'CUPL', 'RQDM', 'CBMA', 'BRKV',
+                                           'CLPLO', 'PREV', 'TRDIC', 'OOAC', 'OMUL', 'VTAP']
+                            },
+                            {
+                                "tag": 708,
+                                "name": "PosAmt",
+                                "required": False,
+                                "datatype": str,
+                                "comments": "Valor do tipo especificado."
+                            }
+                        ]
+                    },
+                    {
+                        "tag": 10061,
+                        "name": "NoAccounts",
+                        "required": False,
+                        "datatype": int,
+                        "comments": "Grupo que contém cada conta relacionada à conta financeira, seu mercado e seu "
+                                    "saldo inicial.",
+                        "subtags": [
+                            {
+                                "tag": 10613,
+                                "name": "ClientAccountID",
+                                "required": False,
+                                "datatype": str,
+                                "comments": "ID da conta recuperada."
+                            },
+                            {
+                                "tag": 10614,
+                                "name": "ClientMarketID",
+                                "required": False,
+                                "datatype": str,
+                                "comments": "ID do mercado da conta."
+                            },
+                            {
+                                "tag": 10615,
+                                "name": "InitialBalanceAccount",
+                                "required": False,
+                                "datatype": float,
+                                "comments": "Valor do saldo inicial da conta."
+                            }
+                        ]
+                    }
+                ]
+            }
         ]
     }
 

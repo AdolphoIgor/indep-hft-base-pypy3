@@ -11,6 +11,7 @@ class Constants:
     POSITION_NEW = 0
     POSITION_OPENED = 1
     POSITION_STOPED = 2
+    POSITION_REJECTED = 3
 
     LAYOUT_NOT_FOUND = "The expected layout was not found from the given token. "
     LAYOUT_ITEM_NOT_FOUND = "The item {0} was not found in the provided provider's layout. "

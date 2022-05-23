@@ -290,10 +290,24 @@
             "T"
           ],
           "oms_id": 0,
-          "broker_id": 9900041824,
+          "broker_id": 603134,
           "start_class": "Opening",
           "start_parameters": {
             "side": "B",
+            "order_qty": 2500,
+            "perc_spread_order_at_market": 0.005
+          }
+        },
+        {
+          "symbol": "VALE3",
+          "instruments": [
+            "T"
+          ],
+          "oms_id": 0,
+          "broker_id": 603134,
+          "start_class": "Opening",
+          "start_parameters": {
+            "side": "S",
             "order_qty": 2500,
             "perc_spread_order_at_market": 0.005
           }
