@@ -46,7 +46,8 @@
             "log_oms_cfg_path": "logs/oms/config/"
           }
         }
-      ]
+      ],
+      "running": true
     },
     {
       "order": 2,
@@ -64,7 +65,8 @@
             "sleep_when_done": 30
           }
         }
-      ]
+      ],
+      "running": true
     },
     {
       "order": 3,
@@ -85,7 +87,8 @@
             "log_oms_cfg_path": "logs/oms/raw/"
           }
         }
-      ]
+      ],
+      "running": true
     },
     {
       "order": 4,
@@ -106,7 +109,8 @@
             "log_oms_path": "logs/oms/data/"
           }
         }
-      ]
+      ],
+      "running": true
     },
     {
       "order": 5,
@@ -125,7 +129,8 @@
             "backtest_filename": "/home/adolpho/Devel/indep/indep-data/reports/backtests/backtest.json"
           }
         }
-      ]
+      ],
+      "running": true
     },
     {
       "order": 6,
@@ -280,7 +285,7 @@
     {
       "id": 0,
       "name": "Long-PETR4",
-      "enabled": true,
+      "enabled": false,
       "training": false,
       "algo_class": "LFT",
       "threads": [
@@ -290,10 +295,24 @@
             "T"
           ],
           "oms_id": 0,
-          "broker_id": 9900041824,
+          "broker_id": 603134,
           "start_class": "Opening",
           "start_parameters": {
             "side": "B",
+            "order_qty": 2500,
+            "perc_spread_order_at_market": 0.005
+          }
+        },
+        {
+          "symbol": "VALE3",
+          "instruments": [
+            "T"
+          ],
+          "oms_id": 0,
+          "broker_id": 603134,
+          "start_class": "Opening",
+          "start_parameters": {
+            "side": "S",
             "order_qty": 2500,
             "perc_spread_order_at_market": 0.005
           }

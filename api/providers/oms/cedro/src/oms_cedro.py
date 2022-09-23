@@ -2,12 +2,12 @@ import socket
 import time as ttime
 from datetime import datetime, date, time, timedelta
 
-from api.config.providers.oms.cedro.src.constants import Constants as CrystalOMSConstants
-from api.config.providers.oms.provider import OMSProvider
 from api.constants import Constants as Constants
 from api.exceptions import LayoutRequiredFildNotProvided, PayloadItemNotFound, \
     PayloadItemNotAsExpected
 from api.io.network.connection import Connection
+from api.providers.oms.cedro.src.constants import Constants as CrystalOMSConstants
+from api.providers.oms.provider import OMSProvider
 
 
 class CedroOMSProviderBasic(OMSProvider):

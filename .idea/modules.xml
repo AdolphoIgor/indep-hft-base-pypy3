@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/indep-py.iml" filepath="$PROJECT_DIR$/.idea/indep-py.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/indep-hft-base-py.iml" filepath="$PROJECT_DIR$/.idea/indep-hft-base-py.iml" />
     </modules>
   </component>
 </project>

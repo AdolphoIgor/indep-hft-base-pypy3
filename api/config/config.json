@@ -8,28 +8,7 @@
   },
   "scheduling": [
     {
-      "order": 0,
-      "enabled": false,
-      "job": "FakeProvider",
-      "dateteime": "08:40:00",
-      "threads": [
-        {
-          "order": 0,
-          "enabled": true,
-          "thread_name": "thr_fake_provider",
-          "target": "FakeProviderJob",
-          "daemon": true,
-          "config": {
-            "sleep_when_done": 0.5,
-            "destination_path": "bkp/PETR4.txt",
-            "encoder": "UTF-8"
-          }
-        }
-      ]
-    },
-    {
       "order": 1,
-      "enabled": true,
       "job": "Configurator",
       "dateteime": "08:40:30",
       "threads": [
@@ -40,10 +19,11 @@
           "target": "ConfiguratorJob",
           "daemon": true,
           "config": {
-            "encoder": "UTF-8",
             "sleep_when_done": 60,
-            "log_market_data_cfg_path": "logs/marketdata/config/",
-            "log_oms_cfg_path": "logs/oms/config/"
+            "connect": true,
+            "provider_name": "Nelogica Data Feed",
+            "username": "adolphoigor",
+            "password": "102030"
           }
         }
       ]
@@ -148,134 +128,6 @@
       ]
     }
   ],
-  "configs": {
-    "online": true,
-    "market_data_providers": [
-      {
-        "id": 0,
-        "name": "Cedro Technologies",
-        "market": "b3sa",
-        "country": "brazil",
-        "connections": [
-          {
-            "type": "telnet",
-            "name": "Crystal Data Provider",
-            "enabled": true,
-            "hosts": [
-              {
-                "host": "datafeed1.cedrotech.com",
-                "port": 81
-              },
-              {
-                "host": "datafeed2.cedrotech.com",
-                "port": 81
-              }
-            ],
-            "username": "adolphoigor",
-            "password": "102030"
-          }
-        ],
-        "configurator_class": "CrystalDataFeedProvider",
-        "symbols": [
-          {
-            "symbol": "petr4",
-            "enabled": true,
-            "instruments": [
-              {
-                "type": "T",
-                "name": "Quotes",
-                "enabled": true,
-                "cmd_subscribe": "sqt",
-                "cmd_unsubscribe": "usq"
-              },
-              {
-                "type": "M",
-                "name": "MiniBook",
-                "enabled": false,
-                "cmd_subscribe": "bqt",
-                "cmd_unsubscribe": "ubq"
-              },
-              {
-                "type": "GQT",
-                "name": "TimesTrades",
-                "enabled": false,
-                "cmd_subscribe": "gqt",
-                "cmd_unsubscribe": "uqt"
-              },
-              {
-                "type": "B",
-                "name": "Book",
-                "enabled": false,
-                "cmd_subscribe": "mbq",
-                "cmd_unsubscribe": "umb"
-              }
-            ]
-          },
-          {
-            "symbol": "vale3",
-            "enabled": true,
-            "instruments": [
-              {
-                "type": "T",
-                "name": "Quotes",
-                "enabled": true,
-                "cmd_subscribe": "sqt",
-                "cmd_unsubscribe": "usq"
-              },
-              {
-                "type": "M",
-                "name": "MiniBook",
-                "enabled": false,
-                "cmd_subscribe": "bqt",
-                "cmd_unsubscribe": "ubq"
-              },
-              {
-                "type": "GQT",
-                "name": "TimesTrades",
-                "enabled": false,
-                "cmd_subscribe": "gqt",
-                "cmd_unsubscribe": "uqt"
-              },
-              {
-                "type": "B",
-                "name": "Book",
-                "enabled": false,
-                "cmd_subscribe": "mbq",
-                "cmd_unsubscribe": "umb"
-              }
-            ]
-          }
-        ]
-      }
-    ],
-    "oms_providers": [
-      {
-        "id": 0,
-        "name": "CedroOMS",
-        "connections": [
-          {
-            "type": "cedro_quickfix",
-            "hosts": [
-              {
-                "begin_string": "FIX.4.4",
-                "sender_comp_id": "adolpho.igor",
-                "target_comp_id": "CDRFIX",
-                "session_qualifier": "cedro_homol",
-                "username": "adolpho.igor",
-                "password": "CedroPwd123",
-                "enabled": true,
-                "settings_file": "api/config/quickfix_settings_homol.cfg",
-                "dictionary_file": "api/config/FIX44_homol.xml"
-              }
-            ]
-          }
-        ],
-        "configurator_class": "CedroOMSProvider",
-        "encode_field_delimiter": "\u0001",
-        "values_field_delimiter": "="
-      }
-    ]
-  },
   "algos": [
     {
       "id": 0,

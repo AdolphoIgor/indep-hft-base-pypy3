@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="app" type="PythonConfigurationType" factoryName="Python" singleton="false" nameIsGenerated="true">
-    <module name="indep-py" />
+    <module name="indep-hft-base-py" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>

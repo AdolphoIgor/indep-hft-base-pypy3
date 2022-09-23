@@ -1,281 +1,92 @@
-import json
-import threading
 import time
 
 import schedule
 
-from api.constants import Constants
 from api.jobs.bkp_job import BackupJob
 from api.jobs.configurator_job import ConfiguratorJob
 from api.jobs.distributor_job import DistributorJob
 from api.jobs.executor_job import ExecutorJob
-from api.jobs.fake_provider_job import FakeProviderJob
 from api.jobs.pre_configurator import PreConfiguratorJob
 from api.jobs.producer_job import ProducerJob
+from api.jobs.scheduler_job import SchedulerJob
 from api.jobs.subscriber_job import SubscriberJob
 from api.logger import logger
 
+__used_classes = [PreConfiguratorJob, ConfiguratorJob, DistributorJob, ExecutorJob, ProducerJob, SchedulerJob,
+                  SubscriberJob, BackupJob]
+
 
 class IndepBase:
+    # keeps track of any thread created during execution.
+    _lst_thread_pool = []
+
+    # keeps track of the config.json content on dict format.
+    _dict_configs = {}
+
+    # creates a custom space for any other configurarion needed.
+    _lst_config_pool = [
+        {"config": {}}
+    ]
 
     def __init__(self, **kwargs):
-        logger.name = Constants.SOFTWARE_NAME
-
-        self._test_mode = bool(kwargs.get("test_mode", False))
-        self._config_cmd_json = "control/config_cmd.json"
-
-        # Holds the current configuration of the entire system.
-        self._dict_configs = {}
-
-        # Holds every configuration created dinamically during the execution.
-        self._lst_config_pool = [
-            {"type": "market_data_providers", "providers": []},
-            {"type": "oms_providers", "providers": []},
-            {"type": "algo_providers", "providers": []}
-        ]
-        '''                                                                                  
-            self.__lst_config_pool = [
-                {
-                    "type": "market_data_providers", 
-                    "providers": [
-                        {
-                            "id": 0, 
-                            "connected": False,
-                            "global_provider_conn": ConnectionTelnetCedro(),
-                            "global_provider_queue": Queue(),
-                            "symbols": [
-                                {
-                                    "symbol": "PETR4", 
-                                    "instruments": [
-                                        {
-                                            "type" : "T",
-                                            "instrument": {
-                                                dict with values returned by md provider
-                                            }
-                                        }
-                                    ]
-                                }
-                            ]                                
-                        }                        
-                    ]
-                },
-                {
-                    "type": "oms_providers", 
-                    "providers": [
-                        {
-                            "id": 0,
-                            "begin_string": "FIX.4.4",
-                            "sender_comp_id": "adolpho.igor",
-                            "target_comp_id": "CDRFIX",
-                            "session_qualifier": "cedro_homol",
-                            
-                            "connected": True,
-                        
-                            "global_provider_conn": CedroOMSProvider(),
-                            "global_provider_queue": Queue(),
-                            "global_provider_decoder": CedroOMSProviderBasic(),
-                            
-                            "admin_msg_types": {
-                                "BD": {last Counterparty System Status Response from admin}, 
-                                "AP": {last Position report from admin},  
-                                "U68": {last Finantial Account Info Report from admin}
-                            },
-                            "news_msg_types": {
-                                "B": [list of {bunch of news reported from admin}],
-                                "U2": [list of {bunch of headlines reports from admin}]
-                            },
-                            "algo_msg_types": {
-                                "ALGO-PETR4": [list of {every message sent/reveived sorted by timestamp}]
-                            },                            
-                            "algo_positions": {
-                                "ALGO-PETR4": {data of that algo's position.},
-                            }
-                        }                        
-                    ]
-                },
-                {
-                    "type": "algos", 
-                    "providers": [
-                        {
-                            "id": 0,
-                            "name": "Long-PETR3|Short-PETR4",
-                            "enabled": true,
-                            "algo_class": "LFT",
-                            "threads": [
-                            {
-                                "symbol": "PETR4",
-                                "instruments": ["T"]
-                                "market_data_instance" = [{"type": "T", "instrument": {MARKET_DATA}}],	
-                                "oms_id": 0,
-                                "oms_instance": {oms_provider}
-                                "start_class": "Opening",
-                                "start_parameters": {
-                                    "side": "S",
-                                    "order_qty": 10000,
-                                    "perc_spread_order_at_market": 0.05
-                                }					
-                            }
-                            "stop_class": "PercTrailingStop",
-                                "stop_parameters": {
-                                "perc_trailing": 0.02,
-                                "inc_trailing": 0.0,
-                                "stop_limit": 500.00
-                            }
-                        }                       
-                    ]
-                }
-            ] 
-        '''
-
-        # Holds all live threads used by the system
-        self._lst_thread_pool = []
-
-        # If turns true, every thread will have its infinite loop broken and the system will resume.
         self._keep_running = True
+        self._test_mode = bool(kwargs.get("test_mode", False))
+        self._config = kwargs.get("config", None)
 
-        self.start_pre_configurator()
+        self.__start_pre_configurator()
+        self.__start_scheduler()
 
     def __del__(self):
         while True:
-            lst_thr = list(filter(lambda x: x.get("pointer").isAlive(), self._lst_thread_pool))
+            lst_thr = self.__get_alive_threads()
 
             if not lst_thr:
                 break
 
             for thr in lst_thr:
                 thr.get("pointer", None).join()
-                thr_name = thr.get("name")
-                logger.info(f"The thread named: {thr_name} was finalized.")
+                logger.info(f"The thread named: {thr.get('name')} was finalized.")
 
-    def start_pre_configurator(self):
-        # start the pre-configurator thread.
-        config = {
-            "encoder": "UTF-8",
-            "sleep_when_done": 15,
-            "config_file_path": "api/config/config.json",
-            "config_cmd_file_path": self._config_cmd_json,
-        }
+    def __get_alive_threads(self):
+        return list(filter(lambda x: x.get("pointer").isAlive(), self._lst_thread_pool))
 
-        cls_str = f'PreConfiguratorJob(' \
-                  f'logger, ' \
-                  f'self._dict_configs, ' \
-                  f'self._lst_config_pool, ' \
-                  f'self._lst_thread_pool, ' \
-                  f'**config ' \
-                  f')'
-
-        prt_cls = eval(cls_str)
+    def __start_pre_configurator(self):
+        prt_cls = eval(f'PreConfiguratorJob(self._dict_configs, self._lst_config_pool, **self._config)')
         prt_cls.setDaemon(True)
         prt_cls.name = "thr_pre_configurator"
-        self._lst_thread_pool.append({"name": prt_cls.name, "level": -998.0, "pointer": prt_cls})
+        self._lst_thread_pool.append({"group": "PRECONF", "order": 1, "name": prt_cls.name, "pointer": prt_cls})
         prt_cls.start()
-        logger.info(f"Initializing the algo name: {prt_cls.name}...")
 
-    def set_cmd(self, **kwargs):
-        shutdown = kwargs.get("shutdown", False)
-        if shutdown:
-            self._dict_configs.get('configs')['online'] = False
-
-        md_shtdn = int(kwargs.get("shutdown_md", -1))
-        if md_shtdn > -1:
-            lst_prov = list(filter(lambda x: x.get('id') == md_shtdn,
-                                   self._dict_configs.get("configs").get("market_data_providers", [])))
-            if len(lst_prov) > 0:
-                lst_prov[0].get("connection")['enabled'] = False
-
-        sb_shtdn = kwargs.get("shutdown_sb", "")
-        if len(sb_shtdn) > 0:
-            for mdp in self._dict_configs.get("configs").get("market_data_providers", []):
-                for sbl in mdp.get('symbols', []):
-                    if sbl.get("symbol").upper() == sb_shtdn.upper():
-                        sbl['enabled'] = False
-                        break
-
-        ''' Updates the control config... '''
-        encoder = Constants.DEFAULT_ENCODER
-        with open(self._config_cmd_json, mode='w', encoding=encoder) as f:
-            f.truncate(0)
-            f.seek(0)
-            json.dump(self._dict_configs, f, ensure_ascii=True, indent=2)
+    def __start_scheduler(self):
+        prt_cls = eval(f'SchedulerJob(self._dict_configs, self._lst_config_pool)')
+        prt_cls.setDaemon(True)
+        prt_cls.name = "thr_scheduler"
+        self._lst_thread_pool.append({"group": "PRECONF", "order": 2, "name": prt_cls.name, "pointer": prt_cls})
+        prt_cls.start()
 
     def is_all_done(self) -> bool:
-        return (not self._keep_running) and all([not thr.get("pointer").isAlive() for thr in self._lst_thread_pool])
+        return not self._keep_running and len(self.__get_alive_threads()) > 0
 
 
 class Indep(IndepBase):
-    __used_classes = [PreConfiguratorJob, ConfiguratorJob, DistributorJob, ExecutorJob, FakeProviderJob, ProducerJob,
-                      SubscriberJob, BackupJob]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
     def start(self):
-        name = "thr_scheduling"
-        thr_ = threading.Thread(target=self.run, name=name)
-        self._lst_thread_pool.append({"name": name, "level": -999.0, "pointer": thr_})
-        thr_.setDaemon(True)
-        thr_.start()
-        time.sleep(1)
+        if self._test_mode:
+            schedule.run_all()
 
-    def run(self):
-        lst_scheduling = self._dict_configs.get('scheduling')
-
-        while True:
-
-            if lst_scheduling is None:
-                time.sleep(1)
-                continue
-
-            for shc in lst_scheduling:
-                if shc.get("enabled") and not shc.get("running", False):
-                    lst_threads = shc.get("threads")
-                    for thr in lst_threads:
-                        if thr.get("enabled"):
-                            cls_str = f'{thr.get("target")}(' \
-                                      f'logger, ' \
-                                      f'self._dict_configs, ' \
-                                      f'self._lst_config_pool, ' \
-                                      f'self._lst_thread_pool, ' \
-                                      f'**{thr.get("config")} ' \
-                                      f')'
-
-                            prt_cls = eval(cls_str)
-                            prt_cls.setDaemon(thr.get("daemon"))
-                            name = thr.get("thread_name")
-                            prt_cls.name = name
-                            level = float(f'{shc.get("order")}.{thr.get("order")}')
-                            self._lst_thread_pool.append({"name": name, "level": level, "pointer": prt_cls})
-
-                            if not self._test_mode:
-                                schedule.every().monday.at(shc.get("dateteime")).do(prt_cls.start)
-                                schedule.every().tuesday.at(shc.get("dateteime")).do(prt_cls.start)
-                                schedule.every().wednesday.at(shc.get("dateteime")).do(prt_cls.start)
-                                schedule.every().thursday.at(shc.get("dateteime")).do(prt_cls.start)
-                                schedule.every().friday.at(shc.get("dateteime")).do(prt_cls.start)
-                            else:
-                                prt_cls.start()
-
-                    shc["running"] = True
-            break
-
-        while self._keep_running and not self._test_mode:
+        while self._keep_running:
             schedule.run_pending()
             time.sleep(1)
 
     def stop(self):
-        # This will interrupt the run method (scheduling part).
-        schedule.clear()
         self._keep_running = False
+        schedule.clear()
 
-        lst_sorted = list(filter(lambda x: x.get("level") >= -998, self._lst_thread_pool))
-        lst_sorted = sorted(lst_sorted, key=lambda x: x.get("level"), reverse=True)
-        for thr in lst_sorted:
-            pointer = thr.get("pointer")
-            if 'stop' in dir(pointer):
-                pointer.stop()
-
-        time.sleep(1)
-        lst_sorted = list(filter(lambda x: x.get("level") <= -999, self._lst_thread_pool))
+        lst_sorted = list(filter(lambda x: x.get("group") == 'PRECONF', self._lst_thread_pool))
+        lst_sorted = sorted(lst_sorted, key=lambda x: x.get("order"), reverse=True)
         for thr in lst_sorted:
             pointer = thr.get("pointer")
             if 'stop' in dir(pointer):

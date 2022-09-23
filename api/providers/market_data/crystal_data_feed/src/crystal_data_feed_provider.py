@@ -1,10 +1,10 @@
 from datetime import datetime, date, time
 
-from api.config.providers.market_data.crystal_data_feed.src.constants import Constants as CrystalDataFeedConstants
-from api.config.providers.market_data.provider import Provider
 from api.constants import Constants as Constants
 from api.exceptions import LayoutIndexNotFound
 from api.logger import logger
+from api.providers.market_data.crystal_data_feed.src.constants import Constants as CrystalDataFeedConstants
+from api.providers.market_data.provider import Provider
 
 
 class CrystalDataFeedProvider(Provider):

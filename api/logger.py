@@ -1,9 +1,12 @@
 import logging
 
+from api.constants import Constants
+
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 ch = logging.StreamHandler()
-ch.setLevel(logging.INFO)
+ch.setLevel(logging.DEBUG)
 ch.setFormatter(formatter)
 logger.addHandler(ch)
+logger.name = f'{Constants.COMPANY_NAME}. {Constants.SOFTWARE_NAME}.'

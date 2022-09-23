@@ -2,8 +2,8 @@ import threading
 import time
 from datetime import datetime
 
-from api.config.providers.market_data.crystal_data_feed.src.crystal_data_feed_provider import CrystalDataFeedProvider
 from api.jobs.job import Job
+from api.providers.market_data.crystal_data_feed.src.crystal_data_feed_provider import CrystalDataFeedProvider
 
 
 class DistributorJob(Job):

@@ -1,55 +1,44 @@
 import getopt
 import sys
+import time
+import traceback
 
 from api.constants import Constants
 from api.indep import Indep
-
-
-def start_platform(test_mode):
-    """ Starts the INDEP Platform. """
-
-    platform = Indep(test_mode=test_mode)
-    try:
-        platform.start()
-
-        while True:
-            if not platform.is_all_done():
-                cmd = input("").split(" ")
-            else:
-                break
-
-            if cmd[0].find("shutdown") >= 0:
-                if cmd[1] in ['now', 'True', '1']:
-                    platform.set_cmd(shutdown=True)
-
-                elif cmd[1] in ['md']:
-                    if len(cmd[2]) > 0:
-                        platform.set_cmd(shutdown_md=cmd[2])
-
-                elif cmd[1] in ['sb']:
-                    if len(cmd[2]) > 0:
-                        platform.set_cmd(shutdown_sb=cmd[2])
-
-    except Exception as e:
-        print("Erro: ", e)
-
-    finally:
-        platform.stop()
+from api.logger import logger
 
 
 def main():
     """ Recebe o parametro e inicia o processo correspondente """
-    opts: any
+    logger.info(f"Incializando a plataforma de execução...")
 
+    opts, args = getopt.getopt(sys.argv[1:], "", [])
+    test_mode = "test_mode" in args
+    config = {
+        "encoder": "UTF-8",
+        "sleep_when_done": 1,
+        "config_file_path": "api/config/config.json",
+        "config_cmd_file_path": "control/config_cmd.json",
+    }
+
+    platform = Indep(test_mode=test_mode, config=config)
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "", [])
-        test_mode = "test_mode" in args
-        start_platform(test_mode)
-        sys.exit(Constants.EXIT_SUCCESS)
+        platform.start()
 
-    except getopt.GetoptError as err:
-        print("Erro: ", err)
+        while True:
+            if platform.is_all_done():
+                break
+
+            time.sleep(Constants.MAIN_LOOP_SLEEP)
+
+    except Exception:
+        logger.critical(f"Erro durante a execução do programa: {traceback.format_exc()}.")
         sys.exit(Constants.EXIT_ERROR)
+
+    finally:
+        platform.stop()
+        logger.info(f"A plataforma de execução foi finalizada com sucesso!")
+        sys.exit(Constants.EXIT_SUCCESS)
 
 
 if __name__ == "__main__":

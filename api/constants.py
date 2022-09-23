@@ -1,6 +1,10 @@
 class Constants:
-    SOFTWARE_NAME = 'INDEP SOFTWARE'
-    SHORT_SOFTWARE_NAME = 'INDEP'
+    COMPANY_NAME = 'INDEP SOFTWARE'
+    SHORT_COMPANY_NAME = 'INDEP'
+
+    SOFTWARE_NAME = 'HFT MANAGER'
+    SHORT_SOFTWARE_NAME = 'HFTMGR'
+
     SOFTWARE_VERSION = 'v1.0'
 
     DEFAULT_ENCODER = 'UTF-8'
@@ -19,3 +23,5 @@ class Constants:
 
     PAYLOAD_ITEM_NOT_FOUND = "The expected item: '{0}' was not found from the given payload. "
     PAYLOAD_ITEM_INVALID = "The expected item: '{0}' from the given payload has an invalid value. Reason: {1}."
+
+    MAIN_LOOP_SLEEP = 1
