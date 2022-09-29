@@ -1,4 +1,4 @@
-from api.algo_bot import AlgoBot
+from api.lft.algo_bot import AlgoBot
 
 
 class LFT(AlgoBot):

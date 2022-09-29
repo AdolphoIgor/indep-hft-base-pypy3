@@ -8,6 +8,11 @@
   },
   "scheduling": [
     {
+      "order": 0,
+      "job": "PreConfigurator",
+      "run_app": true
+    },
+    {
       "order": 1,
       "job": "Configurator",
       "dateteime": "08:40:30",
@@ -22,68 +27,9 @@
             "sleep_when_done": 60,
             "connect": true,
             "provider_name": "Nelogica Data Feed",
-            "username": "adolphoigor",
-            "password": "102030"
-          }
-        }
-      ]
-    },
-    {
-      "order": 2,
-      "enabled": true,
-      "job": "Subscriber",
-      "dateteime": "08:41:00",
-      "threads": [
-        {
-          "order": 0,
-          "enabled": true,
-          "thread_name": "thr_subscriber",
-          "target": "SubscriberJob",
-          "daemon": true,
-          "config": {
-            "sleep_when_done": 30
-          }
-        }
-      ]
-    },
-    {
-      "order": 3,
-      "enabled": true,
-      "job": "Producer",
-      "dateteime": "08:41:30",
-      "threads": [
-        {
-          "order": 0,
-          "enabled": true,
-          "thread_name": "thr_producer",
-          "target": "ProducerJob",
-          "daemon": true,
-          "config": {
-            "sleep_when_done": 15,
-            "encoder": "UTF-8",
-            "log_market_data_cfg_path": "logs/marketdata/raw/",
-            "log_oms_cfg_path": "logs/oms/raw/"
-          }
-        }
-      ]
-    },
-    {
-      "order": 4,
-      "enabled": true,
-      "job": "Distributor",
-      "dateteime": "08:42:00",
-      "threads": [
-        {
-          "order": 0,
-          "enabled": true,
-          "thread_name": "thr_distributor",
-          "target": "DistributorJob",
-          "daemon": true,
-          "config": {
-            "sleep_when_done": 7.5,
-            "encoder": "UTF-8",
-            "log_market_data_path": "logs/marketdata/data/",
-            "log_oms_path": "logs/oms/data/"
+            "username": "username",
+            "password": "password",
+            "soft_key": "key"
           }
         }
       ]
@@ -103,26 +49,6 @@
           "config": {
             "sleep_when_done": 3.75,
             "backtest_filename": "/home/adolpho/Devel/indep/indep-data/reports/backtests/backtest.json"
-          }
-        }
-      ]
-    },
-    {
-      "order": 6,
-      "enabled": false,
-      "job": "Backup",
-      "dateteime": "07:00:00",
-      "threads": [
-        {
-          "order": 0,
-          "enabled": true,
-          "thread_name": "thr_backup",
-          "target": "BackupJob",
-          "daemon": true,
-          "config": {
-            "sleep_when_done": 0,
-            "logs_path": "logs",
-            "bkp_logs_path": "bkp/logs"
           }
         }
       ]
