@@ -2,19 +2,20 @@ import time
 
 import schedule
 
+from api.indep import InternalConfigProviders
 from api.jobs.job import Job
 from api.logger import logger
 
 
 class SchedulerJob(Job):
 
-    def __init__(self, dict_configs, lst_config_pool):
-        super().__init__(dict_configs, lst_config_pool)
+    def __init__(self, config_prov: InternalConfigProviders):
+        super().__init__(config_prov)
 
     def run(self) -> None:
         logger.info("Initializing the Scheduler...")
         while True:
-            lst_scheduling = self._dict_configs.get("scheduling")
+            lst_scheduling = self._config_prov.get_dict_configs().get("scheduling")
 
             if lst_scheduling is None:
                 time.sleep(0.1)
