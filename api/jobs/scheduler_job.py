@@ -4,48 +4,34 @@ import schedule
 
 from api.indep import InternalConfigProviders
 from api.jobs.job import Job
-from api.logger import logger
 
 
 class SchedulerJob(Job):
 
-    def __init__(self, config_prov: InternalConfigProviders):
-        super().__init__(config_prov)
+    def __init__(self, config_prov: InternalConfigProviders, order):
+        super().__init__(config_prov, order)
 
-    def run(self) -> None:
-        logger.info("Initializing the Scheduler...")
-        while True:
-            lst_scheduling = self._config_prov.get_dict_configs().get("scheduling")
+    def _execute(self) -> None:
+        while not self._config_prov.is_running():
+            time.sleep(0.1)
+            continue
 
-            if lst_scheduling is None:
-                time.sleep(0.1)
-                continue
+        lst_scheduling = self._get_shcedule()
+        for shc in lst_scheduling:
+            if shc.get("enabled", False):
+                for thr in shc.get("threads", []):
+                    if thr.get("enabled"):
+                        cls_str = f"{thr.get('target')}(self._config_prov, order={shc.get('order')}, " \
+                                  f"**{thr.get('config')})"
+                        prt_cls = eval(cls_str)
+                        prt_cls.setDaemon(thr.get("daemon"))
+                        prt_cls.name = thr.get("thread_name")
+                        self._lst_thread_pool.append(
+                            {"group": shc.get('order'), "order": thr.get('order'), "name": prt_cls.name,
+                             "pointer": prt_cls})
 
-            for shc in lst_scheduling:
-                if shc.get("enabled") and not shc.get("running", False):
-                    for thr in shc.get("threads"):
-                        if thr.get("enabled"):
-                            cls_str = f"{thr.get('target')}(" \
-                                      f"self._dict_configs, " \
-                                      f"self._lst_config_pool, " \
-                                      f"**{thr.get('config')} " \
-                                      f")"
-
-                            prt_cls = eval(cls_str)
-                            prt_cls.setDaemon(thr.get("daemon"))
-                            thr_name = thr.get("thread_name")
-                            prt_cls.name = thr_name
-                            level = float(f"{shc.get('order')}.{thr.get('order')}")
-                            self._lst_thread_pool.append({"name": thr_name, "level": level, "pointer": prt_cls})
-
-                            schedule.every().monday.at(shc.get("dateteime")).do(prt_cls.start)
-                            schedule.every().tuesday.at(shc.get("dateteime")).do(prt_cls.start)
-                            schedule.every().wednesday.at(shc.get("dateteime")).do(prt_cls.start)
-                            schedule.every().thursday.at(shc.get("dateteime")).do(prt_cls.start)
-                            schedule.every().friday.at(shc.get("dateteime")).do(prt_cls.start)
-
-                    shc["running"] = True
-
-            break
-
-        logger.info("Scheduler was finalized.")
+                        schedule.every().monday.at(shc.get("dateteime")).do(prt_cls.start)
+                        schedule.every().tuesday.at(shc.get("dateteime")).do(prt_cls.start)
+                        schedule.every().wednesday.at(shc.get("dateteime")).do(prt_cls.start)
+                        schedule.every().thursday.at(shc.get("dateteime")).do(prt_cls.start)
+                        schedule.every().friday.at(shc.get("dateteime")).do(prt_cls.start)

@@ -29,7 +29,7 @@ class PreConfiguratorJob(Job):
         logger.info("Initializing the Pre-Configurator...")
 
         dict_configs = self._config_prov.get_dict_configs()
-        while self._config_prov.is_running():
+        while len(dict_configs) == 0 or self._config_prov.is_running():
 
             if len(dict_configs) == 0:
                 with open(self.__config_file_path, mode="r", encoding=self.__encoder) as json_file:
@@ -38,11 +38,6 @@ class PreConfiguratorJob(Job):
             else:
                 with open(self.__config_cmd_file_path, mode="r", encoding=self.__encoder) as json_file:
                     dict_configs.update(json.load(json_file))
-
-            if dict_configs.get("run_app", False):
-                self._config_prov.start_running()
-            else:
-                self._config_prov.stop_running()
 
             time.sleep(self.__sleep_when_done)
 

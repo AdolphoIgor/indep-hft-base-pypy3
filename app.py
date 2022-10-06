@@ -12,11 +12,11 @@ def main():
     """ Recebe o parametro e inicia o processo correspondente """
     logger.info(f"Incializando a plataforma de execução...")
 
-    opts, args = getopt.getopt(sys.argv[1:], "", [])
+    _, args = getopt.getopt(sys.argv[1:], "", [])
     test_mode = "test_mode" in args
     config = {
         "encoder": "UTF-8",
-        "sleep_when_done": 1,
+        "sleep_when_done": 0.1,
         "config_file_path": "api/config/config.json",
         "config_cmd_file_path": "control/config_cmd.json",
     }

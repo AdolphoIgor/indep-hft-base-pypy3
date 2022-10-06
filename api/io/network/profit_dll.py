@@ -195,9 +195,10 @@ class ProfitDLL:
     _profit_dll.SetChangeStateTickerCallback.restype = c_short
     _profit_dll.SetEnabledHistOrder.restype = c_short
 
-    def __init__(self, config_prov: InternalConfigProviders):
+    def __init__(self, config_prov: InternalConfigProviders, dct_instruments: dict):
         # here the instruments will be kept.
         self._config_prov = config_prov
+        self._dct_instruments = dct_instruments
         self._b_ativo = False
         self._b_market_connected = False
         self._b_connectado = False
@@ -600,7 +601,7 @@ class ProfitDLL:
 
     def set_day_trade(self, b_use_day_trade: bool):
         """
-        :param b_use_day_trade:
+        :param: b_use_day_trade:
         :return: a tuple with one of this class constants (_NL_ERR_INIT, _NL_OK, _NL_ERR_INVALID_ARGS,
                     _NL_ERR_INTERNAL_ERROR) and the variable b_use_day_trade
         """
@@ -622,7 +623,7 @@ class ProfitDLL:
 
             Can only be called before a connection has been established.
 
-            :return Triggers self._asset_list_info_callback(), and
+            :return: Triggers self._asset_list_info_callback(), and
             self._asset_list_callback()
         """
         return self._profit_dll.RequestTickerInfo(c_wchar_p(ativo), c_wchar_p(bolsa))
@@ -671,7 +672,7 @@ class ProfitDLL:
 
             Can only be called before a connection has been established.
 
-            :return Can return any constants of this class whose name starts with 'self._NL_...'.
+            :return: Can return any constants of this class whose name starts with 'self._NL_...'.
         """
         return self._profit_dll.SetServerAndPort(c_wchar_p(server), c_wchar_p(port))
 
@@ -681,7 +682,7 @@ class ProfitDLL:
 
             Can only be called after a connection has been established.
 
-            :return Returns a tuple with any constants of this class whose name starts with 'self._NL_...' and a
+            :return: Returns a tuple with any constants of this class whose name starts with 'self._NL_...' and a
             dictionary containing the date data (or not, empty) depending on the result of the call.
         """
         dt_prm = c_double(-1.0)
@@ -725,18 +726,19 @@ class ProfitDLL:
     # CALLBACKS --------------------------------------------------------------------------------------------------------
     @WINFUNCTYPE(None, TAssetID, c_wchar_p, c_uint, c_double)
     def _change_cotation_callback(self, asset_id, date, trade_number, s_price):
-        logger.info("todo - _change_cotation_callback")
+        logger.info("_change_cotation_callback")
         return
 
     @WINFUNCTYPE(None, TAssetID, c_wchar_p)
     def _asset_list_callback(self, asset_id, name):
-        logger.info("_asset_list_callback Ticker=" + str(asset_id.ticker) + " Name=" + str(name))
+        logger.info("_asset_list_callback")
         return
 
     @WINFUNCTYPE(None, TAssetID, c_wchar_p, c_wchar_p, c_int, c_int, c_int, c_int, c_int, c_double, c_double, c_wchar_p,
                  c_wchar_p)
     def _asset_list_info_callback(self, asset_id, name, description, min_order_qtd, max_order_qtd, lote, security_type,
                                   security_sub_type, min_price_increment, contract_multiplier, valid_date, isin):
+        logger.info("_asset_list_info_callback")
         return
 
     @WINFUNCTYPE(None, TAssetID, c_wchar_p, c_wchar_p, c_int, c_int, c_int, c_int, c_int, c_double, c_double, c_wchar_p,
@@ -744,26 +746,28 @@ class ProfitDLL:
     def _asset_list_info_callback_v2(self, asset_id, name, description, min_order_qtd, max_order_qtd, lote,
                                      security_type, min_price_increment, contract_multiplier, valid_date, isin, setor,
                                      sub_setor, segmento):
+        logger.info("_asset_list_info_callback_v2")
         return
 
     @WINFUNCTYPE(None, TAssetID, c_double, c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p, c_int)
     def _adjust_history_callback(self, asset_id, value, adjust_type, observ, ajuste, deliber, pagamento, affect_price):
+        logger.info("_adjust_history_callback")
         return
 
     @WINFUNCTYPE(None, TAssetID, c_double, c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p, c_uint, c_double)
     def _adjust_history_callback_v2(self, asset_id, value, adj_type, observ, dt_ajuste, dt_delib, dt_pagamento, flags,
                                     mult):
-        logger.info("todo - _adjust_history_callback_v2")
+        logger.info("_adjust_history_callback_v2")
         return
 
     @WINFUNCTYPE(None, TAssetID, c_wchar_p, c_int)
     def _change_state_ticker_callback(self, asset_id, date, state):
-        pass
+        logger.info("_change_state_ticker_callback")
+        return
 
     @WINFUNCTYPE(None, TAssetID, c_int, c_int, c_int, c_int, c_int, c_double, POINTER(c_int), POINTER(c_int))
     def _price_book_callback(self, asset_id, action, position, side, qtd, count, price, array_sell, array_buy):
-        if array_sell is not None:
-            logger.info("todo - _price_book_callback")
+        logger.info("_price_book_callback")
         return
 
     @WINFUNCTYPE(None, TAssetID, c_int, c_int, c_int, c_int, c_int, c_longlong, c_double, c_char, c_char, c_char,
@@ -806,7 +810,8 @@ class ProfitDLL:
 
     @WINFUNCTYPE(None, TAssetID, c_double, c_longlong)
     def _set_theoretical_price_callback(self, asset_id, theoretical_price, theoretical_qtd):
-        return asset_id, theoretical_price, theoretical_qtd
+        logger.info("_set_theoretical_price_callback")
+        return
 
     @WINFUNCTYPE(None, c_int32, c_int32)
     def _state_callback(self, type_val, result):
@@ -858,24 +863,13 @@ class ProfitDLL:
                  c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p)
     def _history_callback(self, asset_id, corretora, qtd, traded_qtd, leaves_qtd, side, price, stop_price, avg_price,
                           profit_id, tipo_ordem, conta, titular, cl_ord_id, status, date):
+        logger.info("_history_callback")
         return
 
     @WINFUNCTYPE(None, TAssetID, c_wchar_p, c_uint, c_double, c_double, c_int, c_int, c_int, c_int)
     def _new_history_trade_callback(self, asset_id, date, trade_number, price, vol, qtd, buy_agent, sell_agent,
                                     trade_type):
-        """
-        :param asset_id:
-        :param date:
-        :param trade_number:
-        :param price:
-        :param vol:
-        :param qtd:
-        :param buy_agent:
-        :param sell_agent:
-        :param trade_type:
-        :return:
-        """
-        logger.info(asset_id.ticker + " | Trade History | " + date + " (" + str(trade_number) + ") " + str(price))
+        logger.info("_new_history_trade_callback")
         return
 
     @WINFUNCTYPE(None, TAssetID, c_int)

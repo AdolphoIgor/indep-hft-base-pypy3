@@ -1,61 +1,26 @@
-import json
 import time
 
+from api.indep import InternalConfigProviders
 from api.jobs.job import Job
 from api.lft.algo.lft import LFT
+from api.logger import logger
 
 
 class ExecutorJob(Job):
     __lst_cls = [LFT]
 
-    def __init__(self, logger, dict_configs, lst_config_pool, lst_thread_pool, **kwargs):
-        super().__init__(logger, dict_configs, lst_config_pool, lst_thread_pool)
-        self.__sleep_when_done = kwargs.get("sleep_when_done")
-        self.__backtest_filename = kwargs.get("backtest_filename")
-        self.__encoder = kwargs.get("encoder")
+    def __init__(self, config_prov: InternalConfigProviders, order, **kwargs):
+        super().__init__(config_prov, order)
+        self._config = kwargs.get("config", None)
+        self._sleep_when_done = self._config.get("sleep_when_done")
 
-    def run(self) -> None:
-        """
-            The executor builds a pool of the negotiation algorithms which is used to start the tradings.
-        """
-        self._logger.info("Initializing the Executor...")
+    def _execute(self) -> None:
+        while not self._is_last_job_done():
+            time.sleep(0.5)
 
-        dct_backtest_file = {}
-        with open(self.__backtest_filename, mode='r', encoding=self.__encoder) as json_file:
-            dct_backtest_file.update(json.load(json_file))
-
-        level = None
-        configs = None
-        while self._keep_running:
-
-            configs = self._dict_configs.get("configs", {})
-            if not configs.get("online", False):
-                time.sleep(self.__sleep_when_done)
-                continue
-
-            lst_md_prv, _, __ = self._get_internal_provider_data("market_data_providers")
-            lst_conn = [not prv.get('connected') for prv in lst_md_prv]
-            if len(lst_md_prv) == 0 or len(lst_conn) == 0 or all(lst_conn):
-                time.sleep(self.__sleep_when_done)
-                continue
-
-            lst_oms_prv, _, __ = self._get_internal_provider_data("oms_providers")
-            lst_conn = [not prv.get('connected') for prv in lst_oms_prv]
-            if len(lst_oms_prv) == 0 or len(lst_conn) == 0 or all(lst_conn):
-                time.sleep(self.__sleep_when_done)
-                continue
-
-            lst_scheduling = self._dict_configs.get('scheduling')
-            for sch in lst_scheduling:
-                if sch.get("job", None) == "Executor":
-                    level = float(f'{sch.get("order")}.0')
-                    break
-
-            if level is not None:
-                break
-
-        while self._keep_running:
-            lst_enabled_algos = [algo for algo in self._dict_configs.get("algos", []) if algo.get("enabled", False)]
+        while self._config_prov.is_running():
+            lst_enabled_algos = [algo for algo in self._config_prov.get_dict_configs().get("algos", [])
+                                 if algo.get("enabled", False)]
 
             # Prevents two opposed operations (Buy and Sell) for the same symbol in a particular broker.
             lst_sbl_side_bkr = []
@@ -105,13 +70,6 @@ class ExecutorJob(Job):
                 if not dct_algo_prv.get('running', False):
                     dct_algo_prv = eval(str(algo))
 
-                    for bcktst in dct_backtest_file.get("lst_backtests", []):
-                        if bcktst.get("algo_name") == algo.get("name", ""):
-                            lst_exec = bcktst.get("executions")
-                            lst_exec.sort(key=(lambda x: int(x.get("exec_date").replace("-", ""))))
-                            dct_algo_prv.get("stop_parameters")["backtest"] = lst_exec[-1]
-                            break
-
                     for thread in dct_algo_prv.get("threads"):
                         # It gets the marketdata required for the algorithm.
                         bl_found = False
@@ -148,11 +106,11 @@ class ExecutorJob(Job):
                     target.start()
                     dct_algo_prv['running'] = True
                     lst_algos_prv.append(dct_algo_prv)
-                    self._logger.info(f"Initializing the algo name: {algo_name}...")
+                    logger.info(f"Initializing the algo name: {algo_name}...")
 
-                    time.sleep(self.__sleep_when_done)
+                    time.sleep(self._sleep_when_done)
 
-            lst_disabl_algos = [algo for algo in self._dict_configs.get("algos", [])
+            lst_disabl_algos = [algo for algo in self._config_prov.get_dict_configs().get("algos", [])
                                 if algo.get("running", False) and not algo.get("enabled", False)]
 
             # Stops the running algoritm by a change in config.json.
@@ -165,9 +123,9 @@ class ExecutorJob(Job):
                 if len(thr) > 0:
                     thr.get("pointer", None).join()
                     dct_algo_prv['running'] = False
-                    self._logger.info(f"The algo name: {thr.get('name')} was finalized.")
+                    logger.info(f"The algo name: {thr.get('name')} was finalized.")
 
-                time.sleep(self.__sleep_when_done)
+                time.sleep(self._sleep_when_done)
 
             # Cheching upon finalized threads
             lst_thr = list(filter(lambda x: x.get("level") == 5.1 and not x.get("pointer").isAlive(),
@@ -181,7 +139,7 @@ class ExecutorJob(Job):
                 if dct_algo_prv is None:
                     break
 
-                for algo in self._dict_configs.get("algos", []):
+                for algo in self._config_prov.get_dict_configs().get("algos", []):
                     if algo.get('name') == dct_algo_prv.get('name'):
                         algo['enabled'] = False
                         break
@@ -189,8 +147,8 @@ class ExecutorJob(Job):
                 lst_algos_prv.remove(dct_algo_prv)
                 self._lst_thread_pool.remove(thr)
 
-                self._logger.info(f"The algo name: {thr_name} was finalized.")
+                logger.info(f"The algo name: {thr_name} was finalized.")
 
-                time.sleep(self.__sleep_when_done)
+                time.sleep(self._sleep_when_done)
 
-        self._logger.info("Executor was finalized.")
+        logger.info("Executor was finalized.")

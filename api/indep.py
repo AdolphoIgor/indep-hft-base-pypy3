@@ -17,21 +17,32 @@ class InternalConfigProviders:
 
     # creates a custom space for any other configurarion needed.
     _lst_config_pool = [
-        {"type": "config", "value": {}}
+        {
+            "type": "config",
+            "value": {
+                "connected": False,
+                "provider_connection": None,
+                "provider_name": ""
+            }
+        },
+        {
+            "type": "instruments",
+            "value": {}
+        }
     ]
 
     def __init__(self):
         self._dct_sys_cfg = self.get_internal_provider_data("config")
-        self.start_running()
-
-    def start_running(self):
-        self._dct_sys_cfg["keep_running"] = True
-
-    def stop_running(self):
-        self._dct_sys_cfg["keep_running"] = False
+        self._dct_pre_conf = None
 
     def is_running(self) -> bool:
-        return self._dct_sys_cfg.get("keep_running", False)
+        if self._dct_pre_conf is None:
+            for dct in self.get_dict_configs().get("scheduling", []):
+                if dct.get("order", -1) == 0:
+                    self._dct_pre_conf = dct
+                    break
+
+        return self._dct_pre_conf is not None and self._dct_pre_conf.get("run_app", False)
 
     def get_internal_provider_data(self, provider) -> dict:
         ret_prov = None
@@ -39,6 +50,7 @@ class InternalConfigProviders:
             if dct_prov.get("type") == provider:
                 ret_prov = dct_prov.get("value")
                 break
+
         return ret_prov
 
     def get_dict_configs(self):
@@ -73,20 +85,20 @@ class IndepBase:
                 logger.info(f"The thread named: {thr.get('name')} was finalized.")
 
     def __get_alive_threads(self):
-        return list(filter(lambda x: x.get("pointer").isAlive(), self._lst_thread_pool))
+        return list(filter(lambda x: x.get("pointer").is_alive(), self._lst_thread_pool))
 
     def __start_pre_configurator(self):
         prt_cls = eval(f"PreConfiguratorJob(self._config_prov, **self._config)")
         prt_cls.setDaemon(True)
         prt_cls.name = "thr_pre_configurator"
-        self._lst_thread_pool.append({"group": "PRECONF", "order": 1, "name": prt_cls.name, "pointer": prt_cls})
+        self._lst_thread_pool.append({"group": 0, "order": 0, "name": prt_cls.name, "pointer": prt_cls})
         prt_cls.start()
 
     def __start_scheduler(self):
-        prt_cls = eval(f"SchedulerJob(self._config_prov)")
+        prt_cls = eval(f"SchedulerJob(self._config_prov, order=1)")
         prt_cls.setDaemon(True)
         prt_cls.name = "thr_scheduler"
-        self._lst_thread_pool.append({"group": "PRECONF", "order": 2, "name": prt_cls.name, "pointer": prt_cls})
+        self._lst_thread_pool.append({"group": 1, "order": 0, "name": prt_cls.name, "pointer": prt_cls})
         prt_cls.start()
 
     def is_all_done(self) -> bool:
@@ -107,12 +119,7 @@ class Indep(IndepBase):
             time.sleep(1)
 
     def stop(self):
-        self._config_prov.stop_running()
         schedule.clear()
 
-        lst_sorted = list(filter(lambda x: x.get("group") == "PRECONF", self._lst_thread_pool))
-        lst_sorted = sorted(lst_sorted, key=lambda x: x.get("order"), reverse=True)
-        for thr in lst_sorted:
-            pointer = thr.get("pointer")
-            if "stop_running" in dir(pointer):
-                pointer.stop_running()
+        while not self.is_all_done():
+            time.sleep(0.1)
