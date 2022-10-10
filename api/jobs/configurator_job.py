@@ -31,10 +31,8 @@ class ConfiguratorJob(Job):
                 logger.info(f"The connection to MD {dct_sys_cfg.get('provider_name')} was terminated.")
 
             if self._config.get("connect", False) and not dct_sys_cfg.get("connected", False):
-                dct_sys_inst = self._config_prov.get_internal_provider_data("instruments")
-
                 try:
-                    dct_sys_cfg["provider_connection"] = ProfitDLL(self._config_prov, dct_sys_inst).connect(
+                    dct_sys_cfg["provider_connection"] = ProfitDLL(self._config_prov).connect(
                         soft_key=self._config.get("soft_key", ""),
                         username=self._config.get("username", ""),
                         password=self._config.get("password", ""),

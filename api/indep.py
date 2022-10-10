@@ -27,7 +27,16 @@ class InternalConfigProviders:
         },
         {
             "type": "instruments",
-            "value": {}
+            "value": [
+                {"type": "quote", "value": {}},
+                {"type": "asset", "value": {}},
+                {"type": "tt", "value": {}},
+                {"type": "ttoo", "value": {}},
+                {"type": "lp", "value": {}},
+                {"type": "lo", "value": {}},
+                {"type": "account", "value": {}},
+                {"type": "orders", "value": {}},
+            ]
         }
     ]
 
@@ -44,9 +53,9 @@ class InternalConfigProviders:
 
         return self._dct_pre_conf is not None and self._dct_pre_conf.get("run_app", False)
 
-    def get_internal_provider_data(self, provider) -> dict:
+    def get_internal_provider_data(self, provider, sublist=None):
         ret_prov = None
-        for dct_prov in self._lst_config_pool:
+        for dct_prov in sublist if sublist is not None and type(sublist) is list else self._lst_config_pool:
             if dct_prov.get("type") == provider:
                 ret_prov = dct_prov.get("value")
                 break
