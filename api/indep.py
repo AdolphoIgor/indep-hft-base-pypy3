@@ -29,13 +29,13 @@ class InternalConfigProviders:
             "type": "instruments",
             "value": [
                 {"type": "quote", "value": {}},
-                {"type": "asset", "value": {}},
                 {"type": "tt", "value": {}},
-                {"type": "ttoo", "value": {}},
                 {"type": "lp", "value": {}},
                 {"type": "lo", "value": {}},
+                {"type": "spread", "value": {}},
                 {"type": "account", "value": {}},
                 {"type": "orders", "value": {}},
+                {"type": "progress", "value": {}}
             ]
         }
     ]
