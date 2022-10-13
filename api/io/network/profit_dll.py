@@ -1,6 +1,6 @@
 import struct
 from ctypes import *
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from api.indep import InternalConfigProviders
 from api.logger import logger
@@ -926,7 +926,7 @@ class ProfitDLL:
 
         # action[atAdd = 0, atEdit = 1, atDelete = 2, atDeleteFrom = 3, atFullBook = 4]
         if action == 0:
-            lst_book_side.insert(position + 1, [price, qtd, agent, offer_id, date])
+            lst_book_side.insert(position + 1, [price, qtd, agent, offer_id, date, None])
 
         elif action == 1:
             lst_book_side[position] = [price, qtd, agent, offer_id, date]
@@ -987,10 +987,29 @@ class ProfitDLL:
         if self._b_market_connected and self._b_ativo and self._b_connectado:
             logger.info("Serviços Conectados.")
 
+    def find_lim_ord_pos_book_offer(self, tipo_ordem, status, asset_id, side, price, date, cl_ord_id):
+        if (tipo_ordem == "limitada" and status == "open") or (tipo_ordem == "market" and status == "part_exec"):
+            lst_book = self._dct_lo.get(asset_id.ticker, [])
+
+            lst_prc = list(filter(lambda x: x[0] == price, lst_book[side]))
+            if lst_prc:
+                lst_offers = list(filter(lambda x: datetime.strptime(x, "%Y-%m-%d %H:%M:%S.%f") == date, lst_prc))
+                if not lst_offers:
+                    dt_start = datetime.strptime(date, "%Y-%m-%d %H:%M:%S.%f")
+                    dt_end = dt_start + timedelta(milliseconds=500)
+                    dt_start = dt_start - timedelta(milliseconds=500)
+                    lst_offers = list(filter(lambda x: dt_start < datetime.strptime(x, "%Y-%m-%d %H:%M:%S.%f") < dt_end,
+                                             lst_prc))
+                if lst_offers:
+                    lst_offers[-1][1].append(cl_ord_id)
+
     @WINFUNCTYPE(None, TAssetID, c_int, c_int, c_int, c_int, c_int, c_double, c_double, c_double, c_longlong, c_wchar_p,
                  c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p)
     def _history_callback(self, asset_id, corretora, qtd, traded_qtd, leaves_qtd, side, price, stop_price, avg_price,
                           profit_id, tipo_ordem, conta, titular, cl_ord_id, status, date):
+
+        self.find_lim_ord_pos_book_offer(tipo_ordem, status, asset_id, side, price, date, cl_ord_id)
+
         lst_orders = self._dct_orders.get(asset_id.ticker, [])
         order = None
         for ordr in lst_orders:
@@ -1018,36 +1037,20 @@ class ProfitDLL:
         dct_progress = self._dct_progress.get(asset_id.ticker, {})
         dct_progress.update({"progress": progress})
 
-    @WINFUNCTYPE(None, TAssetID, c_int, c_int, c_int, c_int, c_int, c_double, c_double, c_double, c_longlong,
-                 c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p)
-    def _history_trade_callback(self, asset_id, corretora, qtd, traded_qtd, leaves_qtd, side, price, stop_price,
-                                avg_price, profit_id, tipo_ordem, conta, titular, cl_ord_id, status, date):
-        lst_orders = self._dct_orders.get(asset_id.ticker, [])
-        order = None
-        for ordr in lst_orders:
-            if ordr.get("cl_ord_id") == cl_ord_id:
-                order = ordr
-                break
-
-        if order is None:
-            lst_orders.append({
-                "corretora": corretora, "qtd": qtd, "traded_qtd": traded_qtd, "leaves_qtd": leaves_qtd, "side": side,
-                "price": price, "stop_price": stop_price, "avg_price": avg_price, "profit_id": profit_id,
-                "tipo_ordem": tipo_ordem, "conta": conta, "titular": titular, "cl_ord_id": cl_ord_id, "status": status,
-                "date": date
-            })
-        else:
-            order.update({
-                "corretora": corretora, "qtd": qtd, "traded_qtd": traded_qtd, "leaves_qtd": leaves_qtd, "side": side,
-                "price": price, "stop_price": stop_price, "avg_price": avg_price, "profit_id": profit_id,
-                "tipo_ordem": tipo_ordem, "conta": conta, "titular": titular, "cl_ord_id": cl_ord_id, "status": status,
-                "date": date
-            })
+    @WINFUNCTYPE(None, TAssetID, c_wchar_p, c_uint, c_double, c_double, c_int, c_int, c_int, c_int)
+    def _history_trade_callback(self, asset_id, date, trade_number, price, vol, qtd, buy_agent, sell_agent, trade_type):
+        # trade_type = 2: Compra, 3: Venda, 4: Leilão, 13:RLP.
+        if trade_type in [2, 3, 4, 14]:
+            lst_tt = self._dct_tt.get(asset_id.ticker, [])
+            lst_tt.append([trade_number, date, price, qtd, buy_agent, sell_agent])
 
     @WINFUNCTYPE(None, TAssetID, c_int, c_int, c_int, c_int, c_int, c_double, c_double, c_double, c_longlong,
                  c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p)
     def _order_change_callback(self, asset_id, corretora, qtd, traded_qtd, leaves_qtd, side, price, stop_price,
                                avg_price, profit_id, tipo_ordem, conta, titular, cl_ord_id, status, date, text_message):
+
+        self.find_lim_ord_pos_book_offer(tipo_ordem, status, asset_id, side, price, date, cl_ord_id)
+
         lst_orders = self._dct_orders.get(asset_id.ticker, [])
         order = None
         for ordr in lst_orders:
