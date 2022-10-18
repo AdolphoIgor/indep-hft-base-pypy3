@@ -8,8 +8,8 @@ from api.logger import logger
 
 class ConfiguratorJob(Job):
 
-    def __init__(self, config_prov: InternalConfigProviders, order, **kwargs):
-        super().__init__(config_prov, order)
+    def __init__(self, config_prov: InternalConfigProviders, order, lst_thread_pool, **kwargs):
+        super().__init__(config_prov, order, lst_thread_pool)
         self._config = kwargs.get("config", None)
 
     def _execute(self) -> None:
@@ -22,17 +22,17 @@ class ConfiguratorJob(Job):
             if not self._config.get("connect", False) and dct_sys_cfg.get("connected", False):
                 dct_sys_cfg["connected"] = False
 
-                conn = dct_sys_cfg.get("provider_connection", None)
+                conn = dct_sys_cfg.get("prov_conn", None)
                 if conn and conn.is_connected():
-                    dct_sys_cfg["provider_connection"].disconnect()
+                    dct_sys_cfg["prov_conn"].disconnect()
 
-                dct_sys_cfg["provider_connection"] = None
+                dct_sys_cfg["prov_conn"] = None
                 dct_sys_cfg["provider_queue"] = None
                 logger.info(f"The connection to MD {dct_sys_cfg.get('provider_name')} was terminated.")
 
             if self._config.get("connect", False) and not dct_sys_cfg.get("connected", False):
                 try:
-                    dct_sys_cfg["provider_connection"] = ProfitDLL(self._config_prov).connect(
+                    dct_sys_cfg["prov_conn"] = ProfitDLL(self._config_prov).connect(
                         soft_key=self._config.get("soft_key", ""),
                         username=self._config.get("username", ""),
                         password=self._config.get("password", ""),

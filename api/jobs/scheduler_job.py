@@ -8,8 +8,8 @@ from api.jobs.job import Job
 
 class SchedulerJob(Job):
 
-    def __init__(self, config_prov: InternalConfigProviders, order):
-        super().__init__(config_prov, order)
+    def __init__(self, config_prov: InternalConfigProviders, order, lst_thread_pool):
+        super().__init__(config_prov, order, lst_thread_pool)
 
     def _execute(self) -> None:
         while not self._config_prov.is_running():
@@ -22,7 +22,7 @@ class SchedulerJob(Job):
                 for thr in shc.get("threads", []):
                     if thr.get("enabled"):
                         cls_str = f"{thr.get('target')}(self._config_prov, order={shc.get('order')}, " \
-                                  f"**{thr.get('config')})"
+                                  f"lst_thread_pool=self._lst_thread_pool, **{thr.get('config')})"
                         prt_cls = eval(cls_str)
                         prt_cls.setDaemon(thr.get("daemon"))
                         prt_cls.name = thr.get("thread_name")

@@ -21,7 +21,7 @@ class InternalConfigProviders:
             "type": "config",
             "value": {
                 "connected": False,
-                "provider_connection": None,
+                "prov_conn": None,
                 "provider_name": ""
             }
         },
@@ -104,7 +104,7 @@ class IndepBase:
         prt_cls.start()
 
     def __start_scheduler(self):
-        prt_cls = eval(f"SchedulerJob(self._config_prov, order=1)")
+        prt_cls = eval(f"SchedulerJob(self._config_prov, order=1, lst_thread_pool=_lst_thread_pool)")
         prt_cls.setDaemon(True)
         prt_cls.name = "thr_scheduler"
         self._lst_thread_pool.append({"group": 1, "order": 0, "name": prt_cls.name, "pointer": prt_cls})
