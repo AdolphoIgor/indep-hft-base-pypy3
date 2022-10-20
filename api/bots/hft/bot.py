@@ -6,14 +6,7 @@ from api.logger import logger
 
 
 class Bot(Thread):
-    _lst_quote = []
-    _lst_tt = []
-    _lst_lp = []
-    _lst_lo = []
-    _lst_account = []
-    _lst_orders = []
-    _lst_progress = []
-    _lst_spread = []
+    _dct_inst = {}
 
     def __init__(self, name, daemon, algo: dict, qtd_exp: int, config_prov: InternalConfigProviders):
         super().__init__(name=name, daemon=daemon)
@@ -21,26 +14,7 @@ class Bot(Thread):
         self._qtd_exp = qtd_exp
         self._config_prov = config_prov
         self._profitdll = self._config_prov.get_internal_provider_data("config").get("value").get("prov_conn")
-
-        lst_inst = self._config_prov.get_internal_provider_data("instruments")
-        self._lst_sbl = [algo.get("symbol") for algo in self._algo.get("threads")]
-        for sbl in self._lst_sbl:
-            self._lst_quote.append(
-                self._config_prov.get_internal_provider_data("quote", sublist=lst_inst).get("value").get(sbl))
-            self._lst_tt.append(
-                self._config_prov.get_internal_provider_data("tt", sublist=lst_inst).get("value").get(sbl))
-            self._lst_lp.append(
-                self._config_prov.get_internal_provider_data("lp", sublist=lst_inst).get("value").get(sbl))
-            self._lst_lo.append(
-                self._config_prov.get_internal_provider_data("lo", sublist=lst_inst).get("value").get(sbl))
-            self._lst_account.append(
-                self._config_prov.get_internal_provider_data("account", sublist=lst_inst).get("value").get(sbl))
-            self._lst_orders.append(
-                self._config_prov.get_internal_provider_data("orders", sublist=lst_inst).get("value").get(sbl))
-            self._lst_progress.append(
-                self._config_prov.get_internal_provider_data("progress", sublist=lst_inst).get("value").get(sbl))
-            self._lst_spread.append(
-                self._config_prov.get_internal_provider_data("spread", sublist=lst_inst).get("value").get(sbl))
+        self._lst_sbl = [(alg.get("symbol"), alg.get("stock_market")) for alg in algo.get("threads")]
 
     def execute(self):
         pass
@@ -48,7 +22,16 @@ class Bot(Thread):
     def run(self):
         logger.info(f"Initializing the algo name: {self.name}...")
         self.__test_qtd_assets()
-        self.execute()
+
+        self._profitdll.set_day_trade(self._algo.get("is_day_trade", False))
+        self._profitdll.set_enabled_log_to_debug(self._algo.get("debug_mode", False))
+
+        self.__subscribe()
+
+        while self._config_prov.is_running() and self._algo.get("enabled"):
+            self.execute()
+
+        self.__unsubscribe()
         logger.info(f"The algo name: {self.name} was finalized.")
 
     def __test_qtd_assets(self):
@@ -60,3 +43,48 @@ class Bot(Thread):
         if qtd_ast != self._qtd_exp:
             str_cpl = f"{qtd_ast} was given" if qtd_ast == 1 else f"{qtd_ast} were given"
             raise BotInitializationException(f"The algo: {self.name} requires {self._qtd_exp} asset(s) but {str_cpl}.")
+
+    def __subscribe(self):
+        # Restricts to only the assets managed by the current instance.
+        lst_subs = self._config_prov.get_internal_provider_data("subscriptions")
+        lst_inst = self._config_prov.get_internal_provider_data("instruments")
+        for sbl in self._lst_sbl:
+            for inst in lst_inst:
+                self._dct_inst.get(inst.get("type"), []).append(
+                    self._config_prov.get_internal_provider_data(
+                        inst.get("type"), sublist=lst_inst).get("value").get(sbl[0]))
+
+                lst_inst_subscrbd = self._config_prov.get_internal_provider_data(
+                    inst.get("type"), sublist=lst_subs).get("value")
+
+                for req_inst in self._algo.get("req_instruments"):
+                    if sbl[0] not in lst_inst_subscrbd:
+                        if req_inst == "quote":
+                            self._profitdll.subscribe_ticker(ticker=sbl[0], bolsa=sbl[1])
+                            self._profitdll.get_last_daily_close(ticker=sbl[0], bolsa=sbl[1])
+
+                        elif req_inst == "lp":
+                            self._profitdll.subscribe_price_book(ticker=sbl[0], bolsa=sbl[1])
+
+                        elif req_inst == "lo":
+                            self._profitdll.subscribe_offer_book(ticker=sbl[0], bolsa=sbl[1])
+
+                lst_inst_subscrbd.append(sbl[0])
+
+    def __unsubscribe(self):
+        # Restricts to only the assets managed by the current instance.
+        lst_subs = self._config_prov.get_internal_provider_data("subscriptions")
+        for sbs in lst_subs:
+            for sbl in self._lst_sbl:
+                for inst in sbs.get("value"):
+                    if inst.count(sbl) == 1:
+                        if inst == "quote":
+                            self._profitdll.unsubscribe_ticker(ticker=sbl[0], bolsa=sbl[1])
+
+                        elif inst == "lp":
+                            self._profitdll.unsubscribe_price_book(ticker=sbl[0], bolsa=sbl[1])
+
+                        elif inst == "lo":
+                            self._profitdll.unsubscribe_offer_book(ticker=sbl[0], bolsa=sbl[1])
+
+                    inst.remove(sbl)

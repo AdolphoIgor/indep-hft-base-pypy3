@@ -37,6 +37,17 @@ class InternalConfigProviders:
                 {"type": "orders", "value": {}},
                 {"type": "progress", "value": {}}
             ]
+        },
+        {
+            "type": "subscriptions",
+            "value": [
+                {"type": "quote", "value": []},
+                {"type": "tt", "value": []},
+                {"type": "lp", "value": []},
+                {"type": "lo", "value": []},
+                {"type": "spread", "value": []},
+                {"type": "orders", "value": []}
+            ]
         }
     ]
 

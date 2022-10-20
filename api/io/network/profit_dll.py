@@ -507,14 +507,6 @@ class ProfitDLL:
         """
         return self._profit_dll.GetOrders(c_double(n_profit_id))
 
-    def subscribe_offer(self, asset, bolsa):
-        """
-        :param asset:
-        :param bolsa:
-        :return:
-        """
-        return self._profit_dll.SubscribeOfferBook(c_wchar_p(asset), c_wchar_p(bolsa))
-
     def get_position(self, conta: str, broker: str, ativo: str, bolsa: str):
         """
         :param conta:

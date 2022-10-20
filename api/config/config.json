@@ -60,56 +60,36 @@
   ],
   "algos": [
     {
-      "id": 0,
-      "name": "Long-PETR4",
+      "name": "Arbitrage DOL/WDO",
       "enabled": true,
-      "algo_class": "LFT",
+      "algo_class": "Arbitrage",
+      "is_day_trade": true,
+      "debug_mode": true,
+      "req_instruments": [
+        "quote",
+        "lp",
+        "lo"
+      ],
       "threads": [
         {
-          "symbol": "PETR4",
-          "start_class": "Opening",
+          "symbol": "DOLFUT",
+          "stock_market": "F",
           "start_param": {
-            "side": "B",
-            "order_qty": 2500,
-            "perc_spread_order_at_market": 0.005
+            "order_op_qty": 5,
+            "order_limit_qty": 20
           }
         },
         {
-          "symbol": "VALE3",
-          "start_class": "Opening",
+          "symbol": "WDOFUT",
+          "stock_market": "F",
           "start_param": {
-            "side": "S",
-            "order_qty": 2500,
-            "perc_spread_order_at_market": 0.005
+            "order_op_qty": 25,
+            "order_limit_qty": 100
           }
         }
       ],
-      "stop_class": "PercTrailingStop",
       "stop_parameters": {
-        "perc_trailing": 0.00,
-        "inc_trailing": 0.0,
-        "stop_limit": -500.00
-      }
-    },
-    {
-      "id": 1,
-      "name": "Short-PETR4",
-      "enabled": false,
-      "algo_class": "LFT",
-      "threads": [
-        {
-          "symbol": "PETR4",
-          "start_class": "Opening",
-          "start_param": {
-            "side": "S",
-            "order_qty": 2500
-          }
-        }
-      ],
-      "stop_class": "PercTrailingStop",
-      "stop_parameters": {
-        "perc_trailing": 0.00,
-        "inc_trailing": 0.0,
+        "stop_op": -125.00,
         "stop_limit": -500.00
       }
     }
