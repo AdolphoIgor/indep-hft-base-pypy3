@@ -72,7 +72,6 @@ class Bot(Thread):
                 lst_inst_subscrbd.append(sbl[0])
 
     def __unsubscribe(self):
-        # Restricts to only the assets managed by the current instance.
         lst_subs = self._config_prov.get_internal_provider_data("subscriptions")
         for sbs in lst_subs:
             for sbl in self._lst_sbl:

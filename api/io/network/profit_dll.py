@@ -293,6 +293,9 @@ class ProfitDLL:
     def is_connected(self) -> bool:
         return self._b_market_connected
 
+    def get_asset_state(self) -> dict:
+        return self._dct_asset_state.copy()
+
     # METHODS ----------------------------------------------------------------------------------------------------------
     def subscribe_ticker(self, ticker: str, bolsa: str):
         """
@@ -764,6 +767,17 @@ class ProfitDLL:
         dct_quote = self._dct_quote.get(asset_id.ticker, {})
         dct_quote["description"] = name
 
+    @staticmethod
+    def __get_tick_value(name: str) -> float:
+        name = name.upper()
+        if name.startswith(("DOL", "WDO"), 0):
+            return 0.5
+
+        if name.startswith(("IND", "WIN"), 0):
+            return 1.0
+
+        return 0.1
+
     @WINFUNCTYPE(None, TAssetID, c_wchar_p, c_wchar_p, c_int, c_int, c_int, c_int, c_int, c_double, c_double, c_wchar_p,
                  c_wchar_p)
     def _asset_list_info_callback(self, asset_id, name, description, min_order_qtd, max_order_qtd, lote, security_type,
@@ -782,12 +796,13 @@ class ProfitDLL:
         dct_quote["isin"] = isin
         dct_quote["security_type_desc"] = self._dct_asset_sec_type.get(security_type)
         dct_quote["security_sub_type_desc"] = self._dct_asset_sec_type.get(security_sub_type)
+        dct_quote["tick_value"] = self.__get_tick_value(name)
 
-    @WINFUNCTYPE(None, TAssetID, c_wchar_p, c_wchar_p, c_int, c_int, c_int, c_int, c_int, c_double, c_double, c_wchar_p,
-                 c_wchar_p, c_wchar_p, c_wchar_p)
+    @WINFUNCTYPE(None, TAssetID, c_wchar_p, c_wchar_p, c_int, c_int, c_int, c_int, c_int, c_int, c_double, c_double,
+                 c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p)
     def _asset_list_info_callback_v2(self, asset_id, name, description, min_order_qtd, max_order_qtd, lote,
-                                     security_type, min_price_increment, contract_multiplier, valid_date, isin, setor,
-                                     sub_setor, segmento):
+                                     security_type, security_sub_type, min_price_increment, contract_multiplier,
+                                     valid_date, isin, setor, sub_setor, segmento):
         dct_quote = self._dct_quote.get(asset_id.ticker, {})
         dct_quote["name"] = name
         dct_quote["description"] = description
@@ -795,6 +810,7 @@ class ProfitDLL:
         dct_quote["max_order_qtd"] = max_order_qtd
         dct_quote["lote"] = lote
         dct_quote["security_type"] = security_type
+        dct_quote["security_sub_type"] = security_sub_type
         dct_quote["min_price_increment"] = min_price_increment
         dct_quote["contract_multiplier"] = contract_multiplier
         dct_quote["valid_date"] = valid_date
@@ -803,6 +819,8 @@ class ProfitDLL:
         dct_quote["sub_setor"] = sub_setor
         dct_quote["segmento"] = segmento
         dct_quote["security_type_desc"] = self._dct_asset_sec_type.get(security_type)
+        dct_quote["security_sub_type_desc"] = self._dct_asset_sec_type.get(security_sub_type)
+        dct_quote["tick_value"] = self.__get_tick_value(name)
 
     @WINFUNCTYPE(None, TAssetID, c_double, c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p, c_int)
     def _adjust_history_callback(self, asset_id, value, adjust_type, observ, ajuste, deliber, pagamento, affect_price):
