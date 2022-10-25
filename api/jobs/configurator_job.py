@@ -38,6 +38,8 @@ class ConfiguratorJob(Job):
                         password=self._config.get("password", ""),
                     )
                     dct_sys_cfg["provider_name"] = self._config.get("provider_name")
+                    dct_sys_cfg["username"] = self._config.get("username", "")
+                    dct_sys_cfg["password"] = self._config.get("password", "")
                     dct_sys_cfg["connected"] = True
 
                     logger.info(f"The connection to MD {dct_sys_cfg.get('provider_name')} was established.")

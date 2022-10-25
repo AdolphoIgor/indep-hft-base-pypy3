@@ -195,8 +195,18 @@ class ProfitDLL:
     _profit_dll.SetChangeStateTickerCallback.restype = c_short
     _profit_dll.SetEnabledHistOrder.restype = c_short
 
+    _dct_side = {
+        0: "Compra", 1: "Venda"
+    }
+
     _dct_asset_state = {
         0: "opened", 2: "frozen", 3: "inhibited", 4: "auctioned", 6: "closed", 10: "preclosing", 13: "preopening"
+    }
+
+    _dct_trade_type = {
+        1: "Cross trade", 2: "Compra agressão", 3: "Venda agressão", 4: "Leilão", 5: "Surveillance", 6: "Expit",
+        32: "Desconhecido", 7: "Options Exercise", 8: "Over the counter", 9: "Derivative Term", 10: "Index",
+        11: "BTC", 12: "On Behalf", 13: "RLP"
     }
 
     _dct_asset_sec_type = {
@@ -767,17 +777,6 @@ class ProfitDLL:
         dct_quote = self._dct_quote.get(asset_id.ticker, {})
         dct_quote["description"] = name
 
-    @staticmethod
-    def __get_tick_value(name: str) -> float:
-        name = name.upper()
-        if name.startswith(("DOL", "WDO"), 0):
-            return 0.5
-
-        if name.startswith(("IND", "WIN"), 0):
-            return 1.0
-
-        return 0.1
-
     @WINFUNCTYPE(None, TAssetID, c_wchar_p, c_wchar_p, c_int, c_int, c_int, c_int, c_int, c_double, c_double, c_wchar_p,
                  c_wchar_p)
     def _asset_list_info_callback(self, asset_id, name, description, min_order_qtd, max_order_qtd, lote, security_type,
@@ -796,7 +795,6 @@ class ProfitDLL:
         dct_quote["isin"] = isin
         dct_quote["security_type_desc"] = self._dct_asset_sec_type.get(security_type)
         dct_quote["security_sub_type_desc"] = self._dct_asset_sec_type.get(security_sub_type)
-        dct_quote["tick_value"] = self.__get_tick_value(name)
 
     @WINFUNCTYPE(None, TAssetID, c_wchar_p, c_wchar_p, c_int, c_int, c_int, c_int, c_int, c_int, c_double, c_double,
                  c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p)
@@ -820,18 +818,49 @@ class ProfitDLL:
         dct_quote["segmento"] = segmento
         dct_quote["security_type_desc"] = self._dct_asset_sec_type.get(security_type)
         dct_quote["security_sub_type_desc"] = self._dct_asset_sec_type.get(security_sub_type)
-        dct_quote["tick_value"] = self.__get_tick_value(name)
 
     @WINFUNCTYPE(None, TAssetID, c_double, c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p, c_int)
-    def _adjust_history_callback(self, asset_id, value, adjust_type, observ, ajuste, deliber, pagamento, affect_price):
+    def _adjust_history_callback(self, asset_id, value, adj_type, observ, dt_ajuste, dt_delib, dt_pagamento, aff_price):
         dct_quote = self._dct_quote.get(asset_id.ticker, {})
         dct_quote["ajuste"] = value
+        if aff_price:
+            dct_quote["last"] = dct_quote.get("last", 0) + value
 
     @WINFUNCTYPE(None, TAssetID, c_double, c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p, c_uint, c_double)
     def _adjust_history_callback_v2(self, asset_id, value, adj_type, observ, dt_ajuste, dt_delib, dt_pagamento, flags,
                                     mult):
+        """
+            nFlags é um campo de bits b0 a b31, onde o bit 0 indica se o ajuste afeta o preço e o bit 1 indica se é
+            um ajuste de Soma.
+
+            dMult é o valor pré-computado que deve ser multiplicado pelo preço para realizar o ajuste, somente é
+            utilizado caso o ajuste não seja um ajuste de soma e seja um ajuste que afeta preço, informação fornecida
+            no campo nFlags.
+
+            O valor -9999 de dMult indica que o mesmo é inválido e não deve ser utilizado. Caso o valor dMult seja
+            inválido, utiliza-se dValue para realizar o cálculo, sendo uma subtração em caso de ajuste de soma e
+            divisão caso contrário.
+        """
         dct_quote = self._dct_quote.get(asset_id.ticker, {})
         dct_quote["ajuste"] = value
+        str_flag = bin(flags)
+
+        if str_flag[0] == 1:
+            aj_soma = str_flag[1] == 1
+            last_prc = dct_quote.get("last", 0)
+
+            if mult != -9999:
+                if aj_soma:
+                    last_prc += value
+                else:
+                    last_prc *= mult
+            else:
+                if aj_soma:
+                    last_prc -= value
+                else:
+                    last_prc /= value
+
+            dct_quote["last"] = round(last_prc, 2)
 
     @WINFUNCTYPE(None, TAssetID, c_wchar_p, c_int)
     def _change_state_ticker_callback(self, asset_id, date, state):
@@ -1032,7 +1061,7 @@ class ProfitDLL:
                 "corretora": corretora, "qtd": qtd, "traded_qtd": traded_qtd, "leaves_qtd": leaves_qtd, "side": side,
                 "price": price, "stop_price": stop_price, "avg_price": avg_price, "profit_id": profit_id,
                 "tipo_ordem": tipo_ordem, "conta": conta, "titular": titular, "cl_ord_id": cl_ord_id, "status": status,
-                "date": date
+                "date": date, "symbol": asset_id.ticker,
             })
         else:
             order.update({
@@ -1049,8 +1078,8 @@ class ProfitDLL:
 
     @WINFUNCTYPE(None, TAssetID, c_wchar_p, c_uint, c_double, c_double, c_int, c_int, c_int, c_int)
     def _history_trade_callback(self, asset_id, date, trade_number, price, vol, qtd, buy_agent, sell_agent, trade_type):
-        # trade_type = 2: Compra, 3: Venda, 4: Leilão, 13:RLP.
-        if trade_type in [2, 3, 4, 14]:
+        # See: self._dct_trade_type; trade_type = 2: Compra, 3: Venda, 4: Leilão, 13:RLP.
+        if trade_type in [2, 3, 4, 13]:
             lst_tt = self._dct_tt.get(asset_id.ticker, [])
             lst_tt.append([trade_number, date, price, qtd, buy_agent, sell_agent])
 
@@ -1073,7 +1102,7 @@ class ProfitDLL:
                 "corretora": corretora, "qtd": qtd, "traded_qtd": traded_qtd, "leaves_qtd": leaves_qtd, "side": side,
                 "price": price, "stop_price": stop_price, "avg_price": avg_price, "profit_id": profit_id,
                 "tipo_ordem": tipo_ordem, "conta": conta, "titular": titular, "cl_ord_id": cl_ord_id, "status": status,
-                "date": date, "text_message": text_message
+                "date": date, "text_message": text_message, "symbol": asset_id.ticker,
             })
         else:
             order.update({
@@ -1093,8 +1122,8 @@ class ProfitDLL:
     @WINFUNCTYPE(None, TAssetID, c_wchar_p, c_uint, c_double, c_double, c_int, c_int, c_int, c_int, c_wchar)
     def _new_trade_callback(self, asset_id, date, trade_number, price, vol, qtd, buy_agent, sell_agent, trade_type,
                             is_edit):
-        # trade_type = 2: Compra, 3: Venda, 4: Leilão, 13:RLP.
-        if trade_type in [2, 3, 4, 14]:
+        # See: self._dct_trade_type; trade_type = 2: Compra, 3: Venda, 4: Leilão, 13:RLP.
+        if trade_type in [2, 3, 4, 13]:
             lst_tt = self._dct_tt.get(asset_id.ticker, [])
             lst_tt.append([trade_number, date, price, qtd, buy_agent, sell_agent])
 

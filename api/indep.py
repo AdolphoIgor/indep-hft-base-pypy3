@@ -22,7 +22,9 @@ class InternalConfigProviders:
             "value": {
                 "connected": False,
                 "prov_conn": None,
-                "provider_name": ""
+                "provider_name": "",
+                "username": "",
+                "password": ""
             }
         },
         {

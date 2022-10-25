@@ -7,6 +7,7 @@ from api.logger import logger
 
 class Bot(Thread):
     _dct_inst = {}
+    _lst_orders_sent = []
 
     def __init__(self, name, daemon, algo: dict, qtd_exp: int, config_prov: InternalConfigProviders):
         super().__init__(name=name, daemon=daemon)
@@ -15,6 +16,9 @@ class Bot(Thread):
         self._config_prov = config_prov
         self._profitdll = self._config_prov.get_internal_provider_data("config").get("value").get("prov_conn")
         self._lst_sbl = [(alg.get("symbol"), alg.get("stock_market")) for alg in algo.get("threads")]
+        self._lst_sbl_conf = [[thr.get("symbol"), thr.get("start_param").get("order_op_qty"),
+                               thr.get("start_param").get("order_limit_qty"), 0, True]
+                              for thr in self._algo.get("threads")]
 
     def execute(self):
         pass
@@ -50,9 +54,10 @@ class Bot(Thread):
         lst_inst = self._config_prov.get_internal_provider_data("instruments")
         for sbl in self._lst_sbl:
             for inst in lst_inst:
+                # Gets a copy of every instrument's memory pointer to the dict.
                 self._dct_inst.get(inst.get("type"), []).append(
-                    self._config_prov.get_internal_provider_data(
-                        inst.get("type"), sublist=lst_inst).get("value").get(sbl[0]))
+                    self._config_prov.get_internal_provider_data(inst.get("type"), sublist=lst_inst).
+                    get("value").get(sbl[0]))
 
                 lst_inst_subscrbd = self._config_prov.get_internal_provider_data(
                     inst.get("type"), sublist=lst_subs).get("value")
