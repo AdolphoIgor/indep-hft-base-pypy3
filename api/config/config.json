@@ -70,6 +70,11 @@
         "lp",
         "lo"
       ],
+      "broker": {
+        "id": "1",
+        "account": 12345,
+        "password": 111111
+      },
       "threads": [
         {
           "symbol": "DOLFUT",

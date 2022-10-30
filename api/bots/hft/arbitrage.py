@@ -23,13 +23,25 @@ class Arbitrage(Bot):
 
             # Sell the first asset and buy the second asset, both at market order.
             if self._get_spread() > 0:
-                self._lst_orders_sent.append(self._profitdll.send_buy_order())
-                self._lst_orders_sent.append(self._profitdll.send_sell_order())
+                self._lst_orders_sent.append(self._profitdll.send_buy_order(
+                    conta=self._algo.get("account"), broker=self._algo.get("id"), senha=self._algo.get("password"),
+                    ativo="", bolsa="", preco=0.0, qtd=0
+                ))
+                self._lst_orders_sent.append(self._profitdll.send_sell_order(
+                    conta=self._algo.get("account"), broker=self._algo.get("id"), senha=self._algo.get("password"),
+                    ativo="", bolsa="", preco=0.0, qtd=0
+                ))
 
             # Sell the second asset and buy the first asset, both at market order.
             if self._get_spread() < 0:
-                self._lst_orders_sent.append(self._profitdll.send_buy_order())
-                self._lst_orders_sent.append(self._profitdll.send_sell_order())
+                self._lst_orders_sent.append(self._profitdll.send_buy_order(
+                    conta=self._algo.get("account"), broker=self._algo.get("id"), senha=self._algo.get("password"),
+                    ativo="", bolsa="", preco=0.0, qtd=0
+                ))
+                self._lst_orders_sent.append(self._profitdll.send_sell_order(
+                    conta=self._algo.get("account"), broker=self._algo.get("id"), senha=self._algo.get("password"),
+                    ativo="", bolsa="", preco=0.0, qtd=0
+                ))
 
         # exit point
         lst_orders = self._get_lst_ord_cfg()
@@ -40,8 +52,14 @@ class Arbitrage(Bot):
                     break
 
                 # TODO: ZERAR TODOS
-                self._lst_orders_sent.append(self._profitdll.send_buy_order())
-                self._lst_orders_sent.append(self._profitdll.send_sell_order())
+                self._lst_orders_sent.append(self._profitdll.send_buy_order(
+                    conta=self._algo.get("account"), broker=self._algo.get("id"), senha=self._algo.get("password"),
+                    ativo="", bolsa="", preco=0.0, qtd=0
+                ))
+                self._lst_orders_sent.append(self._profitdll.send_sell_order(
+                    conta=self._algo.get("account"), broker=self._algo.get("id"), senha=self._algo.get("password"),
+                    ativo="", bolsa="", preco=0.0, qtd=0
+                ))
                 # self._lst_orders_sent.append(self._profitdll.send_stop_buy_order())
                 # self._lst_orders_sent.append(self._profitdll.send_stop_sell_order())
                 # self._lst_orders_sent.append(self._profitdll.send_zero_position())
