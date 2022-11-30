@@ -230,6 +230,38 @@ class ProfitDLL:
         44: "TradeableIndex", 45: "Others"
     }
 
+    # strAdjustType do callback TAdjustHistoryCallBack.
+    _lst_str_adjust_type = [
+        "None", "Unknown", "JurosRF", "Dividendo", "Rendimento", "Subscricao", "Desdobramento", "ResgateTotalRF",
+        "ResgateTotalRV", "AmortizacaoRF", "JurosCapProprio", "SubsComRenuncia", "Bonificacao", "Grupamento",
+        "JuncaoSerie", "Cisao", "Unknown"
+    ]
+
+    # tipo de ordem do callback TOrderChangeCallback
+    _lst_tipo_ordem = [
+        "Market", "Limit", "Stop", "StopLimit", "MarketOnClose", "WithOrWithout", "LimitOrBetter", "LimitWithOrWithout",
+        "OnBasis", "OnClose", "LimitOnClose", "ForexMarket", "PreviouslyQuoted", "PreviouslyIndicated", "ForexLimit",
+        "ForexSwap", "ForexPreviouslyQuoted", "Funari", "MarketIfTouched", "MarketWithLeftoverAsLimit",
+        "PreviousFundValuationPoint", "Pegged", "Unknown"
+    ]
+
+    # Valores do Status das callbacks HistoryCallback e OrderChangeCallback.
+    _dct_order_status = {
+        "bstNew": 0, "bstPartiallyFilled": 1, "bstFilled": 2, "bstDoneForDay": 3, "bstCanceled": 4, "bstReplaced": 5,
+        "bstPendingCancel": 6, "bstStopped": 7, "bstRejected": 8, "bstSuspended": 9, "bstPendingNew": 10,
+        "bstCalculated": 11, "bstExpired": 12, "bstAcceptedForBidding": 13, "bstPendingReplace": 14,
+        "bstPartiallyFilledCanceleds": 15, "bstReceived": 16, "bstPartiallyFilledExpired": 17, "bstUnknown": 200,
+        "bstHadesCreated": 201, "bstBrokerSent": 202, "bstClientCreated": 203, "bstOrderNotCreated": 204
+    }
+
+    _dct_order_status_inv = {
+        0: 'bstNew', 1: 'bstPartiallyFilled', 2: 'bstFilled', 3: 'bstDoneForDay', 4: 'bstCanceled', 5: 'bstReplaced',
+        6: 'bstPendingCancel', 7: 'bstStopped', 8: 'bstRejected', 9: 'bstSuspended', 10: 'bstPendingNew',
+        11: 'bstCalculated', 12: 'bstExpired', 13: 'bstAcceptedForBidding', 14: 'bstPendingReplace',
+        15: 'bstPartiallyFilledCanceleds', 16: 'bstReceived', 17: 'bstPartiallyFilledExpired', 200: 'bstUnknown',
+        201: 'bstHadesCreated', 202: 'bstBrokerSent', 203: 'bstClientCreated', 204: 'bstOrderNotCreated'
+    }
+
     def __init__(self, config_prov: InternalConfigProviders):
         # here the instruments will be kept.
         self._config_prov = config_prov
@@ -306,6 +338,9 @@ class ProfitDLL:
     def get_asset_state(self) -> dict:
         return self._dct_asset_state.copy()
 
+    def get_dct_order_status_inv(self) -> dict:
+        return self._dct_order_status_inv.copy()
+
     # METHODS ----------------------------------------------------------------------------------------------------------
     def subscribe_ticker(self, ticker: str, bolsa: str):
         """
@@ -313,7 +348,6 @@ class ProfitDLL:
         :param bolsa:
         :return: triggers self._adjust_history_callback or self._adjust_history_callback_v2
         """
-        # TODO: find out which callback functions will be called.
         return self._profit_dll.SubscribeTicker(c_wchar_p(ticker), c_wchar_p(bolsa))
 
     def unsubscribe_ticker(self, ticker: str, bolsa: str):

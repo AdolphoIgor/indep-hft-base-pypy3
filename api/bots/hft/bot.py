@@ -1,6 +1,7 @@
 from threading import Thread
 
 from api.bots.hft.exceptions import BotInitializationException
+from api.bots.hft.position import Position
 from api.indep import InternalConfigProviders
 from api.logger import logger
 
@@ -16,9 +17,10 @@ class Bot(Thread):
         self._config_prov = config_prov
         self._profitdll = self._config_prov.get_internal_provider_data("config").get("value").get("prov_conn")
         self._lst_sbl = [(alg.get("symbol"), alg.get("stock_market")) for alg in algo.get("threads")]
-        self._lst_sbl_conf = [[thr.get("symbol"), thr.get("start_param").get("order_op_qty"),
-                               thr.get("start_param").get("order_limit_qty"), 0, True]
-                              for thr in self._algo.get("threads")]
+        self._dct_asset_state = self._profitdll.get_asset_state()
+        self._dct_ord_status = self._profitdll.get_dct_order_status_inv()
+        self._position = Position(self._dct_inst.get("orders"), self._lst_orders_sent, algo.get("threads"),
+                                  self._dct_inst.get("spread"), self._dct_ord_status)
 
     def execute(self):
         pass
@@ -92,3 +94,15 @@ class Bot(Thread):
                             self._profitdll.unsubscribe_offer_book(ticker=sbl[0], bolsa=sbl[1])
 
                     inst.remove(sbl)
+
+    def _is_asset_state(self, lst_states: list) -> bool:
+        """
+        See :param lst_states: For valid states, please, see ProfitDLL().get_asset_state()
+        :return:
+        """
+        for quote in self._dct_inst.get("quote"):
+            for state in lst_states:
+                if quote.get("state", -1) == self._dct_asset_state.get(state):
+                    return True
+
+        return False

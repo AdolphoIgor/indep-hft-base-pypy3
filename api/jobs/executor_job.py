@@ -30,6 +30,12 @@ class ExecutorJob(Job):
             # processing...
             for algo in lst_algos:
                 if not algo.get('running', False):
+                    for thr in algo.get("threads"):
+                        for brkr in self._config_prov.get_dict_configs().get("brokers", []):
+                            if thr.get("broker_id") == brkr.get("id"):
+                                thr["broker"] = brkr
+                                break
+
                     thr_name = f'thr_executor_{algo.get("name", "")}'
                     target = eval(f'{algo.get("algo_class")}(name={thr_name}, daemon=True, algo=algo, '
                                   f'config_prov=self._config_prov')

@@ -70,15 +70,11 @@
         "lp",
         "lo"
       ],
-      "broker": {
-        "id": "1",
-        "account": 12345,
-        "password": 111111
-      },
       "threads": [
         {
           "symbol": "DOLFUT",
           "stock_market": "F",
+          "broker_id": 0,
           "start_param": {
             "order_op_qty": 5,
             "order_limit_qty": 20
@@ -87,6 +83,7 @@
         {
           "symbol": "WDOFUT",
           "stock_market": "F",
+          "broker_id": 0,
           "start_param": {
             "order_op_qty": 25,
             "order_limit_qty": 100
@@ -97,6 +94,14 @@
         "stop_op": -125.00,
         "stop_limit": -500.00
       }
+    }
+  ],
+  "brokers": [
+    {
+      "id": "0",
+      "broker_name": "Clear",
+      "account": 12345,
+      "password": 111111
     }
   ]
 }
