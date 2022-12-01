@@ -13,7 +13,7 @@ class Auction(Bot):
     """
 
     def __init__(self, name, daemon, algo: dict, config_prov: InternalConfigProviders):
-        super().__init__(name, daemon, algo, 1, config_prov)
+        super().__init__(name, daemon, algo, Bot.ONE_ARM, config_prov)
         self._lst_lps = self._dct_inst.get("lp")[0]
         self._dct_quote = self._dct_inst.get("quote")
         self._lst_entry_signal = []

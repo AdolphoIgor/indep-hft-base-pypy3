@@ -7,6 +7,11 @@ from api.logger import logger
 
 
 class Bot(Thread):
+    ONE_ARM = 1
+    TWO_ARM = 2
+    TREE_ARM = 3
+    FOUR_ARM = 4
+
     _dct_inst = {}
     _lst_orders_sent = []
 
@@ -18,7 +23,7 @@ class Bot(Thread):
         self._profitdll = self._config_prov.get_internal_provider_data("config").get("value").get("prov_conn")
         self._lst_sbl = [(alg.get("symbol"), alg.get("stock_market")) for alg in algo.get("threads")]
         self._dct_asset_state = self._profitdll.get_asset_state()
-        self._dct_ord_status = self._profitdll.get_dct_order_status_inv()
+        self._dct_ord_status = self._profitdll.get_dct_order_status()
         self._position = Position(self._dct_inst.get("orders"), self._lst_orders_sent, algo.get("threads"),
                                   self._dct_inst.get("spread"), self._dct_ord_status)
 
@@ -97,12 +102,16 @@ class Bot(Thread):
 
     def _is_asset_state(self, lst_states: list) -> bool:
         """
+            At this point, for every asset configurated for the bot its quotes will be availiable here at
+            self._dct_inst.get("quote") dict.
+
         See :param lst_states: For valid states, please, see ProfitDLL().get_asset_state()
         :return:
         """
+        ret_bol = True
         for quote in self._dct_inst.get("quote"):
-            for state in lst_states:
-                if quote.get("state", -1) == self._dct_asset_state.get(state):
-                    return True
+            if self._dct_asset_state.get(quote.get("state", -1)) not in lst_states:
+                ret_bol = False
+                break
 
-        return False
+        return ret_bol

@@ -247,14 +247,6 @@ class ProfitDLL:
 
     # Valores do Status das callbacks HistoryCallback e OrderChangeCallback.
     _dct_order_status = {
-        "bstNew": 0, "bstPartiallyFilled": 1, "bstFilled": 2, "bstDoneForDay": 3, "bstCanceled": 4, "bstReplaced": 5,
-        "bstPendingCancel": 6, "bstStopped": 7, "bstRejected": 8, "bstSuspended": 9, "bstPendingNew": 10,
-        "bstCalculated": 11, "bstExpired": 12, "bstAcceptedForBidding": 13, "bstPendingReplace": 14,
-        "bstPartiallyFilledCanceleds": 15, "bstReceived": 16, "bstPartiallyFilledExpired": 17, "bstUnknown": 200,
-        "bstHadesCreated": 201, "bstBrokerSent": 202, "bstClientCreated": 203, "bstOrderNotCreated": 204
-    }
-
-    _dct_order_status_inv = {
         0: 'bstNew', 1: 'bstPartiallyFilled', 2: 'bstFilled', 3: 'bstDoneForDay', 4: 'bstCanceled', 5: 'bstReplaced',
         6: 'bstPendingCancel', 7: 'bstStopped', 8: 'bstRejected', 9: 'bstSuspended', 10: 'bstPendingNew',
         11: 'bstCalculated', 12: 'bstExpired', 13: 'bstAcceptedForBidding', 14: 'bstPendingReplace',
@@ -338,8 +330,8 @@ class ProfitDLL:
     def get_asset_state(self) -> dict:
         return self._dct_asset_state.copy()
 
-    def get_dct_order_status_inv(self) -> dict:
-        return self._dct_order_status_inv.copy()
+    def get_dct_order_status(self) -> dict:
+        return self._dct_order_status.copy()
 
     # METHODS ----------------------------------------------------------------------------------------------------------
     def subscribe_ticker(self, ticker: str, bolsa: str):
