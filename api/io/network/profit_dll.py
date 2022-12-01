@@ -333,6 +333,14 @@ class ProfitDLL:
     def get_dct_order_status(self) -> dict:
         return self._dct_order_status.copy()
 
+    @staticmethod
+    def get_dct_reversed(orig_dict: dict) -> dict:
+        dct_dest = {}
+        for k, v in orig_dict.items():
+            dct_dest[v] = k
+
+        return dct_dest
+
     # METHODS ----------------------------------------------------------------------------------------------------------
     def subscribe_ticker(self, ticker: str, bolsa: str):
         """
