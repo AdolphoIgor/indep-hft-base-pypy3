@@ -1,5 +1,3 @@
-# TODO: liberar quantidade de ordens usadas quando houver cancelamento.
-
 import json
 import sys
 
@@ -164,10 +162,11 @@ class PositionMgr:
                 lst_status.append(item.get("status"))
                 self._lst_used_clordid.append(cl_ord_id)
 
+            status = self.__get_updated_status(lst_status, lst_open_arms_status=[])
             self._lst_opened_positions.append(
                 {
                     "id": ord_id,
-                    "open_status": self.__get_updated_status(lst_status, lst_open_arms_status=[]),
+                    "open_status": status,
                     "open_arms_status": lst_status,
                     "open_arms": lst_arms,
                     "close_status": self.POS_INIT,
@@ -177,7 +176,8 @@ class PositionMgr:
             )
 
             # updates the global position data
-            self._dct_pos_mgr.get("position")["qtd_open_positions"] += 1
+            if status not in [self.POS_INIT, self.POS_NEW]:
+                self._dct_pos_mgr.get("position")["qtd_open_positions"] += 1
 
         for sor in lst_ordrs:
             self._lst_sent_orders.remove(sor)
@@ -190,14 +190,17 @@ class PositionMgr:
             return
 
         lst_arms_ordrs = []
-        for pos in [pos for pos in self._lst_opened_positions if pos.get("open_status") == self.POS_PRT_OPENED]:
+        for pos in [pos for pos in self._lst_opened_positions if
+                    pos.get("open_status") in [self.POS_NEW, self.POS_PRT_OPENED]]:
             for arm in pos.get("open_arms"):
                 for ordr in self._lst_orders:
                     if ordr.get("cl_ord_id") == arm.get("id"):
 
                         status = ordr.get("status")
 
-                        if status not in ["bstCanceled", "bstRejected"]:
+                        if status in ["bstCanceled", "bstRejected"]:
+                            arm["traded_qtd"] -= ordr.get("traded_qtd")
+                        else:
                             arm["traded_qtd"] = ordr.get("traded_qtd")
 
                         if status in ["bstPartiallyFilled", "bstFilled", "bstRejected", "bstCanceled"]:
@@ -211,7 +214,8 @@ class PositionMgr:
 
         if len(lst_arms_ordrs) > 0:
             for ordr in lst_arms_ordrs:
-                self.__update_arm(ordr.get("symbol"), ordr.get("traded_qtd"))
+                mpl = -1 if ordr.get("status") == "bstCanceled" else 1
+                self.__update_arm(ordr.get("symbol"), (ordr.get("traded_qtd") * mpl))
                 self._lst_orders.remove(ordr)
 
             lst_status = [arm.get("status") for arm in pos.get("open_arms")]
@@ -295,7 +299,7 @@ class PositionMgr:
 
                     lst_arms_ordrs.append(item)
 
-                    # updates the arm/thread position data
+                    # updates the arm/thread position data(ordr.get("traded_qtd") * mpl)
                 self.__update_arm(symbol, -(dct_arm["traded_qtd"] - orig_qtd_traded))
 
                 dct_arm["status"] = "bstFilled" if dct_arm["traded_qtd"] == arm["qtd"] else "bstPartiallyFilled"
