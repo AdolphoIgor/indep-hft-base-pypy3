@@ -1,7 +1,7 @@
 from threading import Thread
 
 from api.bots.hft.exceptions import BotInitializationException
-from api.bots.hft.position import Position
+from api.bots.hft.position import PositionMgr
 from api.indep import InternalConfigProviders
 from api.logger import logger
 
@@ -20,12 +20,14 @@ class Bot(Thread):
         self._algo = algo
         self._qtd_exp = qtd_exp
         self._config_prov = config_prov
+
         self._profitdll = self._config_prov.get_internal_provider_data("config").get("value").get("prov_conn")
-        self._lst_sbl = [(alg.get("symbol"), alg.get("stock_market")) for alg in algo.get("threads")]
         self._dct_asset_state = self._profitdll.get_asset_state()
         self._dct_ord_status = self._profitdll.get_dct_order_status()
-        self._position = Position(self._dct_inst.get("orders"), self._lst_orders_sent, algo.get("threads"),
-                                  self._dct_inst.get("spread"), self._dct_ord_status)
+
+        self._lst_sbl = [(alg.get("symbol"), alg.get("stock_market")) for alg in algo.get("threads")]
+        self._position_mgr = PositionMgr(self._dct_inst.get("orders"), self._lst_orders_sent, algo.get("threads"),
+                                         self._dct_ord_status)
 
     def execute(self):
         pass

@@ -1,4 +1,5 @@
 import json
+import sys
 
 
 class PositionMgr:
@@ -48,7 +49,7 @@ class PositionMgr:
                 }
             )
 
-    def print_state(self):
+    def __print_state(self):
         print("---------------------------------------------------------------")
         print("-->> _lst_opened_positions")
         json_formatted_str = json.dumps(self._lst_opened_positions, indent=2)
@@ -83,10 +84,12 @@ class PositionMgr:
         thr.get("position")["has_ord_rem"] = \
             thr.get("start_param").get("limit_qty_order") > thr.get("position")["limit_qty_order_used"]
 
-        print("---------------------------------------------------------------")
-        print("-->> __update_arm")
-        print(f"{symbol} - {thr.get('position')}")
-        print("---------------------------------------------------------------")
+        gettrace = getattr(sys, 'gettrace', None)
+        if not gettrace() is None:
+            print("---------------------------------------------------------------")
+            print("-->> __update_arm")
+            print(f"{symbol} - {thr.get('position')}")
+            print("---------------------------------------------------------------")
 
     def __get_updated_status(self, lst_status: list, lst_open_arms_status: list, bol_closing=False) -> int:
         if 'bstRejected' in lst_status:
@@ -102,12 +105,6 @@ class PositionMgr:
             return self.POS_PRT_EXEC if bol_closing else self.POS_PRT_OPENED
 
         return self.POS_NEW
-
-    def proc_positions(self):
-        self._proc_new_positions()
-        self._proc_upd_new_positions()
-        self._proc_close_positions()
-        self._proc_lated_orders()
 
     def _proc_lated_orders(self):
         # remove from self._lst_orders every late update of its arm's orders.
@@ -186,10 +183,10 @@ class PositionMgr:
         for ordr in lst_arms_ordrs:
             self._lst_orders.remove(ordr)
 
+    def _proc_upd_new_positions(self):
         if not self._lst_orders or not self._lst_opened_positions:
             return
 
-    def _proc_upd_new_positions(self):
         lst_arms_ordrs = []
         for pos in [pos for pos in self._lst_opened_positions if pos.get("open_status") == self.POS_PRT_OPENED]:
             for arm in pos.get("open_arms"):
@@ -327,6 +324,16 @@ class PositionMgr:
             self._lst_closed_positions.append(pos)
             self._lst_opened_positions.remove(pos)
 
+    def proc_positions(self):
+        self._proc_new_positions()
+        self._proc_upd_new_positions()
+        self._proc_close_positions()
+        self._proc_lated_orders()
+
+        gettrace = getattr(sys, 'gettrace', None)
+        if not gettrace() is None:
+            self.__print_state()
+
     def update_fin_result(self):
         lst_whole = [pos for pos in self._lst_opened_positions]
         lst_whole.extend(self._lst_closed_positions)
@@ -359,3 +366,13 @@ class PositionMgr:
                     dct_pos["PM"] = dct_pos["PMO"] - dct_pos["PMC"]
 
         self._dct_pos_mgr.get("position")["fin_result"] = sum([v.get("PM") for k, v in dct_arms.items()])
+
+    def get_pos(self):
+        return self._dct_pos_mgr.copy()
+
+    def get_pos_arms(self):
+        return self._lst_threads.copy()
+
+    def get_lst_positions(self, lst_open_arms_status: list, close_arms_status: list):
+        return [pos.copy() for pos in self._lst_opened_positions
+                if pos.get("open_status") in lst_open_arms_status and pos.get("close_status") in close_arms_status]
