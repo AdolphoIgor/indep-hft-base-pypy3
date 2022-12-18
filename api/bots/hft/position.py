@@ -1,3 +1,5 @@
+# TODO: liberar quantidade de ordens usadas quando houver cancelamento.
+
 import json
 import sys
 

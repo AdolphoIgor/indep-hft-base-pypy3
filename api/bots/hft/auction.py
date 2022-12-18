@@ -89,7 +89,7 @@ class Auction(Bot):
 
         dct_pos_threads = self._position_mgr.get_pos_arms()[0]
 
-        if self._is_asset_state(["auctioned"]):
+        while self._is_asset_state(["auctioned"]):
             if dct_pos_threads.get("has_ord_rem"):
                 self._lst_entry_signal = get_entry_signal()
                 if self._lst_entry_signal[2] > 2:
@@ -117,7 +117,7 @@ class Auction(Bot):
 
             self._position_mgr.proc_positions()
 
-            # Se a ordem nova ficou fora da formação do preço teórico, ajustá-la.
+            # Se a ordem nova ficou fora da formação do preço teórico, cancela e espera novo sinal.
             lst_new_ordrs = [
                 ordr for pos in self._position_mgr.get_lst_positions([PositionMgr.POS_NEW], [PositionMgr.POS_INIT])
                 for ordr in pos.get("open_arms")
@@ -126,18 +126,15 @@ class Auction(Bot):
 
             for ordr in lst_new_ordrs:
                 if ordr.get("price") != self._dct_inst.get("quote").get("theoretical_price"):
-                    self._lst_orders_sent.append({"id": None, "cl_ord_id": self._profitdll.send_change_order(
+                    self._lst_orders_sent.append({"id": None, "cl_ord_id": self._profitdll.send_cancel_order(
                         conta=dct_pos_threads.get("broker").get("account"),
                         broker=dct_pos_threads.get("broker").get("id"),
                         senha=dct_pos_threads.get("broker").get("password"),
-                        cl_ord_id=ordr.get("cl_ord_id"),
-                        preco=self._dct_inst.get("quote").get("theoretical_price"),
-                        qtd=ordr.get("qtd")
+                        cl_ord_id=ordr.get("cl_ord_id")
                     )})
 
         """
             A saída nunca será dentro do leilão, prorrogação ou fase randomica...
-            só sai se tiver posicao aberta para fechar ou se tiver ordem nova sem executar e fora do leilão.
         """
         if self._is_asset_state(["opened"]):
 
@@ -159,21 +156,75 @@ class Auction(Bot):
                         cl_ord_id=ordr.get("cl_ord_id")
                     )})
 
-            else:
-                """
-                    pegar a ordem executada e ainda não zerada.
-                    já colocar a ordem de saída GAIN no nivel certo...
-                """
-                lst_exec_ordrs = [
+                return
+
+            """
+                pegar a ordem executada e ainda não zerada e já colocar a ordem de saída GAIN no nivel certo...
+            """
+            lst_exec_ordrs = [
+                ordr for pos in self._position_mgr.get_lst_positions(
+                    [PositionMgr.POS_OPENED], [PositionMgr.POS_INIT])
+                for ordr in pos.get("open_arms")
+                if ordr.get("status") in ["bstPartiallyFilled", "bstFilled"]
+            ]
+
+            for ordr in lst_exec_ordrs:
+                # se a ordem foi executada parcialmente (na abertura), cancelar o saldo restante
+                if ordr.get("qtd") != ordr.get("traded_qtd"):
+                    self._lst_orders_sent.append({"id": None, "cl_ord_id": self._profitdll.send_cancel_order(
+                        conta=dct_pos_threads.get("broker").get("account"),
+                        broker=dct_pos_threads.get("broker").get("id"),
+                        senha=dct_pos_threads.get("broker").get("password"),
+                        cl_ord_id=ordr.get("cl_ord_id")
+                    )})
+
+                if ordr.get("side") == "B":
+                    self._lst_orders_sent.append({"id": None, "cl_ord_id": self._profitdll.send_sell_order(
+                        conta=dct_pos_threads.get("broker").get("account"),
+                        broker=dct_pos_threads.get("broker").get("id"),
+                        senha=dct_pos_threads.get("broker").get("password"),
+                        ativo=dct_pos_threads.get("symbol"),
+                        bolsa=dct_pos_threads.get("stock_market"),
+                        preco=self._lst_entry_signal[3][2],
+                        qtd=ordr.get("traded_qtd")
+                    )})
+                else:
+                    self._lst_orders_sent.append({"id": None, "cl_ord_id": self._profitdll.send_buy_order(
+                        conta=dct_pos_threads.get("broker").get("account"),
+                        broker=dct_pos_threads.get("broker").get("id"),
+                        senha=dct_pos_threads.get("broker").get("password"),
+                        ativo=dct_pos_threads.get("symbol"),
+                        bolsa=dct_pos_threads.get("stock_market"),
+                        preco=self._lst_entry_signal[3][2],
+                        qtd=ordr.get("traded_qtd")
+                    )})
+
+            """
+                monitorar a fila de execução, se chegar a 80% enviar ordem stop e cancelar a ordem de saída GAIN.
+            """
+            while self._position_mgr.get_pos().get("qtd_open_positions"):
+                self._position_mgr.proc_positions()
+
+                lst_new_ordrs = [
                     ordr for pos in self._position_mgr.get_lst_positions(
-                        [PositionMgr.POS_OPENED], [PositionMgr.POS_INIT])
-                    for ordr in pos.get("open_arms")
-                    if ordr.get("status") in ["bstPartiallyFilled", "bstFilled"]
+                        [PositionMgr.POS_OPENED], [PositionMgr.POS_NEW, PositionMgr.POS_PRT_EXEC])
+                    for ordr in pos.get("open_arms") if ordr.get("status") in ["bstNew", "bstPartiallyFilled"]
                 ]
 
-                for ordr in lst_exec_ordrs:
-                    # se a ordem foi executada parcialmente, cancelar o saldo restante
-                    if ordr.get("qtd") != ordr.get("traded_qtd"):
+                '''
+                order = {
+                    "corretora": corretora, "qtd": qtd, "traded_qtd": traded_qtd, "leaves_qtd": leaves_qtd,
+                    "side": side, "price": price, "stop_price": stop_price, "avg_price": avg_price, 
+                    "profit_id": profit_id, "tipo_ordem": tipo_ordem, "conta": conta, "titular": titular, 
+                    "cl_ord_id": cl_ord_id, "status": status, "date": date, "symbol": asset_id.ticker,
+                }
+                '''
+
+                lst_spread = self._dct_inst.get("spread")
+                for ordr in lst_new_ordrs:
+                    lst_lp = lst_spread[0] if ordr.get("side") == "B" else lst_spread[0]
+
+                    if lst_lp[0][1] == ordr.get("price") and (lst_lp[0][0] * 3) <= ordr.get("qtd"):
                         self._lst_orders_sent.append({"id": None, "cl_ord_id": self._profitdll.send_cancel_order(
                             conta=dct_pos_threads.get("broker").get("account"),
                             broker=dct_pos_threads.get("broker").get("id"),
@@ -181,30 +232,24 @@ class Auction(Bot):
                             cl_ord_id=ordr.get("cl_ord_id")
                         )})
 
-                    if ordr.get("side") == "B":
-                        self._lst_orders_sent.append({"id": None, "cl_ord_id": self._profitdll.send_sell_order(
-                            conta=dct_pos_threads.get("broker").get("account"),
-                            broker=dct_pos_threads.get("broker").get("id"),
-                            senha=dct_pos_threads.get("broker").get("password"),
-                            ativo=dct_pos_threads.get("symbol"),
-                            bolsa=dct_pos_threads.get("stock_market"),
-                            preco=self._lst_entry_signal[3][2],
-                            qtd=ordr.get("traded_qtd")
-                        )})
-                    else:
-                        self._lst_orders_sent.append({"id": None, "cl_ord_id": self._profitdll.send_buy_order(
-                            conta=dct_pos_threads.get("broker").get("account"),
-                            broker=dct_pos_threads.get("broker").get("id"),
-                            senha=dct_pos_threads.get("broker").get("password"),
-                            ativo=dct_pos_threads.get("symbol"),
-                            bolsa=dct_pos_threads.get("stock_market"),
-                            preco=self._lst_entry_signal[3][2],
-                            qtd=ordr.get("traded_qtd")
-                        )})
+                        if ordr.get("side") == "B":
+                            self._lst_orders_sent.append({"id": None, "cl_ord_id": self._profitdll.send_buy_order(
+                                conta=dct_pos_threads.get("broker").get("account"),
+                                broker=dct_pos_threads.get("broker").get("id"),
+                                senha=dct_pos_threads.get("broker").get("password"),
+                                ativo=dct_pos_threads.get("symbol"),
+                                bolsa=dct_pos_threads.get("stock_market"),
+                                preco=lst_lp[0][1],
+                                qtd=ordr.get("leaves_qtd")
+                            )})
 
-                """
-                    monitorar a fila de execução, se chegar a 80% enviar ordem stop e cancelar a ordem de saída GAIN.
-                """
-                # TODO: concluir
-
-                lst_spread = self._dct_inst.get("spread")
+                        else:
+                            self._lst_orders_sent.append({"id": None, "cl_ord_id": self._profitdll.send_sell_order(
+                                conta=dct_pos_threads.get("broker").get("account"),
+                                broker=dct_pos_threads.get("broker").get("id"),
+                                senha=dct_pos_threads.get("broker").get("password"),
+                                ativo=dct_pos_threads.get("symbol"),
+                                bolsa=dct_pos_threads.get("stock_market"),
+                                preco=lst_lp[0][1],
+                                qtd=ordr.get("leaves_qtd")
+                            )})
