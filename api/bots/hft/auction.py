@@ -220,11 +220,11 @@ class Auction(Bot):
                 }
                 '''
 
-                lst_spread = self._dct_inst.get("spread")
+                lst_sprd = self._dct_inst.get("spread")
                 for ordr in lst_new_ordrs:
-                    lst_lp = lst_spread[0] if ordr.get("side") == "B" else lst_spread[0]
+                    lst_book = lst_sprd[0] if ordr.get("side") == "" "B" else lst_sprd[0]
 
-                    if lst_lp[0][1] == ordr.get("price") and (lst_lp[0][0] * 3) <= ordr.get("qtd"):
+                    if lst_book[0][1] == ordr.get("price") and (lst_book[0][0] * 3) <= ordr.get("qtd"):
                         self._lst_orders_sent.append({"id": None, "cl_ord_id": self._profitdll.send_cancel_order(
                             conta=dct_pos_threads.get("broker").get("account"),
                             broker=dct_pos_threads.get("broker").get("id"),
@@ -239,7 +239,7 @@ class Auction(Bot):
                                 senha=dct_pos_threads.get("broker").get("password"),
                                 ativo=dct_pos_threads.get("symbol"),
                                 bolsa=dct_pos_threads.get("stock_market"),
-                                preco=lst_lp[0][1],
+                                preco=lst_book[0][1],
                                 qtd=ordr.get("leaves_qtd")
                             )})
 
@@ -250,6 +250,6 @@ class Auction(Bot):
                                 senha=dct_pos_threads.get("broker").get("password"),
                                 ativo=dct_pos_threads.get("symbol"),
                                 bolsa=dct_pos_threads.get("stock_market"),
-                                preco=lst_lp[0][1],
+                                preco=lst_book[0][1],
                                 qtd=ordr.get("leaves_qtd")
                             )})
