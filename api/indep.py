@@ -21,8 +21,6 @@ class IndepBase:
         self.__start_scheduler()
 
     def __del__(self):
-        self._config_prov.set_keep_running(False)
-
         while True:
             lst_thr = self.__get_alive_threads()
 
@@ -70,7 +68,7 @@ class IndepBase:
         logger.info("Pre-Scheduler was finalized.")
 
     def is_all_done(self) -> bool:
-        return len(self.__get_alive_threads()) > 0
+        return len(self.__get_alive_threads()) == 0
 
 
 class Indep(IndepBase):
@@ -79,11 +77,15 @@ class Indep(IndepBase):
         super().__init__(**kwargs)
 
     def start(self):
+        if self._test_mode:
+            return
+
         while self._config_prov.get_keep_running():
             schedule.run_pending()
             time.sleep(1)
 
     def stop(self):
+        self._config_prov.set_keep_running(False)
         schedule.clear()
 
         while not self.is_all_done():
