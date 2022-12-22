@@ -1,8 +1,9 @@
+import time
 from threading import Thread
 
 from api.bots.hft.exceptions import BotInitializationException
 from api.bots.hft.position import PositionMgr
-from api.indep import InternalConfigProviders
+from api.jobs.internal_config_provider import InternalConfigProviders
 from api.logger import logger
 
 
@@ -21,7 +22,8 @@ class Bot(Thread):
         self._qtd_exp = qtd_exp
         self._config_prov = config_prov
 
-        self._profitdll = self._config_prov.get_internal_provider_data("config").get("value").get("prov_conn")
+        self._config = self._config_prov.get_internal_provider_data("config").get("value")
+        self._profitdll = self._config.get("prov_conn")
         self._dct_asset_state = self._profitdll.get_asset_state()
         self._dct_ord_status = self._profitdll.get_dct_order_status()
 
@@ -41,8 +43,16 @@ class Bot(Thread):
 
         self.__subscribe()
 
-        while self._config_prov.is_running() and self._algo.get("enabled"):
-            self.execute()
+        while self._config_prov.get_keep_running() and self._algo.get("enabled"):
+            try:
+                self.execute()
+
+            except Exception:
+                if self._profitdll and not self._profitdll.is_connected():
+                    if not self._config.get("conn_broken_rep"):
+                        self._config["conn_broken_rep"] = True
+
+                    time.sleep(0.2)
 
         self.__unsubscribe()
         logger.info(f"The algo name: {self.name} was finalized.")

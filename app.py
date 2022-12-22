@@ -9,19 +9,11 @@ from api.logger import logger
 
 
 def main():
-    """ Recebe o parametro e inicia o processo correspondente """
-    logger.info(f"Incializando a plataforma de execução...")
+    logger.info(f"Starting...")
 
     _, args = getopt.getopt(sys.argv[1:], "", [])
     test_mode = "test_mode" in args
-    config = {
-        "encoder": "UTF-8",
-        "sleep_when_done": 0.1,
-        "config_file_path": "api/config/config.json",
-        "config_cmd_file_path": "control/config_cmd.json",
-    }
-
-    platform = Indep(test_mode=test_mode, config=config)
+    platform = Indep(test_mode=test_mode)
     try:
         platform.start()
 
@@ -32,12 +24,12 @@ def main():
             time.sleep(Constants.MAIN_LOOP_SLEEP)
 
     except Exception:
-        logger.critical(f"Erro durante a execução do programa: {traceback.format_exc()}.")
+        logger.critical(f"Error during execution: {traceback.format_exc()}.")
         sys.exit(Constants.EXIT_ERROR)
 
     finally:
         platform.stop()
-        logger.info(f"A plataforma de execução foi finalizada com sucesso!")
+        logger.info(f"Terminated.")
         sys.exit(Constants.EXIT_SUCCESS)
 
 

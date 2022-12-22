@@ -1,18 +1,20 @@
 from threading import Thread
 
-from api.indep import InternalConfigProviders
+from api.jobs.internal_config_provider import InternalConfigProviders
 from api.logger import logger
 
 
 class Job(Thread):
 
-    def __init__(self, config_prov: InternalConfigProviders, order=None, lst_thread_pool=None):
+    def __init__(self, config_prov: InternalConfigProviders, order=None):
         super().__init__()
         self._config_prov = config_prov
         self._order = order
-        self._lst_thread_pool = lst_thread_pool
+        self._dct_sch = self._get_schedule(order=self._order)
+        self._config = self._dct_sch.get("config", None)
+        self._job_name = self._dct_sch.get("job", None)
 
-    def _get_shcedule(self, order=None, job=None):
+    def _get_schedule(self, order=None, job=None):
         lst_sch = self._config_prov.get_dict_configs().get("scheduling", None)
 
         if order is None and job is None:
@@ -35,17 +37,20 @@ class Job(Thread):
         self._set_done()
 
     def _set_started(self):
-        dct_sch = self._get_shcedule(order=self._order)
-        dct_sch["started"] = True
-        dct_sch["done"] = False
-        logger.info(f"Initializing the {dct_sch.get('Job')}...")
+        if not self.__is_started():
+            self._dct_sch["started"] = True
+            self._dct_sch["done"] = False
+            logger.info(f"Initializing the {self._job_name}...")
 
     def _set_done(self):
-        dct_sch = self._get_shcedule(order=self._order)
-        dct_sch["started"] = True
-        dct_sch["done"] = True
-        logger.info(f"{dct_sch.get('Job')} was finalized.")
+        if self.__is_started():
+            self._dct_sch["started"] = True
+            self._dct_sch["done"] = True
+            logger.info(f"{self._job_name} was finalized.")
 
     def _is_last_job_done(self):
-        dct_last_job = self._get_shcedule(order=self._order - 1)
+        dct_last_job = self._get_schedule(order=self._order - 1)
         return dct_last_job is not None and dct_last_job.get("done")
+
+    def __is_started(self):
+        return self._dct_sch.get("started", False)

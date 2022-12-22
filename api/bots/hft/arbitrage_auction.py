@@ -1,5 +1,5 @@
 from api.bots.hft.bot import Bot
-from api.indep import InternalConfigProviders
+from api.jobs.internal_config_provider import InternalConfigProviders
 
 
 class ArbitrageAuction(Bot):

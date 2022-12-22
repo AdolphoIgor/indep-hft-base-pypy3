@@ -2,7 +2,7 @@ from datetime import datetime
 
 from api.bots.hft.bot import Bot
 from api.bots.hft.position import PositionMgr
-from api.indep import InternalConfigProviders
+from api.jobs.internal_config_provider import InternalConfigProviders
 
 
 class Arbitrage(Bot):

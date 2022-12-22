@@ -9,53 +9,32 @@
   "scheduling": [
     {
       "order": 0,
-      "job": "PreConfigurator",
-      "run_app": true
+      "enabled": true,
+      "job": "Configurator",
+      "date_time": "08:40:30",
+      "thread_name": "thr_configurator",
+      "target": "ConfiguratorJob",
+      "daemon": true,
+      "config": {
+        "sleep_when_done": 0.5,
+        "connect": true,
+        "provider_name": "Nelogica Data Feed",
+        "username": "username",
+        "password": "password",
+        "soft_key": "key"
+      }
     },
     {
       "order": 1,
-      "job": "Scheduler"
-    },
-    {
-      "order": 2,
-      "enabled": true,
-      "job": "Configurator",
-      "dateteime": "08:40:30",
-      "threads": [
-        {
-          "order": 0,
-          "enabled": true,
-          "thread_name": "thr_configurator",
-          "target": "ConfiguratorJob",
-          "daemon": true,
-          "config": {
-            "sleep_when_done": 60,
-            "connect": true,
-            "provider_name": "Nelogica Data Feed",
-            "username": "username",
-            "password": "password",
-            "soft_key": "key"
-          }
-        }
-      ]
-    },
-    {
-      "order": 3,
-      "enabled": true,
+      "enabled": false,
       "job": "Executor",
-      "dateteime": "08:42:30",
-      "threads": [
-        {
-          "order": 0,
-          "enabled": true,
-          "thread_name": "thr_executor",
-          "target": "ExecutorJob",
-          "daemon": true,
-          "config": {
-            "sleep_when_done": 5
-          }
-        }
-      ]
+      "date_time": "08:42:30",
+      "thread_name": "thr_executor",
+      "target": "ExecutorJob",
+      "daemon": true,
+      "config": {
+        "sleep_when_done": 60
+      }
     }
   ],
   "algos": [

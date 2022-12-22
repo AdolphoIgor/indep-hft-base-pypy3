@@ -1,101 +1,28 @@
+import json
 import time
 
 import schedule
 
 from api.jobs.configurator_job import ConfiguratorJob
 from api.jobs.executor_job import ExecutorJob
-from api.jobs.pre_configurator import PreConfiguratorJob
-from api.jobs.scheduler_job import SchedulerJob
+from api.jobs.internal_config_provider import InternalConfigProviders
 from api.logger import logger
-
-__used_classes = [PreConfiguratorJob, ConfiguratorJob, ExecutorJob, SchedulerJob]
-
-
-class InternalConfigProviders:
-    # keeps track of the config.json content on dict format.
-    _dict_configs = {}
-
-    # creates a custom space for any other configurarion needed.
-    _lst_config_pool = [
-        {
-            "type": "config",
-            "value": {
-                "connected": False,
-                "prov_conn": None,
-                "provider_name": "",
-                "username": "",
-                "password": ""
-            }
-        },
-        {
-            "type": "instruments",
-            "value": [
-                {"type": "quote", "value": {}},
-                {"type": "tt", "value": {}},
-                {"type": "lp", "value": {}},
-                {"type": "lo", "value": {}},
-                {"type": "spread", "value": {}},
-                {"type": "account", "value": {}},
-                {"type": "orders", "value": {}},
-                {"type": "progress", "value": {}}
-            ]
-        },
-        {
-            "type": "subscriptions",
-            "value": [
-                {"type": "quote", "value": []},
-                {"type": "tt", "value": []},
-                {"type": "lp", "value": []},
-                {"type": "lo", "value": []},
-                {"type": "spread", "value": []},
-                {"type": "orders", "value": []}
-            ]
-        }
-    ]
-
-    def __init__(self):
-        self._dct_sys_cfg = self.get_internal_provider_data("config")
-        self._dct_pre_conf = None
-
-    def is_running(self) -> bool:
-        if self._dct_pre_conf is None:
-            for dct in self.get_dict_configs().get("scheduling", []):
-                if dct.get("order", -1) == 0:
-                    self._dct_pre_conf = dct
-                    break
-
-        return self._dct_pre_conf is not None and self._dct_pre_conf.get("run_app", False)
-
-    def get_internal_provider_data(self, provider, sublist=None):
-        ret_prov = None
-        for dct_prov in sublist if sublist is not None and type(sublist) is list else self._lst_config_pool:
-            if dct_prov.get("type") == provider:
-                ret_prov = dct_prov.get("value")
-                break
-
-        return ret_prov
-
-    def get_dict_configs(self):
-        return self._dict_configs
-
-    def get_lst_config_pool(self):
-        return self._lst_config_pool
 
 
 class IndepBase:
-    # keeps track of any thread created during execution.
-    _lst_thread_pool = []
+    __lst_used_classes = [ConfiguratorJob, ExecutorJob]
 
     # keeps track of the configurations
     _config_prov = InternalConfigProviders()
 
     def __init__(self, **kwargs):
         self._test_mode = bool(kwargs.get("test_mode", False))
-        self._config = kwargs.get("config", None)
         self.__start_pre_configurator()
         self.__start_scheduler()
 
     def __del__(self):
+        self._config_prov.set_keep_running(False)
+
         while True:
             lst_thr = self.__get_alive_threads()
 
@@ -107,21 +34,40 @@ class IndepBase:
                 logger.info(f"The thread named: {thr.get('name')} was finalized.")
 
     def __get_alive_threads(self):
-        return list(filter(lambda x: x.get("pointer").is_alive(), self._lst_thread_pool))
+        return list(filter(lambda x: x.get("pointer").is_alive(), self._config_prov.get_lst_thread_pool()))
 
     def __start_pre_configurator(self):
-        prt_cls = eval(f"PreConfiguratorJob(self._config_prov, **self._config)")
-        prt_cls.setDaemon(True)
-        prt_cls.name = "thr_pre_configurator"
-        self._lst_thread_pool.append({"group": 0, "order": 0, "name": prt_cls.name, "pointer": prt_cls})
-        prt_cls.start()
+        logger.info("Initializing the Pre-Configurator...")
+        dict_configs = self._config_prov.get_dict_configs()
+        if len(dict_configs) == 0:
+            with open("api/config/config.json", mode="r", encoding="UTF-8") as json_file:
+                dict_configs.update(json.load(json_file))
+
+        logger.info("Pre-Configurator was finalized.")
 
     def __start_scheduler(self):
-        prt_cls = eval(f"SchedulerJob(self._config_prov, order=1, lst_thread_pool=_lst_thread_pool)")
-        prt_cls.setDaemon(True)
-        prt_cls.name = "thr_scheduler"
-        self._lst_thread_pool.append({"group": 1, "order": 0, "name": prt_cls.name, "pointer": prt_cls})
-        prt_cls.start()
+        logger.info("Initializing the Pre-Scheduler...")
+
+        lst_scheduling = self._config_prov.get_dict_configs().get("scheduling", None)
+        for shc in lst_scheduling:
+            if shc.get("enabled", False):
+                cls_str = f"{shc.get('target')}(self._config_prov, order={shc.get('order')})"
+                prt_cls = eval(cls_str)
+                prt_cls.setDaemon(shc.get("daemon"))
+                prt_cls.name = shc.get("thread_name")
+                self._config_prov.get_lst_thread_pool().append({"name": prt_cls.name, "pointer": prt_cls})
+
+                if self._test_mode:
+                    prt_cls.start()
+
+                else:
+                    schedule.every().monday.at(shc.get("date_time")).do(prt_cls.start)
+                    schedule.every().tuesday.at(shc.get("date_time")).do(prt_cls.start)
+                    schedule.every().wednesday.at(shc.get("date_time")).do(prt_cls.start)
+                    schedule.every().thursday.at(shc.get("date_time")).do(prt_cls.start)
+                    schedule.every().friday.at(shc.get("date_time")).do(prt_cls.start)
+
+        logger.info("Pre-Scheduler was finalized.")
 
     def is_all_done(self) -> bool:
         return len(self.__get_alive_threads()) > 0
@@ -133,10 +79,7 @@ class Indep(IndepBase):
         super().__init__(**kwargs)
 
     def start(self):
-        if self._test_mode:
-            schedule.run_all()
-
-        while self._config_prov.is_running():
+        while self._config_prov.get_keep_running():
             schedule.run_pending()
             time.sleep(1)
 

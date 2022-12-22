@@ -2,7 +2,7 @@ import struct
 from ctypes import *
 from datetime import datetime, timedelta
 
-from api.indep import InternalConfigProviders
+from api.jobs.internal_config_provider import InternalConfigProviders
 from api.logger import logger
 
 
@@ -141,10 +141,10 @@ class ProfitDLL:
     _NL_ERR_INTERNAL_ERROR = 100
 
     # Pathway to Profit DLL. Keep in mind that Python interpreter must be 32bits version.
-    _profit_dll = WinDLL("ProfitDLL.dll")
+    _profit_dll = WinDLL("api/io/network/ProfitDLL.dll")
     _profit_dll.argtypes = None
 
-    # initialiation
+    # initialization
     _profit_dll.DLLInitializeLogin.restype = c_short
     _profit_dll.DLLInitializeMarketLogin.restype = c_short
     _profit_dll.DLLFinalize.restype = c_short
@@ -310,7 +310,7 @@ class ProfitDLL:
                     self._profit_dll.SetChangeStateTickerCallback(self._change_state_ticker_callback)
                     self._profit_dll.SetTheoreticalPriceCallback(self._set_theoretical_price_callback)
 
-                    logger.info("DLL Conected.")
+                    # logger.info("DLL Connected.")
                     break
 
         except Exception as e:
