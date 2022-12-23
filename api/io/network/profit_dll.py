@@ -286,29 +286,29 @@ class ProfitDLL:
             if b_roteamento:
                 # market data e roteamento
                 self._profit_dll.DLLInitializeLogin(
-                    c_wchar_p(soft_key), c_wchar_p(username), c_wchar_p(password), self._state_callback,
-                    self._history_callback, self._order_change_callback, self._account_callback,
-                    self._new_trade_callback, self._new_daily_callback, self._price_book_callback,
-                    self._offer_book_callback, self._history_trade_callback, self._progress_callback,
-                    self._tiny_book_callback)
+                    c_wchar_p(soft_key), c_wchar_p(username), c_wchar_p(password), state_callback,
+                    history_callback, order_change_callback, account_callback,
+                    new_trade_callback, new_daily_callback, price_book_callback,
+                    offer_book_callback, history_trade_callback, progress_callback,
+                    tiny_book_callback)
             else:
                 # market data only
                 self._profit_dll.DLLInitializeMarketLogin(
-                    c_wchar_p(soft_key), c_wchar_p(username), c_wchar_p(password), self._state_callback,
-                    self._new_trade_callback, self._new_daily_callback, self._price_book_callback,
-                    self._offer_book_callback, self._history_trade_callback, self._progress_callback,
-                    self._tiny_book_callback)
+                    c_wchar_p(soft_key), c_wchar_p(username), c_wchar_p(password), state_callback,
+                    new_trade_callback, new_daily_callback, price_book_callback,
+                    offer_book_callback, history_trade_callback, progress_callback,
+                    tiny_book_callback)
 
             while True:
                 if self.is_connected:
-                    self._profit_dll.SetChangeCotationCallback(self._change_cotation_callback)
-                    self._profit_dll.SetAssetListCallback(self._asset_list_callback)
-                    self._profit_dll.SetAssetListInfoCallback(self._asset_list_info_callback)
-                    self._profit_dll.SetAssetListInfoCallbackV2(self._asset_list_info_callback_v2)
-                    self._profit_dll.SetAdjustHistoryCallback(self._adjust_history_callback)
-                    self._profit_dll.SetAdjustHistoryCallbackV2(self._adjust_history_callback_v2)
-                    self._profit_dll.SetChangeStateTickerCallback(self._change_state_ticker_callback)
-                    self._profit_dll.SetTheoreticalPriceCallback(self._set_theoretical_price_callback)
+                    self._profit_dll.SetChangeCotationCallback(change_cotation_callback)
+                    self._profit_dll.SetAssetListCallback(asset_list_callback)
+                    self._profit_dll.SetAssetListInfoCallback(asset_list_info_callback)
+                    self._profit_dll.SetAssetListInfoCallbackV2(asset_list_info_callback_v2)
+                    self._profit_dll.SetAdjustHistoryCallback(adjust_history_callback)
+                    self._profit_dll.SetAdjustHistoryCallbackV2(adjust_history_callback_v2)
+                    self._profit_dll.SetChangeStateTickerCallback(change_state_ticker_callback)
+                    self._profit_dll.SetTheoreticalPriceCallback(set_theoretical_price_callback)
 
                     # logger.info("DLL Connected.")
                     break
@@ -343,76 +343,31 @@ class ProfitDLL:
 
     # METHODS ----------------------------------------------------------------------------------------------------------
     def subscribe_ticker(self, ticker: str, bolsa: str):
-        """
-        :param ticker:
-        :param bolsa:
-        :return: triggers self._adjust_history_callback or self._adjust_history_callback_v2
-        """
         return self._profit_dll.SubscribeTicker(c_wchar_p(ticker), c_wchar_p(bolsa))
 
     def unsubscribe_ticker(self, ticker: str, bolsa: str):
-        """
-        :param ticker:
-        :param bolsa:
-        :return:
-        """
         return self._profit_dll.UnsubscribeTicker(c_wchar_p(ticker), c_wchar_p(bolsa))
 
     def subscribe_price_book(self, ticker: str, bolsa: str):
-        """
-        :param ticker:
-        :param bolsa:
-        :return: Triggers the callback function self._price_book_callback()
-        """
         return self._profit_dll.SubscribePriceBook(c_wchar_p(ticker), c_wchar_p(bolsa))
 
     def unsubscribe_price_book(self, ticker: str, bolsa: str):
-        """
-        :param ticker:
-        :param bolsa:
-        :return:
-        """
         return self._profit_dll.UnsubscribePriceBook(c_wchar_p(ticker), c_wchar_p(bolsa))
 
     def subscribe_offer_book(self, ticker: str, bolsa: str):
-        """
-        :param ticker:
-        :param bolsa:
-        :return: Triggers the callback function self._offer_book_callback()
-        """
         return self._profit_dll.SubscribeOfferBook(c_wchar_p(ticker), c_wchar_p(bolsa))
 
     def unsubscribe_offer_book(self, ticker: str, bolsa: str):
-        """
-        :param ticker:
-        :param bolsa:
-        :return:
-        """
         return self._profit_dll.UnsubscribeOfferBook(c_wchar_p(ticker), c_wchar_p(bolsa))
 
     def get_agent_name_by_id(self, n_id: int):
-        """
-        :param n_id:
-        :return:
-        """
         return self._profit_dll.GetAgentNameByID(c_int(n_id))
 
     def get_agent_short_name_by_id(self, n_id: int):
-        """
-        :param n_id:
-        :return:
-        """
         return self._profit_dll.GetAgentShortNameByID(c_int(n_id))
 
     def send_buy_order(self, conta: str, broker: str, senha: str, ativo: str, bolsa: str, preco: float, qtd: int):
         """
-        :param conta:
-        :param broker:
-        :param senha:
-        :param ativo:
-        :param bolsa: [B=Bovespa | F=BM&F]
-        :param preco:
-        :param qtd:
         :return: Returns de cl_ord_id to be compared to the return of self._history_trade_callback().
         """
         return self._profit_dll.SendBuyOrder(c_wchar_p(conta), c_wchar_p(broker), c_wchar_p(senha), c_wchar_p(ativo),
@@ -420,13 +375,7 @@ class ProfitDLL:
 
     def send_sell_order(self, conta: str, broker: str, senha: str, ativo: str, bolsa: str, preco: float, qtd: int):
         """
-        :param conta:
-        :param broker:
-        :param senha:
-        :param ativo:
         :param bolsa: [B=Bovespa | F=BM&F]
-        :param preco:
-        :param qtd:
         :return: Returns de cl_ord_id to be compared to the return of self._history_trade_callback().
         """
         return self._profit_dll.SendSellOrder(c_wchar_p(conta), c_wchar_p(broker), c_wchar_p(senha), c_wchar_p(ativo),
@@ -435,14 +384,7 @@ class ProfitDLL:
     def send_stop_buy_order(self, conta: str, broker: str, senha: str, ativo: str, bolsa: str, preco: float,
                             s_stop_price: float, qtd: int):
         """
-        :param conta:
-        :param broker:
-        :param senha:
-        :param ativo:
         :param bolsa: [B=Bovespa | F=BM&F]
-        :param preco:
-        :param s_stop_price:
-        :param qtd:
         :return: Returns de cl_ord_id to be compared to the return of self._history_trade_callback().
         """
         return self._profit_dll.SendStopBuyOrder(c_wchar_p(conta), c_wchar_p(broker), c_wchar_p(senha),
@@ -452,14 +394,7 @@ class ProfitDLL:
     def send_stop_sell_order(self, conta: str, broker: str, senha: str, ativo: str, bolsa: str, preco: float,
                              s_stop_price: float, qtd: int):
         """
-        :param conta:
-        :param broker:
-        :param senha:
-        :param ativo:
         :param bolsa: [B=Bovespa | F=BM&F]
-        :param preco:
-        :param s_stop_price:
-        :param qtd:
         :return: Returns de cl_ord_id to be compared to the return of self._history_trade_callback().
         """
         return self._profit_dll.SendSellOrder(c_wchar_p(conta), c_wchar_p(broker), c_wchar_p(senha),
@@ -467,76 +402,30 @@ class ProfitDLL:
                                               c_double(s_stop_price), c_int(qtd))
 
     def send_change_order(self, conta: str, broker: str, senha: str, cl_ord_id: str, preco: float, qtd: int):
-        """
-        :param conta:
-        :param broker:
-        :param senha:
-        :param cl_ord_id:
-        :param preco:
-        :param qtd:
-        :return:
-        """
         return self._profit_dll.SendChangeOrder(c_wchar_p(conta), c_wchar_p(broker), c_wchar_p(senha),
                                                 c_wchar_p(cl_ord_id), c_double(preco), c_int(qtd))
 
     def send_cancel_order(self, conta: str, broker: str, cl_ord_id: str, senha: str):
-        """
-        :param conta:
-        :param broker:
-        :param cl_ord_id:
-        :param senha:
-        :return:
-        """
         return self._profit_dll.SendCancelOrder(c_wchar_p(conta), c_wchar_p(broker), c_wchar_p(cl_ord_id),
                                                 c_wchar_p(senha))
 
     def send_cancel_orders(self, conta: str, broker: str, senha: str, ativo: str, bolsa: str):
-        """
-        :param conta:
-        :param broker:
-        :param senha:
-        :param ativo:
-        :param bolsa:
-        :return:
-        """
         return self._profit_dll.SendCancelOrders(c_wchar_p(conta), c_wchar_p(broker), c_wchar_p(senha),
                                                  c_wchar_p(ativo), c_wchar_p(bolsa))
 
     def send_cancel_all_orders(self, conta: str, broker: str, senha: str):
-        """
-        :param conta:
-        :param broker:
-        :param senha:
-        :return:
-        """
         return self._profit_dll.SendCancelAllOrders(c_wchar_p(conta), c_wchar_p(broker), c_wchar_p(senha))
 
     def send_zero_position(self, conta: str, broker: str, ativo: str, bolsa: str, senha: str, price: float):
-        """
-        :param conta:
-        :param broker:
-        :param ativo:
-        :param bolsa:
-        :param senha:
-        :param price:
-        :return: Returns de cl_ord_id to be compared to the return of self._history_trade_callback().
-        """
         return self._profit_dll.SendZeroPosition(c_wchar_p(conta), c_wchar_p(broker), c_wchar_p(ativo),
                                                  c_wchar_p(senha), c_wchar_p(bolsa), c_double(price))
 
     def get_account(self):
-        """
-        :return: Returns on self._account_callback().
-        """
         return self._profit_dll.GetAccount()
 
     def get_orders(self, conta: str, broker: str, dt_start: str, dt_end: str):
         """
-        :param conta:
-        :param broker:
-        :param dt_start:
-        :param dt_end:
-        :return: Returns on self._history_trade_callback().
+         :return: Returns on self._history_trade_callback().
         """
         return self._profit_dll.GetOrders(c_wchar_p(conta), c_wchar_p(broker), c_wchar_p(dt_start), c_wchar_p(dt_end))
 
@@ -556,10 +445,6 @@ class ProfitDLL:
 
     def get_position(self, conta: str, broker: str, ativo: str, bolsa: str):
         """
-        :param conta:
-        :param broker:
-        :param ativo:
-        :param bolsa:
         :return: a dictionary fulfilled wit the server's response.
         """
         result = self._profit_dll.GetPosition(c_wchar_p(conta), c_wchar_p(broker), c_wchar_p(ativo), c_wchar_p(bolsa))
@@ -650,10 +535,6 @@ class ProfitDLL:
 
     def get_history_trades(self, ativo: str, bolsa: str, dt_start: str, dt_end: str):
         """
-        :param ativo:
-        :param bolsa:
-        :param dt_start:
-        :param dt_end:
         :return: Triggers self._history_trade_callback() and self._progress_callback()
         """
         return self._profit_dll.GetHistoryTrades(c_wchar_p(ativo), c_wchar_p(bolsa), c_wchar_p(dt_start),
@@ -662,12 +543,6 @@ class ProfitDLL:
     def get_serie_history(self, ativo: str, bolsa: str, dt_start: str, dt_end: str, n_quote_number_start: int,
                           n_quote_number_end: int):
         """
-        :param ativo:
-        :param bolsa:
-        :param dt_start:
-        :param dt_end:
-        :param n_quote_number_start:
-        :param n_quote_number_end:
         :return: Triggers self._history_trade_callback and self._progress_callback
         """
         return self._profit_dll.GetSerieHistory(c_wchar_p(ativo), c_wchar_p(bolsa), c_wchar_p(dt_start),
@@ -726,18 +601,11 @@ class ProfitDLL:
 
     def subscribe_adjust_history(self, ativo: str, bolsa: str):
         """
-        :param ativo:
-        :param bolsa:
         :return: triggers self._adjust_history_callback()
         """
         return self._profit_dll.SubscribeAdjustHistory(c_wchar_p(ativo), c_wchar_p(bolsa))
 
     def unsubscribe_adjust_history(self, ativo: str, bolsa: str):
-        """
-        :param ativo:
-        :param bolsa:
-        :return:
-        """
         return self._profit_dll.UnSubscribeAdjustHistory(c_wchar_p(ativo), c_wchar_p(bolsa))
 
     def set_server_and_port(self, server, port: str):
@@ -799,22 +667,18 @@ class ProfitDLL:
         return ret, val_close
 
     # CALLBACKS --------------------------------------------------------------------------------------------------------
-    @WINFUNCTYPE(None, TAssetID, c_wchar_p, c_uint, c_double)
-    def _change_cotation_callback(self, asset_id, date, trade_number, price):
+    def change_cotation_callback(self, asset_id, date, trade_number, price):
         dct_quote = self._dct_quote.get(asset_id.ticker, {})
         dct_quote["date"] = date
         dct_quote["last"] = price
         dct_quote["trade_number"] = trade_number
 
-    @WINFUNCTYPE(None, TAssetID, c_wchar_p)
-    def _asset_list_callback(self, asset_id, name):
+    def asset_list_callback(self, asset_id, name):
         dct_quote = self._dct_quote.get(asset_id.ticker, {})
         dct_quote["description"] = name
 
-    @WINFUNCTYPE(None, TAssetID, c_wchar_p, c_wchar_p, c_int, c_int, c_int, c_int, c_int, c_double, c_double, c_wchar_p,
-                 c_wchar_p)
-    def _asset_list_info_callback(self, asset_id, name, description, min_order_qtd, max_order_qtd, lote, security_type,
-                                  security_sub_type, min_price_increment, contract_multiplier, valid_date, isin):
+    def asset_list_info_callback(self, asset_id, name, description, min_order_qtd, max_order_qtd, lote, security_type,
+                                 security_sub_type, min_price_increment, contract_multiplier, valid_date, isin):
         dct_quote = self._dct_quote.get(asset_id.ticker, {})
         dct_quote["name"] = name
         dct_quote["description"] = description
@@ -830,11 +694,9 @@ class ProfitDLL:
         dct_quote["security_type_desc"] = self._dct_asset_sec_type.get(security_type)
         dct_quote["security_sub_type_desc"] = self._dct_asset_sec_type.get(security_sub_type)
 
-    @WINFUNCTYPE(None, TAssetID, c_wchar_p, c_wchar_p, c_int, c_int, c_int, c_int, c_int, c_int, c_double, c_double,
-                 c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p)
-    def _asset_list_info_callback_v2(self, asset_id, name, description, min_order_qtd, max_order_qtd, lote,
-                                     security_type, security_sub_type, min_price_increment, contract_multiplier,
-                                     valid_date, isin, setor, sub_setor, segmento):
+    def asset_list_info_callback_v2(self, asset_id, name, description, min_order_qtd, max_order_qtd, lote,
+                                    security_type, security_sub_type, min_price_increment, contract_multiplier,
+                                    valid_date, isin, setor, sub_setor, segmento):
         dct_quote = self._dct_quote.get(asset_id.ticker, {})
         dct_quote["name"] = name
         dct_quote["description"] = description
@@ -853,16 +715,14 @@ class ProfitDLL:
         dct_quote["security_type_desc"] = self._dct_asset_sec_type.get(security_type)
         dct_quote["security_sub_type_desc"] = self._dct_asset_sec_type.get(security_sub_type)
 
-    @WINFUNCTYPE(None, TAssetID, c_double, c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p, c_int)
-    def _adjust_history_callback(self, asset_id, value, adj_type, observ, dt_ajuste, dt_delib, dt_pagamento, aff_price):
+    def adjust_history_callback(self, asset_id, value, adj_type, observ, dt_ajuste, dt_delib, dt_pagamento, aff_price):
         dct_quote = self._dct_quote.get(asset_id.ticker, {})
         dct_quote["ajuste"] = value
         if aff_price:
             dct_quote["last"] = dct_quote.get("last", 0) + value
 
-    @WINFUNCTYPE(None, TAssetID, c_double, c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p, c_uint, c_double)
-    def _adjust_history_callback_v2(self, asset_id, value, adj_type, observ, dt_ajuste, dt_delib, dt_pagamento, flags,
-                                    mult):
+    def adjust_history_callback_v2(self, asset_id, value, adj_type, observ, dt_ajuste, dt_delib, dt_pagamento, flags,
+                                   mult):
         """
             nFlags é um campo de bits b0 a b31, onde o bit 0 indica se o ajuste afeta o preço e o bit 1 indica se é
             um ajuste de Soma.
@@ -896,16 +756,13 @@ class ProfitDLL:
 
             dct_quote["last"] = round(last_prc, 2)
 
-    @WINFUNCTYPE(None, TAssetID, c_wchar_p, c_int)
-    def _change_state_ticker_callback(self, asset_id, date, state):
+    def change_state_ticker_callback(self, asset_id, date, state):
         dct_quote = self._dct_quote.get(asset_id.ticker, {})
         dct_quote["date"] = date
         dct_quote["state"] = state
         dct_quote["desc_state"] = self._dct_asset_state.get(state)
 
-    @WINFUNCTYPE(None, TAssetID, c_int, c_int, c_int, c_int, c_int, c_double, POINTER(c_int), POINTER(c_int))
-    def _price_book_callback(self, asset_id, action, position, side, qtd, count, price, array_sell, array_buy):
-
+    def price_book_callback(self, asset_id, action, position, side, qtd, count, price, array_sell, array_buy):
         def decript(price_array):
             price_array_descripted = []
             n_qtd = price_array[0]
@@ -951,11 +808,8 @@ class ProfitDLL:
         elif action == 3:
             lst_book[side] = lst_book_side[position:]
 
-    @WINFUNCTYPE(None, TAssetID, c_int, c_int, c_int, c_int, c_int, c_longlong, c_double, c_char, c_char, c_char,
-                 c_char, c_char, c_wchar_p, POINTER(c_int), POINTER(c_int))
-    def _offer_book_callback(self, asset_id, action, position, side, qtd, agent, offer_id, price, has_price, has_qtd,
-                             has_date, has_offer_id, has_agent, date, array_sell, array_buy):
-
+    def offer_book_callback(self, asset_id, action, position, side, qtd, agent, offer_id, price, has_price, has_qtd,
+                            has_date, has_offer_id, has_agent, date, array_sell, array_buy):
         def decript(price_array):
             price_array_descripted = []
             n_qtd = price_array[0]
@@ -1010,14 +864,12 @@ class ProfitDLL:
         elif action == 3:
             lst_book[side] = lst_book_side[position:]
 
-    @WINFUNCTYPE(None, TAssetID, c_double, c_longlong)
-    def _set_theoretical_price_callback(self, asset_id, theoretical_price, theoretical_qtd):
+    def set_theoretical_price_callback(self, asset_id, theoretical_price, theoretical_qtd):
         dct_quote = self._dct_quote.get(asset_id.ticker, {})
         dct_quote["theoretical_price"] = theoretical_price
         dct_quote["theoretical_qtd"] = theoretical_qtd
 
-    @WINFUNCTYPE(None, c_int32, c_int32)
-    def _state_callback(self, type_val, result):
+    def state_callback(self, type_val, result):
         # 0 : connStLogin (Notify Login Change)
         if type_val == 0:
             if result == 0:
@@ -1076,11 +928,8 @@ class ProfitDLL:
                 if lst_offers:
                     lst_offers[-1][1].append(cl_ord_id)
 
-    @WINFUNCTYPE(None, TAssetID, c_int, c_int, c_int, c_int, c_int, c_double, c_double, c_double, c_longlong, c_wchar_p,
-                 c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p)
-    def _history_callback(self, asset_id, corretora, qtd, traded_qtd, leaves_qtd, side, price, stop_price, avg_price,
-                          profit_id, tipo_ordem, conta, titular, cl_ord_id, status, date):
-
+    def history_callback(self, asset_id, corretora, qtd, traded_qtd, leaves_qtd, side, price, stop_price, avg_price,
+                         profit_id, tipo_ordem, conta, titular, cl_ord_id, status, date):
         self.find_lim_ord_pos_book_offer(tipo_ordem, status, asset_id, side, price, date, cl_ord_id)
 
         lst_orders = self._dct_orders.get(asset_id.ticker, [])
@@ -1105,23 +954,18 @@ class ProfitDLL:
                 "date": date
             })
 
-    @WINFUNCTYPE(None, TAssetID, c_int)
-    def _progress_callback(self, asset_id, progress):
+    def progress_callback(self, asset_id, progress):
         dct_progress = self._dct_progress.get(asset_id.ticker, {})
         dct_progress.update({"progress": progress})
 
-    @WINFUNCTYPE(None, TAssetID, c_wchar_p, c_uint, c_double, c_double, c_int, c_int, c_int, c_int)
-    def _history_trade_callback(self, asset_id, date, trade_number, price, vol, qtd, buy_agent, sell_agent, trade_type):
+    def history_trade_callback(self, asset_id, date, trade_number, price, vol, qtd, buy_agent, sell_agent, trade_type):
         # See: self._dct_trade_type; trade_type = 2: Compra, 3: Venda, 4: Leilão, 13:RLP.
         if trade_type in [2, 3, 4, 13]:
             lst_tt = self._dct_tt.get(asset_id.ticker, [])
             lst_tt.append([trade_number, date, price, qtd, buy_agent, sell_agent])
 
-    @WINFUNCTYPE(None, TAssetID, c_int, c_int, c_int, c_int, c_int, c_double, c_double, c_double, c_longlong,
-                 c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p)
-    def _order_change_callback(self, asset_id, corretora, qtd, traded_qtd, leaves_qtd, side, price, stop_price,
-                               avg_price, profit_id, tipo_ordem, conta, titular, cl_ord_id, status, date, text_message):
-
+    def order_change_callback(self, asset_id, corretora, qtd, traded_qtd, leaves_qtd, side, price, stop_price,
+                              avg_price, profit_id, tipo_ordem, conta, titular, cl_ord_id, status, date, text_message):
         self.find_lim_ord_pos_book_offer(tipo_ordem, status, asset_id, side, price, date, cl_ord_id)
 
         lst_orders = self._dct_orders.get(asset_id.ticker, [])
@@ -1146,31 +990,26 @@ class ProfitDLL:
                 "date": date, "text_message": text_message
             })
 
-    @WINFUNCTYPE(None, c_int, c_wchar_p, c_wchar_p, c_wchar_p)
-    def _account_callback(self, corretora, corretora_nome_completo, account_id, nome_titular):
+    def account_callback(self, corretora, corretora_nome_completo, account_id, nome_titular):
         dct_account = self._dct_account.get("Corretora", {})
         dct_account.update({"corretora": corretora, "corretora_nome_completo": corretora_nome_completo,
                             "account_id": account_id, "nome_titular": nome_titular
                             })
 
-    @WINFUNCTYPE(None, TAssetID, c_wchar_p, c_uint, c_double, c_double, c_int, c_int, c_int, c_int, c_wchar)
-    def _new_trade_callback(self, asset_id, date, trade_number, price, vol, qtd, buy_agent, sell_agent, trade_type,
-                            is_edit):
+    def new_trade_callback(self, asset_id, date, trade_number, price, vol, qtd, buy_agent, sell_agent, trade_type,
+                           is_edit):
         # See: self._dct_trade_type; trade_type = 2: Compra, 3: Venda, 4: Leilão, 13:RLP.
         if trade_type in [2, 3, 4, 13]:
             lst_tt = self._dct_tt.get(asset_id.ticker, [])
             lst_tt.append([trade_number, date, price, qtd, buy_agent, sell_agent])
 
-    @WINFUNCTYPE(None, TAssetID, c_double, c_int, c_int)
-    def _tiny_book_callback(self, asset_id, price, qtd, side):
+    def tiny_book_callback(self, asset_id, price, qtd, side):
         lst_spread = self._dct_spread.get(asset_id.ticker, [])
         lst_spread[side] = [qtd, price]
 
-    @WINFUNCTYPE(None, TAssetID, c_wchar_p, c_double, c_double, c_double, c_double, c_double, c_double, c_double,
-                 c_double, c_double, c_double, c_int, c_int, c_int, c_int, c_int, c_int, c_int)
-    def _new_daily_callback(self, asset_id, date, open_val, high, low, close, vol, ajuste, max_limit, min_limit,
-                            vol_buyer, vol_seller, qtd, negocios, contratos_open, qtd_buyer, qtd_seller, neg_buyer,
-                            neg_seller):
+    def new_daily_callback(self, asset_id, date, open_val, high, low, close, vol, ajuste, max_limit, min_limit,
+                           vol_buyer, vol_seller, qtd, negocios, contratos_open, qtd_buyer, qtd_seller, neg_buyer,
+                           neg_seller):
         dct_quote = self._dct_quote.get(asset_id.ticker, {})
         dct_quote.update({"date": date, "open_val": open_val, "high": high, "low": low, "close": close, "vol": vol,
                           "ajuste": ajuste, "max_limit": max_limit, "min_limit": min_limit, "vol_buyer": vol_buyer,
@@ -1178,3 +1017,153 @@ class ProfitDLL:
                           "qtd_buyer": qtd_buyer, "qtd_seller": qtd_seller, "neg_buyer": neg_buyer,
                           "neg_seller": neg_seller
                           })
+
+
+prov_conn: ProfitDLL
+
+
+# CALLBACKS --------------------------------------------------------------------------------------------------------
+@WINFUNCTYPE(None, TAssetID, c_wchar_p, c_uint, c_double)
+def change_cotation_callback(asset_id, date, trade_number, price):
+    if prov_conn:
+        prov_conn.change_cotation_callback(asset_id, date, trade_number, price)
+
+
+@WINFUNCTYPE(None, TAssetID, c_wchar_p)
+def asset_list_callback(asset_id, name):
+    if prov_conn:
+        prov_conn.asset_list_callback(asset_id, name)
+
+
+@WINFUNCTYPE(None, TAssetID, c_wchar_p, c_wchar_p, c_int, c_int, c_int, c_int, c_int, c_double, c_double, c_wchar_p,
+             c_wchar_p)
+def asset_list_info_callback(asset_id, name, description, min_order_qtd, max_order_qtd, lote, security_type,
+                             security_sub_type, min_price_increment, contract_multiplier, valid_date, isin):
+    if prov_conn:
+        prov_conn.asset_list_info_callback(asset_id, name, description, min_order_qtd, max_order_qtd, lote,
+                                           security_type, security_sub_type, min_price_increment, contract_multiplier,
+                                           valid_date, isin)
+
+
+@WINFUNCTYPE(None, TAssetID, c_wchar_p, c_wchar_p, c_int, c_int, c_int, c_int, c_int, c_int, c_double, c_double,
+             c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p)
+def asset_list_info_callback_v2(asset_id, name, description, min_order_qtd, max_order_qtd, lote,
+                                security_type, security_sub_type, min_price_increment, contract_multiplier,
+                                valid_date, isin, setor, sub_setor, segmento):
+    if prov_conn:
+        prov_conn.asset_list_info_callback_v2(asset_id, name, description, min_order_qtd, max_order_qtd, lote,
+                                              security_type, security_sub_type, min_price_increment,
+                                              contract_multiplier,
+                                              valid_date, isin, setor, sub_setor, segmento)
+
+
+@WINFUNCTYPE(None, TAssetID, c_double, c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p, c_int)
+def adjust_history_callback(asset_id, value, adj_type, observ, dt_ajuste, dt_delib, dt_pagamento, aff_price):
+    if prov_conn:
+        prov_conn.adjust_history_callback(asset_id, value, adj_type, observ, dt_ajuste, dt_delib, dt_pagamento,
+                                          aff_price)
+
+
+@WINFUNCTYPE(None, TAssetID, c_double, c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p, c_uint, c_double)
+def adjust_history_callback_v2(asset_id, value, adj_type, observ, dt_ajuste, dt_delib, dt_pagamento, flags,
+                               mult):
+    if prov_conn:
+        prov_conn.adjust_history_callback_v2(asset_id, value, adj_type, observ, dt_ajuste, dt_delib, dt_pagamento,
+                                             flags, mult)
+
+
+@WINFUNCTYPE(None, TAssetID, c_wchar_p, c_int)
+def change_state_ticker_callback(asset_id, date, state):
+    if prov_conn:
+        prov_conn.change_state_ticker_callback(asset_id, date, state)
+
+
+@WINFUNCTYPE(None, TAssetID, c_int, c_int, c_int, c_int, c_int, c_double, POINTER(c_int), POINTER(c_int))
+def price_book_callback(asset_id, action, position, side, qtd, count, price, array_sell, array_buy):
+    if prov_conn:
+        prov_conn.price_book_callback(asset_id, action, position, side, qtd, count, price, array_sell, array_buy)
+
+
+@WINFUNCTYPE(None, TAssetID, c_int, c_int, c_int, c_int, c_int, c_longlong, c_double, c_char, c_char, c_char,
+             c_char, c_char, c_wchar_p, POINTER(c_int), POINTER(c_int))
+def offer_book_callback(asset_id, action, position, side, qtd, agent, offer_id, price, has_price, has_qtd,
+                        has_date, has_offer_id, has_agent, date, array_sell, array_buy):
+    if prov_conn:
+        prov_conn.offer_book_callback(asset_id, action, position, side, qtd, agent, offer_id, price, has_price, has_qtd,
+                                      has_date, has_offer_id, has_agent, date, array_sell, array_buy)
+
+
+@WINFUNCTYPE(None, TAssetID, c_double, c_longlong)
+def set_theoretical_price_callback(asset_id, theoretical_price, theoretical_qtd):
+    if prov_conn:
+        prov_conn.set_theoretical_price_callback(asset_id, theoretical_price, theoretical_qtd)
+
+
+@WINFUNCTYPE(None, c_int32, c_int32)
+def state_callback(type_val, result):
+    if prov_conn:
+        prov_conn.state_callback(type_val, result)
+
+
+@WINFUNCTYPE(None, TAssetID, c_int, c_int, c_int, c_int, c_int, c_double, c_double, c_double, c_longlong, c_wchar_p,
+             c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p)
+def history_callback(asset_id, corretora, qtd, traded_qtd, leaves_qtd, side, price, stop_price, avg_price,
+                     profit_id, tipo_ordem, conta, titular, cl_ord_id, status, date):
+    if prov_conn:
+        prov_conn.history_callback(asset_id, corretora, qtd, traded_qtd, leaves_qtd, side, price, stop_price, avg_price,
+                                   profit_id, tipo_ordem, conta, titular, cl_ord_id, status, date)
+
+
+@WINFUNCTYPE(None, TAssetID, c_int)
+def progress_callback(asset_id, progress):
+    if prov_conn:
+        prov_conn.progress_callback(asset_id, progress)
+
+
+@WINFUNCTYPE(None, TAssetID, c_wchar_p, c_uint, c_double, c_double, c_int, c_int, c_int, c_int)
+def history_trade_callback(asset_id, date, trade_number, price, vol, qtd, buy_agent, sell_agent, trade_type):
+    if prov_conn:
+        prov_conn.history_trade_callback(asset_id, date, trade_number, price, vol, qtd, buy_agent, sell_agent,
+                                         trade_type)
+
+
+@WINFUNCTYPE(None, TAssetID, c_int, c_int, c_int, c_int, c_int, c_double, c_double, c_double, c_longlong,
+             c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p)
+def order_change_callback(asset_id, corretora, qtd, traded_qtd, leaves_qtd, side, price, stop_price,
+                          avg_price, profit_id, tipo_ordem, conta, titular, cl_ord_id, status, date, text_message):
+    if prov_conn:
+        prov_conn.order_change_callback(asset_id, corretora, qtd, traded_qtd, leaves_qtd, side, price, stop_price,
+                                        avg_price, profit_id, tipo_ordem, conta, titular, cl_ord_id, status, date,
+                                        text_message)
+
+
+@WINFUNCTYPE(None, c_int, c_wchar_p, c_wchar_p, c_wchar_p)
+def account_callback(corretora, corretora_nome_completo, account_id, nome_titular):
+    if prov_conn:
+        prov_conn.account_callback(corretora, corretora_nome_completo, account_id, nome_titular)
+
+
+@WINFUNCTYPE(None, TAssetID, c_wchar_p, c_uint, c_double, c_double, c_int, c_int, c_int, c_int, c_wchar)
+def new_trade_callback(asset_id, date, trade_number, price, vol, qtd, buy_agent, sell_agent, trade_type,
+                       is_edit):
+    if prov_conn:
+        prov_conn.new_trade_callback(asset_id, date, trade_number, price, vol, qtd, buy_agent, sell_agent, trade_type,
+                                     is_edit)
+
+
+@WINFUNCTYPE(None, TAssetID, c_double, c_int, c_int)
+def tiny_book_callback(asset_id, price, qtd, side):
+    if prov_conn:
+        prov_conn.tiny_book_callback(asset_id, price, qtd, side)
+
+
+@WINFUNCTYPE(None, TAssetID, c_wchar_p, c_double, c_double, c_double, c_double, c_double, c_double, c_double,
+             c_double, c_double, c_double, c_int, c_int, c_int, c_int, c_int, c_int, c_int)
+def new_daily_callback(asset_id, date, open_val, high, low, close, vol, ajuste, max_limit, min_limit,
+                       vol_buyer, vol_seller, qtd, negocios, contratos_open, qtd_buyer, qtd_seller, neg_buyer,
+                       neg_seller):
+    if prov_conn:
+        prov_conn.new_daily_callback(asset_id, date, open_val, high, low, close, vol, ajuste, max_limit, min_limit,
+                                     vol_buyer, vol_seller, qtd, negocios, contratos_open, qtd_buyer, qtd_seller,
+                                     neg_buyer,
+                                     neg_seller)

@@ -1,5 +1,6 @@
 import time
 
+import api.io.network.profit_dll
 from api.io.network.profit_dll import ProfitDLL
 from api.jobs.internal_config_provider import InternalConfigProviders
 from api.jobs.job import Job
@@ -27,7 +28,11 @@ class ConfiguratorJob(Job):
 
             if not dct_sys_cfg.get("connected"):
                 try:
-                    dct_sys_cfg["prov_conn"] = ProfitDLL(self._config_prov).connect(
+                    if not dct_sys_cfg["prov_conn"]:
+                        dct_sys_cfg["prov_conn"] = ProfitDLL(self._config_prov)
+                        api.io.network.profit_dll.prov_conn = dct_sys_cfg["prov_conn"]
+
+                    dct_sys_cfg["prov_conn"].connect(
                         soft_key=self._config.get("soft_key", ""),
                         username=self._config.get("username", ""),
                         password=self._config.get("password", ""),
