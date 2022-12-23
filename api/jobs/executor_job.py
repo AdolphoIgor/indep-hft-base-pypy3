@@ -23,8 +23,9 @@ class ExecutorJob(Job):
             lst_algos = [algo for algo in self._config_prov.get_dict_configs().get("algos", [])
                          if not algo.get("running", False) and algo.get("enabled", False)]
 
-            # Prevents two opposed operations (Buy and Sell) for the same symbol in a particular broker.
-            lst_thr = [(thr.get("symbol"), thr.get("start_param").get("side")) for thr in lst_algos]
+            # Prevent a symbol to be used twice on the broker.
+            lst_thr = [thr.get("symbol") for algo in lst_algos for thr in algo.get("threads")]
+
             if len(set(lst_thr)) != len(lst_thr):
                 raise Exception("It's not possible to sell and buy the same symbol in a particular broker.")
 
@@ -39,9 +40,9 @@ class ExecutorJob(Job):
                                 thr["broker"] = brkr
                                 break
 
-                    thr_name = f'thr_executor_{algo.get("name", "")}'
-                    target = eval(f'{algo.get("algo_class")}(name={thr_name}, daemon=True, algo=algo, '
-                                  f'config_prov=self._config_prov')
+                    thr_name = f'thr_executor_{algo.get("name").lower().replace(" ", "_")}'
+                    target = eval(f'{algo.get("algo_class")}(name="{thr_name}", daemon=True, algo=algo, '
+                                  f'config_prov=self._config_prov)')
                     lst_thread_pool.append({"name": thr_name, "pointer": target})
                     target.start()
                     algo['running'] = True

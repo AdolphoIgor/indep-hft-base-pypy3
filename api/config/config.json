@@ -26,7 +26,7 @@
     },
     {
       "order": 1,
-      "enabled": false,
+      "enabled": true,
       "job": "Executor",
       "date_time": "08:42:30",
       "thread_name": "thr_executor",
@@ -39,7 +39,7 @@
   ],
   "algos": [
     {
-      "name": "Arbitrage DOL/WDO",
+      "name": "Arbitrage DOL-WDO",
       "enabled": true,
       "algo_class": "Arbitrage",
       "is_day_trade": true,
