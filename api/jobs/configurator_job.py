@@ -38,10 +38,11 @@ class ConfiguratorJob(Job):
                         password=self._config.get("password", ""),
                     )
 
-                    dct_sys_cfg["connected"] = True
-                    dct_sys_cfg["conn_broken_rep"] = False
-                    self._set_started()
-                    logger.info(f"The connection to {dct_sys_cfg.get('provider_name')} was established.")
+                    if dct_sys_cfg["prov_conn"].is_connected():
+                        dct_sys_cfg["connected"] = True
+                        dct_sys_cfg["conn_broken_rep"] = False
+                        self._set_started()
+                        logger.info(f"The connection to {dct_sys_cfg.get('provider_name')} was established.")
 
                 except Exception:
                     dct_sys_cfg["connected"] = False
