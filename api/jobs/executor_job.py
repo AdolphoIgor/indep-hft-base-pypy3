@@ -5,7 +5,6 @@ from api.bots.hft.arbitrage_auction import ArbitrageAuction
 from api.bots.hft.auction import Auction
 from api.jobs.internal_config_provider import InternalConfigProviders
 from api.jobs.job import Job
-from api.logger import logger
 
 
 class ExecutorJob(Job):
@@ -56,5 +55,3 @@ class ExecutorJob(Job):
                 lst_thread_pool.remove(thr)
 
             time.sleep(self._sleep_when_done)
-
-        logger.info("Executor was finalized.")
