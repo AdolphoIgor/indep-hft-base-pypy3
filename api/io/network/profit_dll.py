@@ -663,7 +663,8 @@ class ProfitDLL:
             :return Returns a tuple with  NL_OK or NL_WAITING_SERVER or NL_ERR_INVALID_ARGS and the close value.
         """
         val_close = c_double(-1.0)
-        ret = self._profit_dll.GetLastDailyClose(c_wchar_p(ticker), c_wchar_p(bolsa), val_close, c_int(bol_val_adj))
+        ret = self._profit_dll.GetLastDailyClose(c_wchar_p(ticker), c_wchar_p(bolsa), byref(val_close),
+                                                 c_int(bol_val_adj))
         return ret, val_close
 
     # CALLBACKS --------------------------------------------------------------------------------------------------------
@@ -886,10 +887,10 @@ class ProfitDLL:
                 logger.info("Broker: Conectado.")
             elif result > 2:
                 self._b_broker_connected = False
-                logger.info("Broker: Sem conexão com corretora.")
+                logger.info("Broker: Sem conexao com corretora.")
             else:
                 self._b_broker_connected = False
-                logger.info(f"Broker: Sem conexão com servidores ({str(result)}).")
+                logger.info(f"Broker: Sem conexao com servidores ({str(result)}).")
 
         # 2 : connStMarket (Notify Market Change)
         elif type_val == 2:
@@ -903,14 +904,14 @@ class ProfitDLL:
         # 3 : connStActv (Notify Atctivation do Profit)
         elif type_val == 3:
             if result == 0:
-                logger.info("Ativação: OK.")
+                logger.info("Ativacao: OK.")
                 self._b_ativo = True
             else:
-                logger.info(f"Ativação: {str(result)}.")
+                logger.info(f"Ativacao: {str(result)}.")
                 self._b_ativo = False
 
         if self._b_market_connected and self._b_ativo and self._b_connectado:
-            logger.info("Serviços Conectados.")
+            logger.info("Servicos Conectados.")
 
     def find_lim_ord_pos_book_offer(self, tipo_ordem, status, asset_id, side, price, date, cl_ord_id):
         if (tipo_ordem == "limitada" and status == "open") or (tipo_ordem == "market" and status == "part_exec"):
