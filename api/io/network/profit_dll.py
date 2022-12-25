@@ -141,7 +141,7 @@ class ProfitDLL:
     _NL_ERR_INTERNAL_ERROR = 100
 
     # Pathway to Profit DLL. Keep in mind that Python interpreter must be 32bits version.
-    _profit_dll = WinDLL("api/io/network/ProfitDLL.dll")
+    _profit_dll = WinDLL("ProfitDLL.dll")
     _profit_dll.argtypes = None
 
     # initialization
@@ -397,9 +397,9 @@ class ProfitDLL:
         :param bolsa: [B=Bovespa | F=BM&F]
         :return: Returns de cl_ord_id to be compared to the return of self._history_trade_callback().
         """
-        return self._profit_dll.SendSellOrder(c_wchar_p(conta), c_wchar_p(broker), c_wchar_p(senha),
-                                              c_wchar_p(ativo), c_wchar_p(bolsa), c_double(preco),
-                                              c_double(s_stop_price), c_int(qtd))
+        return self._profit_dll.SendStopSellOrder(c_wchar_p(conta), c_wchar_p(broker), c_wchar_p(senha),
+                                                  c_wchar_p(ativo), c_wchar_p(bolsa), c_double(preco),
+                                                  c_double(s_stop_price), c_int(qtd))
 
     def send_change_order(self, conta: str, broker: str, senha: str, cl_ord_id: str, preco: float, qtd: int):
         return self._profit_dll.SendChangeOrder(c_wchar_p(conta), c_wchar_p(broker), c_wchar_p(senha),
@@ -429,19 +429,19 @@ class ProfitDLL:
         """
         return self._profit_dll.GetOrders(c_wchar_p(conta), c_wchar_p(broker), c_wchar_p(dt_start), c_wchar_p(dt_end))
 
-    def get_order(self, cl_ord_id: float):
+    def get_order(self, cl_ord_id: str):
         """
         :param cl_ord_id:
         :return: Returns on self._order_change_callback().
         """
-        return self._profit_dll.GetOrder(c_double(cl_ord_id))
+        return self._profit_dll.GetOrder(c_wchar_p(cl_ord_id))
 
-    def get_order_profit_id(self, n_profit_id: float):
+    def get_order_profit_id(self, n_profit_id: int):
         """
         :param n_profit_id:
         :return: Returns on self._order_change_callback().
         """
-        return self._profit_dll.GetOrders(c_double(n_profit_id))
+        return self._profit_dll.GetOrderProfitID(c_longlong(n_profit_id))
 
     def get_position(self, conta: str, broker: str, ativo: str, bolsa: str):
         """
@@ -606,7 +606,7 @@ class ProfitDLL:
         return self._profit_dll.SubscribeAdjustHistory(c_wchar_p(ativo), c_wchar_p(bolsa))
 
     def unsubscribe_adjust_history(self, ativo: str, bolsa: str):
-        return self._profit_dll.UnSubscribeAdjustHistory(c_wchar_p(ativo), c_wchar_p(bolsa))
+        return self._profit_dll.UnsubscribeAdjustHistory(c_wchar_p(ativo), c_wchar_p(bolsa))
 
     def set_server_and_port(self, server, port: str):
         """
@@ -628,28 +628,29 @@ class ProfitDLL:
             :return: Returns a tuple with any constants of this class whose name starts with 'self._NL_...' and a
             dictionary containing the date data (or not, empty) depending on the result of the call.
         """
-        dt_prm = c_double(-1.0)
-        year_prm, mth_prm, day_prm = c_int(-1), c_int(-1), c_int(-1)
-        hr_prm, min_prm, sec_prm, mil_prm = c_int(-1), c_int(-1), c_int(-1), c_int(-1)
+        dt_prm = byref(c_double(-1.0))
+        year_prm, mth_prm, day_prm = byref(c_int(0)), byref(c_int(0)), byref(c_int(0))
+        hr_prm, min_prm, sec_prm, mil_prm = byref(c_int(0)), byref(c_int(0)), byref(c_int(0)), byref(c_int(0))
 
         ret_dct = {}
         ret = self._profit_dll.GetServerClock(dt_prm, year_prm, mth_prm, day_prm, hr_prm, min_prm, sec_prm, mil_prm)
         if ret != self._NL_OK:
             return ret, ret_dct
 
-        ret_dct['date'] = datetime.fromtimestamp(dt_prm.value)
-        ret_dct['year'] = year_prm.value
-        ret_dct['month'] = mth_prm.value
-        ret_dct['day'] = day_prm.value
-        ret_dct['hour'] = hr_prm.value
-        ret_dct['min'] = min_prm.value
-        ret_dct['sec'] = sec_prm.value
-        ret_dct['mil'] = mil_prm.value
-        ret_dct['bra_format'] = f"{year_prm.value}/{mth_prm.value}/{day_prm.value} {hr_prm.value}:{min_prm.value}:" \
-                                f"{sec_prm.value}.{mil_prm.value}"
+        ret_dct['year'] = year_prm.contents.value
+        ret_dct['month'] = mth_prm.contents.value
+        ret_dct['day'] = day_prm.contents.value
+        ret_dct['hour'] = hr_prm.contents.value
+        ret_dct['min'] = min_prm.contents.value
+        ret_dct['sec'] = sec_prm.contents.value
+        ret_dct['mil'] = mil_prm.contents.value
+        ret_dct['bra_format'] = f"{ret_dct['year']}/{ret_dct['month']}/{ret_dct['day']} {ret_dct['hour']}:{ret_dct['min']}:" \
+                                f"{ret_dct['sec']}.{ret_dct['mil']}"
+        ret_dct['date'] = f"{ret_dct['year']}-{ret_dct['month']}-{ret_dct['day']} {ret_dct['hour']}:{ret_dct['min']}:" \
+                                f"{ret_dct['sec']}.{ret_dct['mil']}"
         return ret, ret_dct
 
-    def get_last_daily_close(self, ticker, bolsa, bol_val_adj=1):
+    def get_last_daily_close(self, ativo: str, bolsa: str, bol_val_adj=1):
         """
             Returns the close value from the last session. if bol_val_adj == True will return the adjusted value,
             commonly used in future markets.
@@ -663,7 +664,7 @@ class ProfitDLL:
             :return Returns a tuple with  NL_OK or NL_WAITING_SERVER or NL_ERR_INVALID_ARGS and the close value.
         """
         val_close = c_double(-1.0)
-        ret = self._profit_dll.GetLastDailyClose(c_wchar_p(ticker), c_wchar_p(bolsa), byref(val_close),
+        ret = self._profit_dll.GetLastDailyClose(c_wchar_p(ativo), c_wchar_p(bolsa), byref(val_close),
                                                  c_int(bol_val_adj))
         return ret, val_close
 
@@ -1019,7 +1020,8 @@ class ProfitDLL:
                           "neg_seller": neg_seller
                           })
 
-
+# WHEN THE PROFITDLL WILL BE INITIATED, PLEASE SET THAT REFERENCE HERE.
+# THAT WOULD ALLOW TO THE CALLBACKS TO FORWARD THOSE CALLS TO THE PYTHON DLL.
 prov_conn: ProfitDLL
 
 
