@@ -1,5 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="app" type="PythonConfigurationType" factoryName="Python" singleton="false" nameIsGenerated="true">
+    <output_file path="$PROJECT_DIR$/log.txt" />
     <module name="indep-hft-base-pypy3" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />

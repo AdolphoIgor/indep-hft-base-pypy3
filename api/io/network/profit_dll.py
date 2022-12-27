@@ -1,5 +1,5 @@
 import struct
-import traceback
+import sys
 from ctypes import *
 from datetime import datetime, timedelta
 
@@ -813,30 +813,34 @@ class ProfitDLL:
                      f"{price}")
 
         lst_book = self._dct_lp.get(asset_id.ticker, None)
-
         if not lst_book:
             lst_book = [None, None]
             self._dct_lp[asset_id.ticker] = lst_book
 
         if action == 4:
-            lst_book[0] = decript(array_buy)
-            lst_book[1] = decript(array_sell)
+            if bool(array_buy):
+                lst_book[0] = decript(array_buy)
+
+            if bool(array_sell):
+                lst_book[1] = decript(array_sell)
+
             return
 
         lst_book_side = lst_book[side]
-        # position = len(lst_book_side) - position - 1
+        if not lst_book_side:
+            return
+
+        if len(lst_book_side) == 0 or position > len(lst_book_side):
+            return
 
         # action[atAdd = 0, atEdit = 1, atDelete = 2, atDeleteFrom = 3, atFullBook = 4]
         if action == 0:
             lst_book_side.insert(len(lst_book_side) - position, [price, qtd, count])
 
         elif action == 1:
-            try:
-                group = lst_book_side[-position - 1]
-                group[1] = group[1] + qtd
-                group[2] = group[2] + count
-            except:
-                logger.debug(f"len(lst_book_side):{len(lst_book_side)}-{lst_book_side}")
+            group = lst_book_side[-position - 1]
+            group[1] = group[1] + qtd
+            group[2] = group[2] + count
 
         elif action == 2:
             del lst_book_side[-position - 1]
@@ -887,12 +891,22 @@ class ProfitDLL:
             self._dct_lo[asset_id.ticker] = lst_book
 
         if action == 4:
-            lst_book[0] = decript(array_buy)
-            lst_book[1] = decript(array_sell)
+            if bool(array_buy):
+                lst_book[0] = decript(array_buy)
+
+            if bool(array_sell):
+                lst_book[1] = decript(array_sell)
+
             return
 
         lst_book_side = lst_book[side]
-        # position = len(lst_book_side) - position - 1
+        if not lst_book_side:
+            return
+
+        if len(lst_book_side) == 0 or position > len(lst_book_side):
+            return
+
+        lst_book_side = lst_book[side]
 
         # action[atAdd = 0, atEdit = 1, atDelete = 2, atDeleteFrom = 3, atFullBook = 4]
         if action == 0:
