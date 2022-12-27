@@ -52,5 +52,9 @@ class Job(Thread):
         dct_last_job = self._get_schedule(order=self._order - 1)
         return dct_last_job is not None and dct_last_job.get("done")
 
+    def _is_last_job_started(self):
+        dct_last_job = self._get_schedule(order=self._order - 1)
+        return dct_last_job is not None and dct_last_job.get("started")
+
     def __is_started(self):
         return self._dct_sch.get("started", False)
