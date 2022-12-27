@@ -23,12 +23,6 @@ class ExecutorJob(Job):
             lst_algos = [algo for algo in self._config_prov.get_dict_configs().get("algos", [])
                          if not algo.get("running", False) and algo.get("enabled", False)]
 
-            # Prevent a symbol to be used twice on the broker.
-            lst_thr = [thr.get("symbol") for algo in lst_algos for thr in algo.get("threads")]
-
-            if len(set(lst_thr)) != len(lst_thr):
-                raise Exception("It's not possible to sell and buy the same symbol in a particular broker.")
-
             lst_thread_pool = self._config_prov.get_lst_thread_pool()
 
             # processing...
