@@ -141,7 +141,7 @@ class ProfitDLL:
     _NL_ERR_INTERNAL_ERROR = 100
 
     # Pathway to Profit DLL. Keep in mind that Python interpreter must be 32bits version.
-    _profit_dll = WinDLL("api/io/network/ProfitDLL.dll")
+    _profit_dll = WinDLL("ProfitDLL.dll")
     _profit_dll.argtypes = None
 
     # initialization
