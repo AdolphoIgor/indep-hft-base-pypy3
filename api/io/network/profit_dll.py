@@ -650,7 +650,7 @@ class ProfitDLL:
                           f"{ret_dct['sec']}.{ret_dct['mil']}"
         return ret, ret_dct
 
-    def get_last_daily_close(self, ativo: str, bolsa: str, bol_val_adj=1):
+    def get_last_daily_close(self, ticker: str, bolsa: str, bol_val_adj=1):
         """
             Returns the close value from the last session. if bol_val_adj == True will return the adjusted value,
             commonly used in future markets.
@@ -664,7 +664,7 @@ class ProfitDLL:
             :return Returns a tuple with  NL_OK or NL_WAITING_SERVER or NL_ERR_INVALID_ARGS and the close value.
         """
         val_close = c_double(-1.0)
-        ret = self._profit_dll.GetLastDailyClose(c_wchar_p(ativo), c_wchar_p(bolsa), byref(val_close),
+        ret = self._profit_dll.GetLastDailyClose(c_wchar_p(ticker), c_wchar_p(bolsa), byref(val_close),
                                                  c_int(bol_val_adj))
         return ret, val_close
 
@@ -1006,7 +1006,7 @@ class ProfitDLL:
             lst_tt.append([trade_number, date, price, qtd, buy_agent, sell_agent])
 
     def tiny_book_callback(self, asset_id, price, qtd, side):
-        lst_spread = self._dct_spread.get(asset_id.ticker, [])
+        lst_spread = self._dct_spread.get(asset_id.ticker, [None, None])
         lst_spread[side] = [qtd, price]
 
     def new_daily_callback(self, asset_id, date, open_val, high, low, close, vol, ajuste, max_limit, min_limit,
@@ -1083,6 +1083,7 @@ def change_state_ticker_callback(asset_id, date, state):
 
 @WINFUNCTYPE(None, TAssetID, c_int, c_int, c_int, c_int, c_int, c_double, POINTER(c_int), POINTER(c_int))
 def price_book_callback(asset_id, action, position, side, qtd, count, price, array_sell, array_buy):
+    print(f"price_book_callback-{side}")
     if prov_conn:
         prov_conn.price_book_callback(asset_id, action, position, side, qtd, count, price, array_sell, array_buy)
 
@@ -1091,6 +1092,7 @@ def price_book_callback(asset_id, action, position, side, qtd, count, price, arr
              c_char, c_char, c_wchar_p, POINTER(c_int), POINTER(c_int))
 def offer_book_callback(asset_id, action, position, side, qtd, agent, offer_id, price, has_price, has_qtd,
                         has_date, has_offer_id, has_agent, date, array_sell, array_buy):
+    print(f"offer_book_callback-{side}")
     if prov_conn:
         prov_conn.offer_book_callback(asset_id, action, position, side, qtd, agent, offer_id, price, has_price, has_qtd,
                                       has_date, has_offer_id, has_agent, date, array_sell, array_buy)
