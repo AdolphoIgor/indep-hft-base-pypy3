@@ -15,7 +15,7 @@ class ExecutorJob(Job):
         self._sleep_when_done = self._config.get("sleep_when_done")
 
     def _execute(self) -> None:
-        while self._is_last_job_started() and not self._is_last_job_done():
+        while not (self._is_last_job_started() and not self._is_last_job_done()):
             time.sleep(0.5)
 
         while self._config_prov.get_keep_running():
