@@ -820,9 +820,11 @@ class ProfitDLL:
         if action == 4:
             if bool(array_buy):
                 lst_book[0] = decript(array_buy)
+                logger.debug(f"array_buy-{asset_id.ticker}-{lst_book[0][:5]}")
 
             if bool(array_sell):
                 lst_book[1] = decript(array_sell)
+                logger.debug(f"array_sell-{asset_id.ticker}-{lst_book[1][:5]}")
 
             return
 
@@ -830,7 +832,7 @@ class ProfitDLL:
         if not lst_book_side:
             return
 
-        if len(lst_book_side) == 0 or position > len(lst_book_side):
+        if len(lst_book_side) == 0 or position > len(lst_book_side) or position < 0:
             return
 
         # action[atAdd = 0, atEdit = 1, atDelete = 2, atDeleteFrom = 3, atFullBook = 4]
@@ -838,9 +840,18 @@ class ProfitDLL:
             lst_book_side.insert(len(lst_book_side) - position, [price, qtd, count])
 
         elif action == 1:
-            group = lst_book_side[-position - 1]
-            group[1] = group[1] + qtd
-            group[2] = group[2] + count
+            try:
+                group = lst_book_side[-position - 1]
+                group[1] = group[1] + qtd
+                group[2] = group[2] + count
+
+            except Exception as e:
+                logger.debug(f"self._dct_lp:{self._dct_lp}")
+                logger.debug(f"len(lst_book):{len(lst_book)}")
+                logger.debug(f"lst_book_side:{lst_book_side}")
+                logger.debug(f"position:{position}")
+                logger.debug(e)
+                sys.exit(1)
 
         elif action == 2:
             del lst_book_side[-position - 1]
@@ -893,9 +904,11 @@ class ProfitDLL:
         if action == 4:
             if bool(array_buy):
                 lst_book[0] = decript(array_buy)
+                logger.debug(f"array_buy-{asset_id.ticker}-{lst_book[0][:5]}")
 
             if bool(array_sell):
                 lst_book[1] = decript(array_sell)
+                logger.debug(f"array_sell-{asset_id.ticker}-{lst_book[1][:5]}")
 
             return
 
@@ -903,7 +916,7 @@ class ProfitDLL:
         if not lst_book_side:
             return
 
-        if len(lst_book_side) == 0 or position > len(lst_book_side):
+        if len(lst_book_side) == 0 or position > len(lst_book_side) or position < 0:
             return
 
         lst_book_side = lst_book[side]
@@ -913,9 +926,17 @@ class ProfitDLL:
             lst_book_side.insert(len(lst_book_side) - position, [price, qtd, agent, offer_id, date, None])
 
         elif action == 1:
-            group = lst_book_side[-position - 1]
-            group[1] = group[1] + qtd
-            group[2] = group[2] + agent
+            try:
+                group = lst_book_side[-position - 1]
+                group[1] = group[1] + qtd
+                group[2] = group[2] + agent
+
+            except Exception as e:
+                logger.debug(f"self._dct_lp:{self._dct_lp}")
+                logger.debug(f"len(lst_book):{len(lst_book)}")
+                logger.debug(f"lst_book_side:{lst_book_side}")
+                logger.debug(f"position:{position}")
+                sys.exit(1)
 
         elif action == 2:
             del lst_book_side[-position - 1]
