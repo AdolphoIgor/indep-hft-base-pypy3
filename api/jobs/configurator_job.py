@@ -58,5 +58,3 @@ class ConfiguratorJob(Job):
         dct_sys_cfg["provider_queue"] = None
         self._set_done()
         logger.info(f"The connection to {dct_sys_cfg.get('provider_name')} was terminated.")
-
-

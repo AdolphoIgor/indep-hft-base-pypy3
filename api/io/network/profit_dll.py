@@ -141,7 +141,7 @@ class ProfitDLL:
     _NL_ERR_INTERNAL_ERROR = 100
 
     # Pathway to Profit DLL. Keep in mind that Python interpreter must be 32bits version.
-    _profit_dll = WinDLL("ProfitDLL.dll")
+    _profit_dll = WinDLL("api/io/network/ProfitDLL.dll")
     _profit_dll.argtypes = None
 
     # initialization
@@ -644,10 +644,10 @@ class ProfitDLL:
         ret_dct['min'] = min_prm.contents.value
         ret_dct['sec'] = sec_prm.contents.value
         ret_dct['mil'] = mil_prm.contents.value
-        ret_dct['bra_format'] = f"{ret_dct['year']}/{ret_dct['month']}/{ret_dct['day']} {ret_dct['hour']}:{ret_dct['min']}:" \
-                                f"{ret_dct['sec']}.{ret_dct['mil']}"
+        ret_dct['bra_format'] = f"{ret_dct['year']}/{ret_dct['month']}/{ret_dct['day']} " \
+                                f"{ret_dct['hour']}:{ret_dct['min']}:{ret_dct['sec']}.{ret_dct['mil']}"
         ret_dct['date'] = f"{ret_dct['year']}-{ret_dct['month']}-{ret_dct['day']} {ret_dct['hour']}:{ret_dct['min']}:" \
-                                f"{ret_dct['sec']}.{ret_dct['mil']}"
+                          f"{ret_dct['sec']}.{ret_dct['mil']}"
         return ret, ret_dct
 
     def get_last_daily_close(self, ativo: str, bolsa: str, bol_val_adj=1):
