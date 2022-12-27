@@ -1,4 +1,5 @@
 import struct
+import traceback
 from ctypes import *
 from datetime import datetime, timedelta
 
@@ -671,17 +672,26 @@ class ProfitDLL:
     # CALLBACKS --------------------------------------------------------------------------------------------------------
     def change_cotation_callback(self, asset_id, date, trade_number, price):
         dct_quote = self._dct_quote.get(asset_id.ticker, {})
+        if not dct_quote:
+            self._dct_quote[asset_id.ticker] = dct_quote
+
         dct_quote["date"] = date
         dct_quote["last"] = price
         dct_quote["trade_number"] = trade_number
 
     def asset_list_callback(self, asset_id, name):
         dct_quote = self._dct_quote.get(asset_id.ticker, {})
+        if not dct_quote:
+            self._dct_quote[asset_id.ticker] = dct_quote
+
         dct_quote["description"] = name
 
     def asset_list_info_callback(self, asset_id, name, description, min_order_qtd, max_order_qtd, lote, security_type,
                                  security_sub_type, min_price_increment, contract_multiplier, valid_date, isin):
         dct_quote = self._dct_quote.get(asset_id.ticker, {})
+        if not dct_quote:
+            self._dct_quote[asset_id.ticker] = dct_quote
+
         dct_quote["name"] = name
         dct_quote["description"] = description
         dct_quote["min_order_qtd"] = min_order_qtd
@@ -700,6 +710,9 @@ class ProfitDLL:
                                     security_type, security_sub_type, min_price_increment, contract_multiplier,
                                     valid_date, isin, setor, sub_setor, segmento):
         dct_quote = self._dct_quote.get(asset_id.ticker, {})
+        if not dct_quote:
+            self._dct_quote[asset_id.ticker] = dct_quote
+
         dct_quote["name"] = name
         dct_quote["description"] = description
         dct_quote["min_order_qtd"] = min_order_qtd
@@ -719,6 +732,9 @@ class ProfitDLL:
 
     def adjust_history_callback(self, asset_id, value, adj_type, observ, dt_ajuste, dt_delib, dt_pagamento, aff_price):
         dct_quote = self._dct_quote.get(asset_id.ticker, {})
+        if not dct_quote:
+            self._dct_quote[asset_id.ticker] = dct_quote
+
         dct_quote["ajuste"] = value
         if aff_price:
             dct_quote["last"] = dct_quote.get("last", 0) + value
@@ -738,6 +754,9 @@ class ProfitDLL:
             divisão caso contrário.
         """
         dct_quote = self._dct_quote.get(asset_id.ticker, {})
+        if not dct_quote:
+            self._dct_quote[asset_id.ticker] = dct_quote
+
         dct_quote["ajuste"] = value
         str_flag = bin(flags)
 
@@ -760,6 +779,9 @@ class ProfitDLL:
 
     def change_state_ticker_callback(self, asset_id, date, state):
         dct_quote = self._dct_quote.get(asset_id.ticker, {})
+        if not dct_quote:
+            self._dct_quote[asset_id.ticker] = dct_quote
+
         dct_quote["date"] = date
         dct_quote["state"] = state
         dct_quote["desc_state"] = self._dct_asset_state.get(state)
@@ -787,28 +809,40 @@ class ProfitDLL:
 
             return price_array_descripted
 
-        lst_book = self._dct_lp.get(asset_id.ticker, [])
+        logger.debug(f"price_book_callback-{asset_id.ticker}, {action}, {position}, {side}, {qtd}, {count}, "
+                     f"{price}")
+
+        lst_book = self._dct_lp.get(asset_id.ticker, None)
+
+        if not lst_book:
+            lst_book = [None, None]
+            self._dct_lp[asset_id.ticker] = lst_book
 
         if action == 4:
-            lst_book.append(decript(array_buy))
-            lst_book.append(decript(array_sell))
+            lst_book[0] = decript(array_buy)
+            lst_book[1] = decript(array_sell)
             return
 
         lst_book_side = lst_book[side]
-        position = len(lst_book_side) - position - 1
+        # position = len(lst_book_side) - position - 1
 
         # action[atAdd = 0, atEdit = 1, atDelete = 2, atDeleteFrom = 3, atFullBook = 4]
         if action == 0:
-            lst_book_side.insert(position + 1, [price, qtd, count])
+            lst_book_side.insert(len(lst_book_side) - position, [price, qtd, count])
 
         elif action == 1:
-            lst_book_side[position] = [price, qtd, count]
+            try:
+                group = lst_book_side[-position - 1]
+                group[1] = group[1] + qtd
+                group[2] = group[2] + count
+            except:
+                logger.debug(f"len(lst_book_side):{len(lst_book_side)}-{lst_book_side}")
 
         elif action == 2:
-            lst_book_side.pop(position)
+            del lst_book_side[-position - 1]
 
         elif action == 3:
-            lst_book[side] = lst_book_side[position:]
+            del lst_book_side[-position - 1:]
 
     def offer_book_callback(self, asset_id, action, position, side, qtd, agent, offer_id, price, has_price, has_qtd,
                             has_date, has_offer_id, has_agent, date, array_sell, array_buy):
@@ -816,7 +850,6 @@ class ProfitDLL:
             price_array_descripted = []
             n_qtd = price_array[0]
             n_tam = price_array[1]
-            logger.info(f"qtd: {n_qtd}, n_tam: {n_tam}")
 
             arr = cast(price_array, POINTER(c_char))
             frame = bytearray()
@@ -843,31 +876,44 @@ class ProfitDLL:
 
             return price_array_descripted
 
-        lst_book = self._dct_lo.get(asset_id.ticker, [])
+        logger.debug(f"offer_book_callback-{asset_id.ticker}, {action}, {position}, {side}, {qtd}, {agent}, "
+                     f"{offer_id}, {price}, {has_price}, {has_qtd}, {has_date}, {has_offer_id}, {has_agent}, "
+                     f"{date}, {array_sell}, {array_buy}")
+
+        lst_book = self._dct_lo.get(asset_id.ticker, None)
+
+        if not lst_book:
+            lst_book = [None, None]
+            self._dct_lo[asset_id.ticker] = lst_book
 
         if action == 4:
-            lst_book.append(decript(array_buy))
-            lst_book.append(decript(array_sell))
+            lst_book[0] = decript(array_buy)
+            lst_book[1] = decript(array_sell)
             return
 
         lst_book_side = lst_book[side]
-        position = len(lst_book_side) - position - 1
+        # position = len(lst_book_side) - position - 1
 
         # action[atAdd = 0, atEdit = 1, atDelete = 2, atDeleteFrom = 3, atFullBook = 4]
         if action == 0:
-            lst_book_side.insert(position + 1, [price, qtd, agent, offer_id, date, None])
+            lst_book_side.insert(len(lst_book_side) - position, [price, qtd, agent, offer_id, date, None])
 
         elif action == 1:
-            lst_book_side[position] = [price, qtd, agent, offer_id, date]
+            group = lst_book_side[-position - 1]
+            group[1] = group[1] + qtd
+            group[2] = group[2] + agent
 
         elif action == 2:
-            lst_book_side.pop(position)
+            del lst_book_side[-position - 1]
 
         elif action == 3:
-            lst_book[side] = lst_book_side[position:]
+            del lst_book_side[-position - 1:]
 
     def set_theoretical_price_callback(self, asset_id, theoretical_price, theoretical_qtd):
         dct_quote = self._dct_quote.get(asset_id.ticker, {})
+        if not dct_quote:
+            self._dct_quote[asset_id.ticker] = dct_quote
+
         dct_quote["theoretical_price"] = theoretical_price
         dct_quote["theoretical_qtd"] = theoretical_qtd
 
@@ -935,6 +981,9 @@ class ProfitDLL:
         self.find_lim_ord_pos_book_offer(tipo_ordem, status, asset_id, side, price, date, cl_ord_id)
 
         lst_orders = self._dct_orders.get(asset_id.ticker, [])
+        if not lst_orders:
+            self._dct_orders[asset_id.ticker] = lst_orders
+
         order = None
         for ordr in lst_orders:
             if ordr.get("cl_ord_id") == cl_ord_id:
@@ -958,12 +1007,18 @@ class ProfitDLL:
 
     def progress_callback(self, asset_id, progress):
         dct_progress = self._dct_progress.get(asset_id.ticker, {})
+        if not dct_progress:
+            self._dct_progress[asset_id.ticker] = dct_progress
+
         dct_progress.update({"progress": progress})
 
     def history_trade_callback(self, asset_id, date, trade_number, price, vol, qtd, buy_agent, sell_agent, trade_type):
         # See: self._dct_trade_type; trade_type = 2: Compra, 3: Venda, 4: Leilão, 13:RLP.
         if trade_type in [2, 3, 4, 13]:
             lst_tt = self._dct_tt.get(asset_id.ticker, [])
+            if not lst_tt:
+                self._dct_tt[asset_id.ticker] = lst_tt
+
             lst_tt.append([trade_number, date, price, qtd, buy_agent, sell_agent])
 
     def order_change_callback(self, asset_id, corretora, qtd, traded_qtd, leaves_qtd, side, price, stop_price,
@@ -971,6 +1026,9 @@ class ProfitDLL:
         self.find_lim_ord_pos_book_offer(tipo_ordem, status, asset_id, side, price, date, cl_ord_id)
 
         lst_orders = self._dct_orders.get(asset_id.ticker, [])
+        if not lst_orders:
+            self._dct_orders[asset_id.ticker] = lst_orders
+
         order = None
         for ordr in lst_orders:
             if ordr.get("cl_ord_id") == cl_ord_id:
@@ -994,6 +1052,9 @@ class ProfitDLL:
 
     def account_callback(self, corretora, corretora_nome_completo, account_id, nome_titular):
         dct_account = self._dct_account.get("Corretora", {})
+        if not dct_account:
+            self._dct_account[corretora] = dct_account
+
         dct_account.update({"corretora": corretora, "corretora_nome_completo": corretora_nome_completo,
                             "account_id": account_id, "nome_titular": nome_titular
                             })
@@ -1003,22 +1064,32 @@ class ProfitDLL:
         # See: self._dct_trade_type; trade_type = 2: Compra, 3: Venda, 4: Leilão, 13:RLP.
         if trade_type in [2, 3, 4, 13]:
             lst_tt = self._dct_tt.get(asset_id.ticker, [])
+            if not lst_tt:
+                self._dct_tt[asset_id.ticker] = lst_tt
+
             lst_tt.append([trade_number, date, price, qtd, buy_agent, sell_agent])
 
     def tiny_book_callback(self, asset_id, price, qtd, side):
         lst_spread = self._dct_spread.get(asset_id.ticker, [None, None])
+        if not lst_spread:
+            self._dct_spread[asset_id.ticker] = lst_spread
+
         lst_spread[side] = [qtd, price]
 
     def new_daily_callback(self, asset_id, date, open_val, high, low, close, vol, ajuste, max_limit, min_limit,
                            vol_buyer, vol_seller, qtd, negocios, contratos_open, qtd_buyer, qtd_seller, neg_buyer,
                            neg_seller):
         dct_quote = self._dct_quote.get(asset_id.ticker, {})
+        if not dct_quote:
+            self._dct_quote[asset_id.ticker] = dct_quote
+
         dct_quote.update({"date": date, "open_val": open_val, "high": high, "low": low, "close": close, "vol": vol,
                           "ajuste": ajuste, "max_limit": max_limit, "min_limit": min_limit, "vol_buyer": vol_buyer,
                           "vol_seller": vol_seller, "qtd": qtd, "negocios": negocios, "contratos_open": contratos_open,
                           "qtd_buyer": qtd_buyer, "qtd_seller": qtd_seller, "neg_buyer": neg_buyer,
                           "neg_seller": neg_seller
                           })
+
 
 # WHEN THE PROFITDLL WILL BE INITIATED, PLEASE SET THAT REFERENCE HERE.
 # THAT WOULD ALLOW TO THE CALLBACKS TO FORWARD THOSE CALLS TO THE PYTHON DLL.
@@ -1083,7 +1154,6 @@ def change_state_ticker_callback(asset_id, date, state):
 
 @WINFUNCTYPE(None, TAssetID, c_int, c_int, c_int, c_int, c_int, c_double, POINTER(c_int), POINTER(c_int))
 def price_book_callback(asset_id, action, position, side, qtd, count, price, array_sell, array_buy):
-    print(f"price_book_callback-{side}")
     if prov_conn:
         prov_conn.price_book_callback(asset_id, action, position, side, qtd, count, price, array_sell, array_buy)
 
@@ -1092,7 +1162,6 @@ def price_book_callback(asset_id, action, position, side, qtd, count, price, arr
              c_char, c_char, c_wchar_p, POINTER(c_int), POINTER(c_int))
 def offer_book_callback(asset_id, action, position, side, qtd, agent, offer_id, price, has_price, has_qtd,
                         has_date, has_offer_id, has_agent, date, array_sell, array_buy):
-    print(f"offer_book_callback-{side}")
     if prov_conn:
         prov_conn.offer_book_callback(asset_id, action, position, side, qtd, agent, offer_id, price, has_price, has_qtd,
                                       has_date, has_offer_id, has_agent, date, array_sell, array_buy)
