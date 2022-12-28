@@ -809,8 +809,10 @@ class ProfitDLL:
 
             return price_array_descripted
 
+        '''
         logger.debug(f"price_book_callback-{asset_id.ticker}, {action}, {position}, {side}, {qtd}, {count}, "
                      f"{price}")
+        '''
 
         lst_book = self._dct_lp.get(asset_id.ticker, None)
         if not lst_book:
@@ -820,11 +822,11 @@ class ProfitDLL:
         if action == 4:
             if bool(array_buy):
                 lst_book[0] = decript(array_buy)
-                logger.debug(f"array_buy-{asset_id.ticker}-{lst_book[0][:5]}")
+                # logger.debug(f"array_buy-{asset_id.ticker}-{lst_book[0][:5]}")
 
             if bool(array_sell):
                 lst_book[1] = decript(array_sell)
-                logger.debug(f"array_sell-{asset_id.ticker}-{lst_book[1][:5]}")
+                # logger.debug(f"array_sell-{asset_id.ticker}-{lst_book[1][:5]}")
 
             return
 
@@ -840,18 +842,9 @@ class ProfitDLL:
             lst_book_side.insert(len(lst_book_side) - position, [price, qtd, count])
 
         elif action == 1:
-            try:
-                group = lst_book_side[-position - 1]
-                group[1] = group[1] + qtd
-                group[2] = group[2] + count
-
-            except Exception as e:
-                logger.debug(f"self._dct_lp:{self._dct_lp}")
-                logger.debug(f"len(lst_book):{len(lst_book)}")
-                logger.debug(f"lst_book_side:{lst_book_side}")
-                logger.debug(f"position:{position}")
-                logger.debug(e)
-                sys.exit(1)
+            group = lst_book_side[-position - 1]
+            group[1] = group[1] + qtd
+            group[2] = group[2] + count
 
         elif action == 2:
             del lst_book_side[-position - 1]
@@ -891,9 +884,11 @@ class ProfitDLL:
 
             return price_array_descripted
 
+        '''
         logger.debug(f"offer_book_callback-{asset_id.ticker}, {action}, {position}, {side}, {qtd}, {agent}, "
                      f"{offer_id}, {price}, {has_price}, {has_qtd}, {has_date}, {has_offer_id}, {has_agent}, "
                      f"{date}, {array_sell}, {array_buy}")
+        '''
 
         lst_book = self._dct_lo.get(asset_id.ticker, None)
 
@@ -904,11 +899,11 @@ class ProfitDLL:
         if action == 4:
             if bool(array_buy):
                 lst_book[0] = decript(array_buy)
-                logger.debug(f"array_buy-{asset_id.ticker}-{lst_book[0][:5]}")
+                # logger.debug(f"array_buy-{asset_id.ticker}-{lst_book[0][:5]}")
 
             if bool(array_sell):
                 lst_book[1] = decript(array_sell)
-                logger.debug(f"array_sell-{asset_id.ticker}-{lst_book[1][:5]}")
+                # logger.debug(f"array_sell-{asset_id.ticker}-{lst_book[1][:5]}")
 
             return
 
@@ -926,17 +921,9 @@ class ProfitDLL:
             lst_book_side.insert(len(lst_book_side) - position, [price, qtd, agent, offer_id, date, None])
 
         elif action == 1:
-            try:
-                group = lst_book_side[-position - 1]
-                group[1] = group[1] + qtd
-                group[2] = group[2] + agent
-
-            except Exception as e:
-                logger.debug(f"self._dct_lp:{self._dct_lp}")
-                logger.debug(f"len(lst_book):{len(lst_book)}")
-                logger.debug(f"lst_book_side:{lst_book_side}")
-                logger.debug(f"position:{position}")
-                sys.exit(1)
+            group = lst_book_side[-position - 1]
+            group[1] = group[1] + qtd
+            group[2] = group[2] + agent
 
         elif action == 2:
             del lst_book_side[-position - 1]
