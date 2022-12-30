@@ -1092,11 +1092,17 @@ class ProfitDLL:
             lst_tt.append([trade_number, date, price, qtd, buy_agent, sell_agent])
 
     def tiny_book_callback(self, asset_id, price, qtd, side):
-        lst_spread = self._dct_spread.get(asset_id.ticker, [None, None])
+        lst_spread = self._dct_spread.get(asset_id.ticker, None)
         if not lst_spread:
+            lst_spread = [None, None]
             self._dct_spread[asset_id.ticker] = lst_spread
 
-        lst_spread[side] = [qtd, price]
+        if not lst_spread[side]:
+            lst_spread[side] = [qtd, price]
+            return
+
+        lst_spread[side][0] = qtd
+        lst_spread[side][1] = price
 
     def new_daily_callback(self, asset_id, date, open_val, high, low, close, vol, ajuste, max_limit, min_limit,
                            vol_buyer, vol_seller, qtd, negocios, contratos_open, qtd_buyer, qtd_seller, neg_buyer,
@@ -1249,6 +1255,7 @@ def new_trade_callback(asset_id, date, trade_number, price, vol, qtd, buy_agent,
 
 @WINFUNCTYPE(None, TAssetID, c_double, c_int, c_int)
 def tiny_book_callback(asset_id, price, qtd, side):
+    # print(f"tiny_book_callback -> {asset_id.ticker}-{price}-{qtd}-{side}")
     if prov_conn:
         prov_conn.tiny_book_callback(asset_id, price, qtd, side)
 
