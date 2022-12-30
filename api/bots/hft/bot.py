@@ -142,6 +142,7 @@ class Bot(Thread):
                     elif sbs.get("type") == "lo":
                         self._profitdll.unsubscribe_offer_book(ticker=sbl[0], bolsa=sbl[1])
                         inst.remove(sbl[0])
+
         logger.info(f"Instruments unsubscription for the algo: {self.name} done.")
 
     def _is_asset_state(self, lst_states: list) -> bool:
@@ -153,7 +154,7 @@ class Bot(Thread):
         :return:
         """
         ret_bol = True
-        for quote in self._dct_inst.get("quote"):
+        for quote in self._dct_inst.get("quote", []):
             if self._dct_asset_state.get(quote.get("state", -1)) not in lst_states:
                 ret_bol = False
                 break

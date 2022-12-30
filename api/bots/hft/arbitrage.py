@@ -10,69 +10,71 @@ class Arbitrage(Bot):
     def __init__(self, name, daemon, algo: dict, config_prov: InternalConfigProviders):
         super().__init__(name, daemon, algo, Bot.TWO_ARM, config_prov)
 
+    def _get_signal(self):
+        lst_spread = list(self._dct_inst.get("spread").values())
+        return [(lst_spread[0][0][1] - lst_spread[1][1][1]) > 0, (lst_spread[1][0][1] - lst_spread[0][1][1]) > 0], \
+            lst_spread
+
     def execute(self):
-        """
-            For asset state check out the ProfitDLL's member _dct_asset_state.
-        """
         # entry point
         arms = self._position_mgr.get_pos_arms()
-        if self._get_spread() != 0 and self._is_asset_state(["opened"]) and \
-                arms[0].get("has_ord_rem", False) and arms[1].get("has_ord_rem", False):
+        if self._is_asset_state(["opened"]) and arms[0].get("position").get("has_ord_rem") and \
+                arms[1].get("position").get("has_ord_rem"):
 
-            lst_sides = None
-            lst_prices = None
+            arm_0_qty = arms[0].get("start_param").get("order_op_qty")
+            arm_1_qty = arms[1].get("start_param").get("order_op_qty")
 
-            # SELL. Sell the first asset and buy the second asset, both at market order.
-            lst_spread = self._dct_inst.get("spread")
-            if self._get_spread() > 0:
-                lst_sides = [arms[0], arms[1]]
-                lst_prices = [lst_spread[0][0][0], lst_spread[0][0][1], lst_spread[1][1][0], lst_spread[1][1][1]]
+            tpl_arm_0 = (
+                arms[0].get("broker").get("account"),
+                arms[0].get("broker").get("id"),
+                arms[0].get("broker").get("password"),
+                arms[0].get("symbol"),
+                arms[0].get("stock_market"),
+                arm_0_qty
+            )
 
-            # BUY. Sell the second asset and buy the first asset, both at market order.
-            if self._get_spread() < 0:
-                lst_sides = [arms[1], arms[0]]
-                lst_prices = [lst_spread[1][1][0], lst_spread[1][1][1], lst_spread[0][0][0], lst_spread[0][0][1]]
+            tpl_arm_1 = (
+                arms[1].get("broker").get("account"),
+                arms[1].get("broker").get("id"),
+                arms[1].get("broker").get("password"),
+                arms[1].get("symbol"),
+                arms[1].get("stock_market"),
+                arm_1_qty
+            )
 
-            side_0_qty = lst_sides[0].get("start_param").get("order_op_qty")
-            side_1_qty = lst_sides[1].get("start_param").get("order_op_qty")
+            lst_sides = [
+                (tpl_arm_0, tpl_arm_1),
+                (tpl_arm_1, tpl_arm_0)
+            ]
 
-            if self._get_spread() != 0 and lst_prices[0] >= side_0_qty and lst_prices[1] >= side_1_qty:
+            lst_signal, lst_spread = self._get_signal()
+            if any(lst_signal):
+                if lst_signal[0]:
+                    lst_sides = lst_sides[0]
+                    lst_prices = [lst_spread[0][0][0], lst_spread[0][0][1], lst_spread[1][1][0], lst_spread[1][1][1]]
+                else:
+                    lst_sides = lst_sides[1]
+                    lst_prices = [lst_spread[1][0][0], lst_spread[1][0][1], lst_spread[0][1][0], lst_spread[0][1][1]]
+
+                if lst_prices[0] < lst_sides[0][-1] and lst_prices[1] < lst_sides[1][-1]:
+                    return
+
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
                 self._lst_orders_sent.append({"id": timestamp, "cl_ord_id": self._profitdll.send_buy_order(
-                    conta=lst_sides[0].get("broker").get("account"),
-                    broker=lst_sides[0].get("broker").get("id"),
-                    senha=lst_sides[0].get("broker").get("password"),
-                    ativo=lst_sides[0].get("symbol"),
-                    bolsa=lst_sides[0].get("stock_market"),
-                    preco=lst_prices[1],
-                    qtd=side_0_qty
+                    conta=lst_sides[0][0], broker=lst_sides[0][1], senha=lst_sides[0][2], ativo=lst_sides[0][3],
+                    bolsa=lst_sides[0][4], preco=lst_prices[1], qtd=lst_sides[0][5]
                 )})
                 self._lst_orders_sent.append({"id": timestamp, "cl_ord_id": self._profitdll.send_sell_order(
-                    conta=lst_sides[1].get("broker").get("account"),
-                    broker=lst_sides[1].get("broker").get("id"),
-                    senha=lst_sides[1].get("broker").get("password"),
-                    ativo=lst_sides[1].get("symbol"),
-                    bolsa=lst_sides[1].get("stock_market"),
-                    preco=lst_prices[3],
-                    qtd=side_1_qty
+                    conta=lst_sides[1][0], broker=lst_sides[1][1], senha=lst_sides[1][2], ativo=lst_sides[1][3],
+                    bolsa=lst_sides[1][4], preco=lst_prices[3], qtd=lst_sides[1][5]
                 )})
 
         self._position_mgr.proc_positions()
 
         # exit point
-        if self._get_spread() != 0:
+        if not any(self._get_signal()):
             for pos in self._position_mgr.get_lst_positions([PositionMgr.POS_OPENED], [PositionMgr.POS_INIT]):
                 for ordr in pos.get("open_arms"):
-
-                    '''
-                    order = {
-                        "corretora": corretora, "qtd": qtd, "traded_qtd": traded_qtd, "leaves_qtd": leaves_qtd,
-                        "side": side, "price": price, "stop_price": stop_price, "avg_price": avg_price, 
-                        "profit_id": profit_id, "tipo_ordem": tipo_ordem, "conta": conta, "titular": titular, 
-                        "cl_ord_id": cl_ord_id, "status": status, "date": date, "symbol": asset_id.ticker,
-                    }
-                    '''
-
                     thr_sel = None
                     lst_spread = self._dct_inst.get("spread")
                     for thr in arms:
@@ -95,15 +97,3 @@ class Arbitrage(Bot):
                             ativo=thr_sel.get("symbol"), bolsa=thr_sel.get("stock_market"),
                             preco=lst_spread[1][0], qtd=thr_sel.get("qtd")
                         )})
-
-    def _get_spread(self):
-        """
-        This algo is Desgigned to work with 2 assets simultaneously.
-        The spreado of each asset has a list with two lists inside, one for 'BUY' side other for 'SELL' side,
-        in this order.
-            lst_spread[[[qtd, price], [qtd, price]], [[qtd, price], [qtd, price]]]
-
-        :return: the spread.
-        """
-        lst_spread = self._dct_inst.get("spread")
-        return lst_spread[1][1][0] - lst_spread[0][0][0]
