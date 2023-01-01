@@ -13,9 +13,19 @@ class ArbitrageAuction(Bot):
     """
 
     def __init__(self, name, daemon, algo: dict, config_prov: InternalConfigProviders):
-        super().__init__(name, daemon, algo, 2, config_prov)
+        super().__init__(name, daemon, algo, Bot.TWO_ARM, config_prov)
         self._lst_lps = [self._dct_inst.get("lp")[0], self._dct_inst.get("lp")[1]]
 
     def execute(self):
-        # TODO: preciso saber como detectar o tempo restante do leião e da fase randomica.
+        """
+            A ideia de arbitrar leilões de ativo e devivativo parece ser interessante, entretanto, de logística
+            bem mais complexa que a de um leilão simples.
+
+            Além disso, este algoritmo não poderia rodar concorrentemente com o de leilão simples em uma mesma
+            corretora (devido ao fato do risco de uma ordem enviada por ele poder zerar uma operação de leilão
+            em andaento)
+
+            Vou deixar esta ideia pausada por enquanto.
+
+        """
         pass
