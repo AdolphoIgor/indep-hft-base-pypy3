@@ -17,8 +17,6 @@ class Auction(Bot):
 
     def __init__(self, name, daemon, algo: dict, config_prov: InternalConfigProviders):
         super().__init__(name, daemon, algo, Bot.ONE_ARM, config_prov)
-        self._lst_lps = self._dct_inst.get("lp")[0]
-        self._dct_quote = self._dct_inst.get("quote")
         self._lst_entry_signal = []
 
     def execute(self):
@@ -87,15 +85,15 @@ class Auction(Bot):
 
             return [side, qtd, nivel_p_dentro, lst_niv_menor_liq]
 
-        dct_pos_threads = self._position_mgr.get_pos_arms()[0]
+        dct_pos_threads = self._position_mgr.get_pos_arms()
 
         while self._is_asset_state(["auctioned"]):
-            if dct_pos_threads.get("has_ord_rem"):
+            if dct_pos_threads[0].get("position").get("has_ord_rem"):
                 self._lst_entry_signal = get_entry_signal()
                 if self._lst_entry_signal[2] > 2:
                     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
                     if self._lst_entry_signal[0] == "B":
-                        self._lst_orders_sent.append({"id": timestamp, "cl_ord_id": self._profitdll.send_buy_order(
+                        self._lst_orders_sent.append({"id": timestamp, "cl_ord_id": self._profit_dll.send_buy_order(
                             conta=dct_pos_threads.get("broker").get("account"),
                             broker=dct_pos_threads.get("broker").get("id"),
                             senha=dct_pos_threads.get("broker").get("password"),
@@ -105,7 +103,7 @@ class Auction(Bot):
                             qtd=dct_pos_threads.get("start_param").get("order_op_qty")
                         )})
                     else:
-                        self._lst_orders_sent.append({"id": timestamp, "cl_ord_id": self._profitdll.send_sell_order(
+                        self._lst_orders_sent.append({"id": timestamp, "cl_ord_id": self._profit_dll.send_sell_order(
                             conta=dct_pos_threads.get("broker").get("account"),
                             broker=dct_pos_threads.get("broker").get("id"),
                             senha=dct_pos_threads.get("broker").get("password"),
@@ -126,7 +124,7 @@ class Auction(Bot):
 
             for ordr in lst_new_ordrs:
                 if ordr.get("price") != self._dct_inst.get("quote").get("theoretical_price"):
-                    self._lst_orders_sent.append({"id": None, "cl_ord_id": self._profitdll.send_cancel_order(
+                    self._lst_orders_sent.append({"id": None, "cl_ord_id": self._profit_dll.send_cancel_order(
                         conta=dct_pos_threads.get("broker").get("account"),
                         broker=dct_pos_threads.get("broker").get("id"),
                         senha=dct_pos_threads.get("broker").get("password"),
@@ -149,7 +147,7 @@ class Auction(Bot):
                 ]
 
                 for ordr in lst_new_ordrs:
-                    self._lst_orders_sent.append({"id": None, "cl_ord_id": self._profitdll.send_cancel_order(
+                    self._lst_orders_sent.append({"id": None, "cl_ord_id": self._profit_dll.send_cancel_order(
                         conta=dct_pos_threads.get("broker").get("account"),
                         broker=dct_pos_threads.get("broker").get("id"),
                         senha=dct_pos_threads.get("broker").get("password"),
@@ -171,7 +169,7 @@ class Auction(Bot):
             for ordr in lst_exec_ordrs:
                 # se a ordem foi executada parcialmente (na abertura), cancelar o saldo restante
                 if ordr.get("qtd") != ordr.get("traded_qtd"):
-                    self._lst_orders_sent.append({"id": None, "cl_ord_id": self._profitdll.send_cancel_order(
+                    self._lst_orders_sent.append({"id": None, "cl_ord_id": self._profit_dll.send_cancel_order(
                         conta=dct_pos_threads.get("broker").get("account"),
                         broker=dct_pos_threads.get("broker").get("id"),
                         senha=dct_pos_threads.get("broker").get("password"),
@@ -179,7 +177,7 @@ class Auction(Bot):
                     )})
 
                 if ordr.get("side") == "B":
-                    self._lst_orders_sent.append({"id": None, "cl_ord_id": self._profitdll.send_sell_order(
+                    self._lst_orders_sent.append({"id": None, "cl_ord_id": self._profit_dll.send_sell_order(
                         conta=dct_pos_threads.get("broker").get("account"),
                         broker=dct_pos_threads.get("broker").get("id"),
                         senha=dct_pos_threads.get("broker").get("password"),
@@ -189,7 +187,7 @@ class Auction(Bot):
                         qtd=ordr.get("traded_qtd")
                     )})
                 else:
-                    self._lst_orders_sent.append({"id": None, "cl_ord_id": self._profitdll.send_buy_order(
+                    self._lst_orders_sent.append({"id": None, "cl_ord_id": self._profit_dll.send_buy_order(
                         conta=dct_pos_threads.get("broker").get("account"),
                         broker=dct_pos_threads.get("broker").get("id"),
                         senha=dct_pos_threads.get("broker").get("password"),
@@ -225,7 +223,7 @@ class Auction(Bot):
                     lst_book = lst_sprd[0] if ordr.get("side") == "" "B" else lst_sprd[0]
 
                     if lst_book[0][1] == ordr.get("price") and (lst_book[0][0] * 3) <= ordr.get("qtd"):
-                        self._lst_orders_sent.append({"id": None, "cl_ord_id": self._profitdll.send_cancel_order(
+                        self._lst_orders_sent.append({"id": None, "cl_ord_id": self._profit_dll.send_cancel_order(
                             conta=dct_pos_threads.get("broker").get("account"),
                             broker=dct_pos_threads.get("broker").get("id"),
                             senha=dct_pos_threads.get("broker").get("password"),
@@ -233,7 +231,7 @@ class Auction(Bot):
                         )})
 
                         if ordr.get("side") == "B":
-                            self._lst_orders_sent.append({"id": None, "cl_ord_id": self._profitdll.send_buy_order(
+                            self._lst_orders_sent.append({"id": None, "cl_ord_id": self._profit_dll.send_buy_order(
                                 conta=dct_pos_threads.get("broker").get("account"),
                                 broker=dct_pos_threads.get("broker").get("id"),
                                 senha=dct_pos_threads.get("broker").get("password"),
@@ -244,7 +242,7 @@ class Auction(Bot):
                             )})
 
                         else:
-                            self._lst_orders_sent.append({"id": None, "cl_ord_id": self._profitdll.send_sell_order(
+                            self._lst_orders_sent.append({"id": None, "cl_ord_id": self._profit_dll.send_sell_order(
                                 conta=dct_pos_threads.get("broker").get("account"),
                                 broker=dct_pos_threads.get("broker").get("id"),
                                 senha=dct_pos_threads.get("broker").get("password"),

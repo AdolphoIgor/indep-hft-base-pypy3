@@ -60,11 +60,11 @@ class Arbitrage(Bot):
                     return
 
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
-                self._lst_orders_sent.append({"id": timestamp, "cl_ord_id": self._profitdll.send_buy_order(
+                self._lst_orders_sent.append({"id": timestamp, "cl_ord_id": self._profit_dll.send_buy_order(
                     conta=lst_sides[0][0], broker=lst_sides[0][1], senha=lst_sides[0][2], ativo=lst_sides[0][3],
                     bolsa=lst_sides[0][4], preco=lst_prices[1], qtd=lst_sides[0][5]
                 )})
-                self._lst_orders_sent.append({"id": timestamp, "cl_ord_id": self._profitdll.send_sell_order(
+                self._lst_orders_sent.append({"id": timestamp, "cl_ord_id": self._profit_dll.send_sell_order(
                     conta=lst_sides[1][0], broker=lst_sides[1][1], senha=lst_sides[1][2], ativo=lst_sides[1][3],
                     bolsa=lst_sides[1][4], preco=lst_prices[3], qtd=lst_sides[1][5]
                 )})
@@ -83,7 +83,7 @@ class Arbitrage(Bot):
                             break
 
                     if ordr.get("side") == "S":
-                        self._lst_orders_sent.append({"id": None, "cl_ord_id": self._profitdll.send_buy_order(
+                        self._lst_orders_sent.append({"id": None, "cl_ord_id": self._profit_dll.send_buy_order(
                             conta=thr_sel.get("broker").get("account"), broker=thr_sel.get("broker").get("id"),
                             senha=thr_sel.get("broker").get("password"),
                             ativo=thr_sel.get("symbol"), bolsa=thr_sel.get("stock_market"),
@@ -91,7 +91,7 @@ class Arbitrage(Bot):
 
                         )})
                     else:
-                        self._lst_orders_sent.append({"id": None, "cl_ord_id": self._profitdll.send_sell_order(
+                        self._lst_orders_sent.append({"id": None, "cl_ord_id": self._profit_dll.send_sell_order(
                             conta=thr_sel.get("broker").get("account"), broker=thr_sel.get("broker").get("id"),
                             senha=thr_sel.get("broker").get("password"),
                             ativo=thr_sel.get("symbol"), bolsa=thr_sel.get("stock_market"),

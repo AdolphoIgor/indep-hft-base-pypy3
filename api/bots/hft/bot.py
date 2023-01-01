@@ -23,9 +23,9 @@ class Bot(Thread):
         self._config_prov = config_prov
 
         self._config = self._config_prov.get_internal_provider_data("config")
-        self._profitdll = self._config.get("prov_conn")
-        self._dct_asset_state = self._profitdll.get_asset_state()
-        self._dct_ord_status = self._profitdll.get_dct_order_status()
+        self._profit_dll = self._config.get("prov_conn")
+        self._dct_asset_state = self._profit_dll.get_asset_state()
+        self._dct_ord_status = self._profit_dll.get_dct_order_status()
 
         self._lst_sbl = [(alg.get("symbol"), alg.get("stock_market")) for alg in algo.get("threads")]
         self._position_mgr = PositionMgr(self._dct_inst.get("orders"), self._lst_orders_sent, algo,
@@ -38,8 +38,8 @@ class Bot(Thread):
         logger.info(f"Initializing the algo name: {self.name}...")
         self.__test_qtd_assets()
 
-        self._profitdll.set_day_trade(self._algo.get("is_day_trade", False))
-        self._profitdll.set_enabled_log_to_debug(self._algo.get("debug_mode", False))
+        self._profit_dll.set_day_trade(self._algo.get("is_day_trade", False))
+        self._profit_dll.set_enabled_log_to_debug(self._algo.get("debug_mode", False))
 
         self.__subscribe()
         self.__get_instruments()
@@ -49,7 +49,7 @@ class Bot(Thread):
                 self.execute()
 
             except Exception:
-                if self._profitdll and not self._profitdll.is_connected():
+                if self._profit_dll and not self._profit_dll.is_connected():
                     if not self._config.get("conn_broken_rep"):
                         self._config["conn_broken_rep"] = True
 
@@ -107,16 +107,16 @@ class Bot(Thread):
                 inst = sbs.get("value")
                 if inst.count(sbl[0]) == 0:
                     if sbs.get("type") == "quote":
-                        self._profitdll.subscribe_ticker(ticker=sbl[0], bolsa=sbl[1])
-                        self._profitdll.get_last_daily_close(ticker=sbl[0], bolsa=sbl[1])
+                        self._profit_dll.subscribe_ticker(ticker=sbl[0], bolsa=sbl[1])
+                        self._profit_dll.get_last_daily_close(ticker=sbl[0], bolsa=sbl[1])
                         inst.append(sbl[0])
 
                     elif sbs.get("type") == "lp":
-                        self._profitdll.subscribe_price_book(ticker=sbl[0], bolsa=sbl[1])
+                        self._profit_dll.subscribe_price_book(ticker=sbl[0], bolsa=sbl[1])
                         inst.append(sbl[0])
 
                     elif sbs.get("type") == "lo":
-                        self._profitdll.subscribe_offer_book(ticker=sbl[0], bolsa=sbl[1])
+                        self._profit_dll.subscribe_offer_book(ticker=sbl[0], bolsa=sbl[1])
                         inst.append(sbl[0])
 
         logger.info(f"Instruments subscription for the algo: {self.name} done.")
@@ -132,15 +132,15 @@ class Bot(Thread):
                 inst = sbs.get("value")
                 if inst.count(sbl[0]) == 1:
                     if sbs.get("type") == "quote":
-                        self._profitdll.unsubscribe_ticker(ticker=sbl[0], bolsa=sbl[1])
+                        self._profit_dll.unsubscribe_ticker(ticker=sbl[0], bolsa=sbl[1])
                         inst.remove(sbl[0])
 
                     elif sbs.get("type") == "lp":
-                        self._profitdll.unsubscribe_price_book(ticker=sbl[0], bolsa=sbl[1])
+                        self._profit_dll.unsubscribe_price_book(ticker=sbl[0], bolsa=sbl[1])
                         inst.remove(sbl[0])
 
                     elif sbs.get("type") == "lo":
-                        self._profitdll.unsubscribe_offer_book(ticker=sbl[0], bolsa=sbl[1])
+                        self._profit_dll.unsubscribe_offer_book(ticker=sbl[0], bolsa=sbl[1])
                         inst.remove(sbl[0])
 
         logger.info(f"Instruments unsubscription for the algo: {self.name} done.")
