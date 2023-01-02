@@ -1035,8 +1035,8 @@ class ProfitDLL:
         dct_progress.update({"progress": progress})
 
     def history_trade_callback(self, asset_id, date, trade_number, price, vol, qtd, buy_agent, sell_agent, trade_type):
-        # See: self._dct_trade_type; trade_type = 2: Compra, 3: Venda, 4: Leilão, 13:RLP.
-        if trade_type in [2, 3, 4, 13]:
+        # See: self._dct_trade_type; trade_type = 2: Compra, 3: Venda, 4: Leilão, 12: On Behalf, 13:RLP.
+        if trade_type in [2, 3, 4, 12, 13]:
             lst_tt = self._dct_tt.get(asset_id.ticker, [])
             if not lst_tt:
                 self._dct_tt[asset_id.ticker] = lst_tt
@@ -1083,8 +1083,8 @@ class ProfitDLL:
 
     def new_trade_callback(self, asset_id, date, trade_number, price, vol, qtd, buy_agent, sell_agent, trade_type,
                            is_edit):
-        # See: self._dct_trade_type; trade_type = 2: Compra, 3: Venda, 4: Leilão, 13:RLP.
-        if trade_type in [2, 3, 4, 13]:
+        # See: self._dct_trade_type; trade_type = 2: Compra, 3: Venda, 4: Leilão, 12: On Behalf, 13:RLP.
+        if trade_type in [2, 3, 4, 12, 13]:
             lst_tt = self._dct_tt.get(asset_id.ticker, [])
             if not lst_tt:
                 self._dct_tt[asset_id.ticker] = lst_tt
