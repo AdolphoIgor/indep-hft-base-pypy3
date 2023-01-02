@@ -45,7 +45,9 @@
       "is_day_trade": true,
       "debug_mode": true,
       "req_instruments": [
-        "quote"
+        "quote",
+        "spread",
+        "orders"
       ],
       "threads": [
         {

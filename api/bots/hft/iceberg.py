@@ -8,5 +8,5 @@ class Iceberg(BotMomentum):
     def __init__(self, name, daemon, algo: dict, config_prov: InternalConfigProviders):
         super().__init__(name, daemon, algo, Bot.ONE_ARM, config_prov)
 
-    def execute(self):
+    def _execute(self):
         pass

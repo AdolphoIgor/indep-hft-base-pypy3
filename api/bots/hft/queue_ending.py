@@ -21,7 +21,7 @@ class QueueEnding(BotMomentum):
         )
         self._qtd_ff = self._arms[0].get("start_param").get("order_op_qty") * 3
 
-    def execute(self):
+    def _execute(self):
         """
            Agredir fim de fila é uma estratégia interessante apenas para ativos com pouca liquidez nas filas, situação
            onde, mesmo pendurando a saída na ultima posição da fila, ainda é possivel ser zerado rapidamente por conta

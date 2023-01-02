@@ -39,7 +39,7 @@ class Arbitrage(Bot):
         return [(lst_spread[0][0][1] - lst_spread[1][1][1]) > 0, (lst_spread[1][0][1] - lst_spread[0][1][1]) > 0], \
             lst_spread
 
-    def execute(self):
+    def _execute(self):
         # entry point
 
         self._arms = self._position_mgr.get_pos_arms()

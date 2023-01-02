@@ -31,7 +31,7 @@ class Bot(Thread):
         self._position_mgr = PositionMgr(self._dct_inst.get("orders"), self._lst_orders_sent, algo,
                                          self._dct_ord_status)
 
-    def execute(self):
+    def _execute(self):
         pass
 
     def run(self):
@@ -46,7 +46,7 @@ class Bot(Thread):
 
         while self._config_prov.get_keep_running() and self._algo.get("enabled"):
             try:
-                self.execute()
+                self._execute()
 
             except Exception:
                 if self._profit_dll and not self._profit_dll.is_connected():
@@ -154,7 +154,7 @@ class Bot(Thread):
         :return:
         """
         ret_bol = True
-        for quote in self._dct_inst.get("quote", []):
+        for _, quote in self._dct_inst.get("quote", {}).items():
             if self._dct_asset_state.get(quote.get("state", -1)) not in lst_states:
                 ret_bol = False
                 break

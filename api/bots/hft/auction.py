@@ -19,7 +19,7 @@ class Auction(Bot):
         super().__init__(name, daemon, algo, Bot.ONE_ARM, config_prov)
         self._lst_entry_signal = []
 
-    def execute(self):
+    def _execute(self):
         # TODO: preciso saber como detectar o tempo restante do leião e da fase randomica.
 
         """
