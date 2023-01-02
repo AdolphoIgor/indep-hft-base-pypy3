@@ -9,6 +9,30 @@ class Arbitrage(Bot):
 
     def __init__(self, name, daemon, algo: dict, config_prov: InternalConfigProviders):
         super().__init__(name, daemon, algo, Bot.TWO_ARM, config_prov)
+        self._arms = self._position_mgr.get_pos_arms()
+
+        self._tpl_arm_0 = (
+            self._arms[0].get("broker").get("account"),
+            self._arms[0].get("broker").get("id"),
+            self._arms[0].get("broker").get("password"),
+            self._arms[0].get("symbol"),
+            self._arms[0].get("stock_market"),
+            self._arms[0].get("start_param").get("order_op_qty")
+        )
+
+        self._tpl_arm_1 = (
+            self._arms[1].get("broker").get("account"),
+            self._arms[1].get("broker").get("id"),
+            self._arms[1].get("broker").get("password"),
+            self._arms[1].get("symbol"),
+            self._arms[1].get("stock_market"),
+            self._arms[1].get("start_param").get("order_op_qty")
+        )
+
+        self._lst_sides = [
+            (self._tpl_arm_0, self._tpl_arm_1),
+            (self._tpl_arm_1, self._tpl_arm_0)
+        ]
 
     def _get_signal(self):
         lst_spread = list(self._dct_inst.get("spread").values())
@@ -17,43 +41,18 @@ class Arbitrage(Bot):
 
     def execute(self):
         # entry point
-        arms = self._position_mgr.get_pos_arms()
-        if self._is_asset_state(["opened"]) and arms[0].get("position").get("has_ord_rem") and \
-                arms[1].get("position").get("has_ord_rem"):
 
-            arm_0_qty = arms[0].get("start_param").get("order_op_qty")
-            arm_1_qty = arms[1].get("start_param").get("order_op_qty")
-
-            tpl_arm_0 = (
-                arms[0].get("broker").get("account"),
-                arms[0].get("broker").get("id"),
-                arms[0].get("broker").get("password"),
-                arms[0].get("symbol"),
-                arms[0].get("stock_market"),
-                arm_0_qty
-            )
-
-            tpl_arm_1 = (
-                arms[1].get("broker").get("account"),
-                arms[1].get("broker").get("id"),
-                arms[1].get("broker").get("password"),
-                arms[1].get("symbol"),
-                arms[1].get("stock_market"),
-                arm_1_qty
-            )
-
-            lst_sides = [
-                (tpl_arm_0, tpl_arm_1),
-                (tpl_arm_1, tpl_arm_0)
-            ]
+        self._arms = self._position_mgr.get_pos_arms()
+        if self._is_asset_state(["opened"]) and self._arms[0].get("position").get("has_ord_rem") and \
+                self._arms[1].get("position").get("has_ord_rem"):
 
             lst_signal, lst_spread = self._get_signal()
             if any(lst_signal):
                 if lst_signal[0]:
-                    lst_sides = lst_sides[0]
+                    lst_sides = self._lst_sides[0]
                     lst_prices = [lst_spread[0][0][0], lst_spread[0][0][1], lst_spread[1][1][0], lst_spread[1][1][1]]
                 else:
-                    lst_sides = lst_sides[1]
+                    lst_sides = self._lst_sides[1]
                     lst_prices = [lst_spread[1][0][0], lst_spread[1][0][1], lst_spread[0][1][0], lst_spread[0][1][1]]
 
                 if lst_prices[0] < lst_sides[0][-1] and lst_prices[1] < lst_sides[1][-1]:
@@ -77,7 +76,7 @@ class Arbitrage(Bot):
                 for ordr in pos.get("open_arms"):
                     thr_sel = None
                     lst_spread = self._dct_inst.get("spread")
-                    for thr in arms:
+                    for thr in self._arms:
                         if thr.ge("symbol") == ordr.get("symbol"):
                             thr_sel = thr
                             break
