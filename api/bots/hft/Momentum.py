@@ -5,7 +5,7 @@ class Momentum:
     _mm_lst = []
     _dt_start = None
 
-    def get_momentum(self, lst_tt: list, minutes=5, skip_minutes=5):
+    def get_momentum(self, lst_tt: list, minutes=5, skip_minutes=5, buy_threshold=0.80, sell_threshold=0.20):
 
         if not self._mm_lst:
             self._dt_start = datetime.strptime(lst_tt[0][1], "%Y-%m-%d %H:%M:%S.%f")
@@ -44,8 +44,7 @@ class Momentum:
         b_buy, b_sell = False, False
         if max_min > 0 and med_min > 0:
             med_max_min = round(med_min / max_min, 2)
-            b_buy = med_max_min >= 0.75
-            b_sell = med_max_min <= 0.25
+            b_buy = med_max_min >= buy_threshold
+            b_sell = med_max_min <= sell_threshold
 
         return [mm_max, mm_med, mm_min, b_buy, b_sell]
-
