@@ -28,8 +28,15 @@ class Bot(Thread):
         self._dct_ord_status = self._profit_dll.get_dct_order_status()
 
         self._lst_sbl = [(alg.get("symbol"), alg.get("stock_market")) for alg in algo.get("threads")]
-        self._position_mgr = PositionMgr(self._dct_inst.get("orders"), self._lst_orders_sent, algo,
-                                         self._dct_ord_status)
+        self._position_mgr = PositionMgr(self._lst_orders_sent, algo, self._dct_ord_status)
+
+        # we will always have to be quotes for every bot created.
+        lst_req = self._algo.get("req_instruments", [])
+        if "quote" not in lst_req:
+            lst_req.append("quote")
+
+        if "orders" in lst_req:
+            del lst_req[lst_req.index("orders")]
 
     def _execute(self):
         pass
@@ -55,6 +62,9 @@ class Bot(Thread):
 
                     time.sleep(0.2)
 
+            finally:
+                self.__get_lst_orders()
+
         self.__unsubscribe()
         logger.info(f"The algo name: {self.name} was finalized.")
 
@@ -67,6 +77,29 @@ class Bot(Thread):
         if qtd_ast != self._qtd_exp:
             str_cpl = f"{qtd_ast} was given" if qtd_ast == 1 else f"{qtd_ast} were given"
             raise BotInitializationException(f"The algo: {self.name} requires {self._qtd_exp} asset(s) but {str_cpl}.")
+
+    def __get_lst_orders(self):
+        if self._dct_inst.get("orders", None) is not None:
+            return
+
+        dct_ordrs = None
+        for subs in self._config_prov.get_internal_provider_data("instruments"):
+            if subs.get("type") == "orders":
+                dct_ordrs = subs.get("value")
+                break
+
+        if not dct_ordrs:
+            return
+
+        dct_val = {}
+        lst_sbl_f = [sbl[0] for sbl in self._lst_sbl]
+        for sbl in lst_sbl_f:
+            dct_val[sbl] = dct_ordrs.get(sbl)
+
+        if dct_val:
+            dct_res = {"orders": dct_val}
+            self._dct_inst.update(dct_res)
+            self._position_mgr.set_lst_orders(dct_res)
 
     def __get_instruments(self):
         logger.info(f"Waiting for instruments for the algo: {self.name}...")

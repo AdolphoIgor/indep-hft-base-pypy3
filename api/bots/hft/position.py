@@ -21,8 +21,10 @@ class PositionMgr:
     # for every processed cl_ord_id
     _lst_used_clordid = []
 
-    def __init__(self, lst_orders: list, lst_sent_orders: list, algo: dict, dct_ord_status: dict):
-        self._lst_orders = lst_orders
+    # holds the pointer to the lists orders of profitdll.
+    _dct_orders = None
+
+    def __init__(self, lst_sent_orders: list, algo: dict, dct_ord_status: dict):
         self._dct_ord_status = dct_ord_status
         self._lst_sent_orders = lst_sent_orders
 
@@ -49,6 +51,10 @@ class PositionMgr:
                 }
             )
 
+    def set_lst_orders(self, dct_orders: dict):
+        if self._dct_orders is None:
+            self._dct_orders = dct_orders
+
     def __print_state(self):
         print("---------------------------------------------------------------")
         print("-->> _lst_opened_positions")
@@ -63,8 +69,8 @@ class PositionMgr:
         json_formatted_str = json.dumps(self._lst_used_clordid, indent=2)
         print(json_formatted_str)
         print("")
-        print("-->> self._lst_orders")
-        json_formatted_str = json.dumps(self._lst_orders, indent=2)
+        print("-->> lst_orders")
+        json_formatted_str = json.dumps(self._dct_orders, indent=2)
         print(json_formatted_str)
         print("")
         print("-->> self._lst_sent_orders")
@@ -106,10 +112,13 @@ class PositionMgr:
 
         return self.POS_NEW
 
-    def _proc_lated_orders(self):
-        # remove from self._lst_orders every late update of its arm's orders.
+    def _proc_lated_orders(self, lst_orders: list):
+        if not lst_orders:
+            return
+
+        # remove from lst_orders every late update of its arm's orders.
         bol_found = False
-        for ordr in self._lst_orders:
+        for ordr in lst_orders:
             for pos in self._lst_closed_positions:
                 for arm in pos.get("open_arms"):
                     if ordr.get("cl_ord_id") == arm.get("id"):
@@ -123,11 +132,11 @@ class PositionMgr:
                             break
 
                 if bol_found:
-                    self._lst_orders.remove(ordr)
+                    lst_orders.remove(ordr)
                     break
 
-    def _proc_new_positions(self):
-        if not self._lst_orders:
+    def _proc_new_positions(self, lst_orders: list):
+        if not lst_orders:
             return
 
         lst_ordrs = [ordr for ordr in self._lst_sent_orders if ordr.get("id") is not None]
@@ -143,7 +152,7 @@ class PositionMgr:
             for cl_ord_id in [i.get("cl_ord_id") for i in lst_ordrs if i.get("id") == ord_id]:
                 dct_arm = {}
 
-                lst_ord_id = [ordr for ordr in self._lst_orders if ordr.get("cl_ord_id") == cl_ord_id]
+                lst_ord_id = [ordr for ordr in lst_orders if ordr.get("cl_ord_id") == cl_ord_id]
                 item = lst_ord_id[-1]
 
                 dct_arm["id"] = cl_ord_id
@@ -183,17 +192,17 @@ class PositionMgr:
             self._lst_sent_orders.remove(sor)
 
         for ordr in lst_arms_ordrs:
-            self._lst_orders.remove(ordr)
+            lst_orders.remove(ordr)
 
-    def _proc_upd_new_positions(self):
-        if not self._lst_orders or not self._lst_opened_positions:
+    def _proc_upd_new_positions(self, lst_orders: list):
+        if not lst_orders or not self._lst_opened_positions:
             return
 
         lst_arms_ordrs = []
         for pos in [pos for pos in self._lst_opened_positions if
                     pos.get("open_status") in [self.POS_NEW, self.POS_PRT_OPENED]]:
             for arm in pos.get("open_arms"):
-                for ordr in self._lst_orders:
+                for ordr in lst_orders:
                     if ordr.get("cl_ord_id") == arm.get("id"):
 
                         status = ordr.get("status")
@@ -216,14 +225,14 @@ class PositionMgr:
             for ordr in lst_arms_ordrs:
                 mpl = -1 if ordr.get("status") == "bstCanceled" else 1
                 self.__update_arm(ordr.get("symbol"), (ordr.get("traded_qtd") * mpl))
-                self._lst_orders.remove(ordr)
+                lst_orders.remove(ordr)
 
             lst_status = [arm.get("status") for arm in pos.get("open_arms")]
             pos["open_arms_status"] = lst_status
             pos["open_status"] = self.__get_updated_status(lst_status, lst_open_arms_status=pos.get("open_arms_status"))
 
-    def _proc_close_positions(self):
-        if not self._lst_orders or not self._lst_opened_positions:
+    def _proc_close_positions(self, lst_orders: list):
+        if not lst_orders or not self._lst_opened_positions:
             return
 
         for pos in [pos for pos in self._lst_opened_positions
@@ -236,7 +245,7 @@ class PositionMgr:
                 symbol = arm.get("symbol")
 
                 lst_sel_ordrs = [
-                    ordr for ordr in self._lst_orders
+                    ordr for ordr in lst_orders
                     if ordr.get("symbol") == symbol and ordr.get("side") == side and
                        ordr.get("status") in ["bstPartiallyFilled", "bstFilled", "bstCanceled", "bstRejected"]]
 
@@ -308,7 +317,7 @@ class PositionMgr:
                     pos["close_arms"].append(dct_arm)
 
             for ordr in lst_arms_ordrs:
-                self._lst_orders.remove(ordr)
+                lst_orders.remove(ordr)
 
             for ord_id in set([ordr.get("cl_ord_id") for ordr in lst_arms_ordrs]):
                 dct_ordr = {"id": None, "cl_ord_id": ord_id}
@@ -331,10 +340,14 @@ class PositionMgr:
             self._lst_opened_positions.remove(pos)
 
     def proc_positions(self):
-        self._proc_new_positions()
-        self._proc_upd_new_positions()
-        self._proc_close_positions()
-        self._proc_lated_orders()
+        lst_orders = []
+        for _, v in self._dct_orders.items():
+            lst_orders.extend(v)
+
+        self._proc_new_positions(lst_orders)
+        self._proc_upd_new_positions(lst_orders)
+        self._proc_close_positions(lst_orders)
+        self._proc_lated_orders(lst_orders)
 
         gettrace = getattr(sys, 'gettrace', None)
         if not gettrace() is None:

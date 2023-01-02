@@ -20,25 +20,25 @@ class InternalConfigProviders:
         {
             "type": "instruments",
             "value": [
+                {"type": "orders", "value": {}},
                 {"type": "quote", "value": {}},
                 {"type": "tt", "value": {}},
                 {"type": "lp", "value": {}},
                 {"type": "lo", "value": {}},
                 {"type": "spread", "value": {}},
                 {"type": "account", "value": {}},
-                {"type": "orders", "value": {}},
                 {"type": "progress", "value": {}}
             ]
         },
         {
             "type": "subscriptions",
             "value": [
+                {"type": "orders", "value": []},
                 {"type": "quote", "value": []},
                 {"type": "tt", "value": []},
                 {"type": "lp", "value": []},
                 {"type": "lo", "value": []},
-                {"type": "spread", "value": []},
-                {"type": "orders", "value": []}
+                {"type": "spread", "value": []}
             ]
         }
     ]
