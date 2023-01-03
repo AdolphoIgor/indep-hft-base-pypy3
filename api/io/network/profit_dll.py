@@ -1002,6 +1002,14 @@ class ProfitDLL:
                          profit_id, tipo_ordem, conta, titular, cl_ord_id, status, date):
         self.find_lim_ord_pos_book_offer(tipo_ordem, status, asset_id, side, price, date, cl_ord_id)
 
+        dct = {
+            "corretora": corretora, "qtd": qtd, "traded_qtd": traded_qtd, "leaves_qtd": leaves_qtd, "side": side,
+            "price": price, "stop_price": stop_price, "avg_price": avg_price, "profit_id": profit_id,
+            "tipo_ordem": tipo_ordem, "conta": conta, "titular": titular, "cl_ord_id": cl_ord_id, "status": status,
+            "date": date, "symbol": asset_id.ticker,
+        }
+        print(f"history_callback -> {dct}")
+
         lst_orders = self._dct_orders.get(asset_id.ticker, [])
         if not lst_orders:
             self._dct_orders[asset_id.ticker] = lst_orders
@@ -1046,6 +1054,14 @@ class ProfitDLL:
     def order_change_callback(self, asset_id, corretora, qtd, traded_qtd, leaves_qtd, side, price, stop_price,
                               avg_price, profit_id, tipo_ordem, conta, titular, cl_ord_id, status, date, text_message):
         self.find_lim_ord_pos_book_offer(tipo_ordem, status, asset_id, side, price, date, cl_ord_id)
+
+        dct = {
+            "corretora": corretora, "qtd": qtd, "traded_qtd": traded_qtd, "leaves_qtd": leaves_qtd, "side": side,
+            "price": price, "stop_price": stop_price, "avg_price": avg_price, "profit_id": profit_id,
+            "tipo_ordem": tipo_ordem, "conta": conta, "titular": titular, "cl_ord_id": cl_ord_id, "status": status,
+            "date": date, "symbol": asset_id.ticker,
+        }
+        print(f"order_change_callback -> {dct}")
 
         lst_orders = self._dct_orders.get(asset_id.ticker, [])
         if not lst_orders:

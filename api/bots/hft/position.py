@@ -51,7 +51,7 @@ class PositionMgr:
                 }
             )
 
-    def set_lst_orders(self, dct_orders: dict):
+    def set_dct_orders(self, dct_orders: dict):
         if self._dct_orders is None:
             self._dct_orders = dct_orders
 
@@ -153,6 +153,9 @@ class PositionMgr:
                 dct_arm = {}
 
                 lst_ord_id = [ordr for ordr in lst_orders if ordr.get("cl_ord_id") == cl_ord_id]
+                if not lst_ord_id:
+                    continue
+
                 item = lst_ord_id[-1]
 
                 dct_arm["id"] = cl_ord_id
@@ -340,18 +343,25 @@ class PositionMgr:
             self._lst_opened_positions.remove(pos)
 
     def proc_positions(self):
+        if not self._dct_orders:
+            return
+
         lst_orders = []
-        for _, v in self._dct_orders.items():
-            lst_orders.extend(v)
+        for lst in list(self._dct_orders.get("orders").values()):
+            lst_orders.extend(lst)
+
+        lst_orders.sort(key=(lambda x: x.get("date")))
 
         self._proc_new_positions(lst_orders)
         self._proc_upd_new_positions(lst_orders)
         self._proc_close_positions(lst_orders)
         self._proc_lated_orders(lst_orders)
 
+        '''
         gettrace = getattr(sys, 'gettrace', None)
         if not gettrace() is None:
             self.__print_state()
+        '''
 
     def update_fin_result(self):
         lst_whole = [pos for pos in self._lst_opened_positions]

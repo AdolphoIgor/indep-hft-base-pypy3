@@ -35,8 +35,9 @@ class Bot(Thread):
         if "quote" not in lst_req:
             lst_req.append("quote")
 
-        if "orders" in lst_req:
-            del lst_req[lst_req.index("orders")]
+        if "orders" not in lst_req:
+            #del lst_req[lst_req.index("orders")]
+            lst_req.append("orders")
 
     def _execute(self):
         pass
@@ -79,27 +80,28 @@ class Bot(Thread):
             raise BotInitializationException(f"The algo: {self.name} requires {self._qtd_exp} asset(s) but {str_cpl}.")
 
     def __get_lst_orders(self):
-        if self._dct_inst.get("orders", None) is not None:
+        dct_exsts = self._dct_inst.get("orders", {})
+        if len(dct_exsts) == self._qtd_exp:
             return
 
-        dct_ordrs = None
+        lst_sbl_f = [sbl[0] for sbl in self._lst_sbl]
         for subs in self._config_prov.get_internal_provider_data("instruments"):
             if subs.get("type") == "orders":
-                dct_ordrs = subs.get("value")
+                for k, v in subs.get("value").items():
+                    if k in lst_sbl_f and not dct_exsts.get(k):
+                        dct_exsts[k] = v
+
                 break
 
-        if not dct_ordrs:
+        if not dct_exsts:
             return
 
-        dct_val = {}
-        lst_sbl_f = [sbl[0] for sbl in self._lst_sbl]
-        for sbl in lst_sbl_f:
-            dct_val[sbl] = dct_ordrs.get(sbl)
-
-        if dct_val:
-            dct_res = {"orders": dct_val}
+        if dct_exsts:
+            dct_res = {"orders": dct_exsts}
             self._dct_inst.update(dct_res)
-            self._position_mgr.set_lst_orders(dct_res)
+
+            if len(dct_exsts) == self._qtd_exp:
+                self._position_mgr.set_dct_orders(dct_res)
 
     def __get_instruments(self):
         logger.info(f"Waiting for instruments for the algo: {self.name}...")
@@ -118,9 +120,14 @@ class Bot(Thread):
                         dct_val[sbl] = value
                         lst_found.append(True)
                     else:
-                        lst_found.append(False)
+                        if not inst.get("type") == "orders":
+                            lst_found.append(False)
 
                 dct_res[inst.get("type")] = dct_val
+
+            dct_orders = dct_res.get("orders")
+            if dct_orders:
+                self._position_mgr.set_dct_orders(dct_res)
 
             if all(lst_found):
                 self._dct_inst.update(dct_res)

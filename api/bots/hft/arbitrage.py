@@ -71,7 +71,8 @@ class Arbitrage(Bot):
         self._position_mgr.proc_positions()
 
         # exit point
-        if not any(self._get_signal()):
+        lst_signal, _ = self._get_signal()
+        if not any(lst_signal):
             for pos in self._position_mgr.get_lst_positions([PositionMgr.POS_OPENED], [PositionMgr.POS_INIT]):
                 for ordr in pos.get("open_arms"):
                     thr_sel = None

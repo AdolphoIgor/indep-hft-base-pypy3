@@ -44,12 +44,14 @@
       "algo_class": "Arbitrage",
       "is_day_trade": true,
       "debug_mode": true,
-      "req_instruments": ["spread"],
+      "req_instruments": [
+        "spread"
+      ],
       "threads": [
         {
           "symbol": "DOLFUT",
           "stock_market": "F",
-          "broker_id": -1,
+          "broker_id": "15002",
           "start_param": {
             "order_op_qty": 5,
             "order_limit_qty": 20
@@ -58,7 +60,7 @@
         {
           "symbol": "WDOFUT",
           "stock_market": "F",
-          "broker_id": -1,
+          "broker_id": "15002",
           "start_param": {
             "order_op_qty": 25,
             "order_limit_qty": 100
@@ -73,9 +75,9 @@
   ],
   "brokers": [
     {
-      "id": -1,
+      "id": "15002",
       "broker_name": "Nelogica",
-      "account": 102376375,
+      "account": "102376375",
       "username": "87723603134",
       "password": "Air1945jc!1"
     }

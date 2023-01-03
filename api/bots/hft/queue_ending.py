@@ -33,6 +33,7 @@ class QueueEnding(BotMomentum):
            com baixa liquidez.
 
         """
+        '''
         # entry point.
         self._arms = self._position_mgr.get_pos_arms()
         if self._is_asset_state(["opened"]) and self._arms[0].get("position").get("has_ord_rem"):
@@ -41,30 +42,44 @@ class QueueEnding(BotMomentum):
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
 
             # [[[price, qtd, count], [price, qtd, count]], [[price, qtd, count], [price, qtd, count]]]
+            lst_sides = None
             # buy
             if lst_mm[3] and lst_lp[0][0][1] <= self._qtd_ff:
-                self._lst_orders_sent.append({"id": timestamp, "cl_ord_id": self._profit_dll.send_buy_order(
-                    conta=self._tpl_arm[0], broker=self._tpl_arm[1], senha=self._tpl_arm[2], ativo=self._tpl_arm[3],
-                    bolsa=self._tpl_arm[4], preco=lst_lp[0][0][0], qtd=self._tpl_arm[5]
-                )})
-                self._lst_orders_sent.append({"id": timestamp, "cl_ord_id": self._profit_dll.send_sell_order(
-                    conta=self._tpl_arm[0], broker=self._tpl_arm[1], senha=self._tpl_arm[2], ativo=self._tpl_arm[3],
-                    bolsa=self._tpl_arm[4], preco=lst_lp[0][0][1], qtd=self._tpl_arm[5]
-                )})
+                lst_sides = [lst_lp[1][0][0], lst_lp[1][1][0], lst_lp[0][0][0]]
 
             # sell
-            elif lst_mm[4] and lst_lp[1][1] <= self._qtd_ff:
-                self._lst_orders_sent.append({"id": timestamp, "cl_ord_id": self._profit_dll.send_sell_order(
-                    conta=self._tpl_arm[0], broker=self._tpl_arm[1], senha=self._tpl_arm[2], ativo=self._tpl_arm[3],
-                    bolsa=self._tpl_arm[4], preco=lst_lp[1][0][0], qtd=self._tpl_arm[5]
-                )})
-                self._lst_orders_sent.append({"id": timestamp, "cl_ord_id": self._profit_dll.send_buy_order(
-                    conta=self._tpl_arm[0], broker=self._tpl_arm[1], senha=self._tpl_arm[2], ativo=self._tpl_arm[3],
-                    bolsa=self._tpl_arm[4], preco=lst_lp[1][0][1], qtd=self._tpl_arm[5]
-                )})
+            elif lst_mm[4] and lst_lp[1][1][1] <= self._qtd_ff:
+                lst_sides = [lst_lp[0][0][0], lst_lp[0][1][0], lst_lp[1][0][0]]
 
-        self._position_mgr.proc_positions()
+            self._lst_orders_sent.append({"id": timestamp, "cl_ord_id": self._profit_dll.send_buy_order(
+                conta=self._tpl_arm[0], broker=self._tpl_arm[1], senha=self._tpl_arm[2], ativo=self._tpl_arm[3],
+                bolsa=self._tpl_arm[4], preco=lst_lp[0][0][0], qtd=self._tpl_arm[5]
+            )})
+            self._lst_orders_sent.append({"id": timestamp, "cl_ord_id": self._profit_dll.send_sell_order(
+                conta=self._tpl_arm[0], broker=self._tpl_arm[1], senha=self._tpl_arm[2], ativo=self._tpl_arm[3],
+                bolsa=self._tpl_arm[4], preco=lst_lp[0][0][1], qtd=self._tpl_arm[5]
+            )})
+
+            self._position_mgr.proc_positions()
+
+            # Se a ordem nova ficou fora da formação do preço teórico, cancela e espera novo sinal.
+            lst_new_ordrs = [
+                ordr for pos in self._position_mgr.get_lst_positions([PositionMgr.POS_NEW], [PositionMgr.POS_INIT])
+                for ordr in pos.get("open_arms")
+                if ordr.get("status") == "bstNew"
+            ]
+
+            for ordr in lst_new_ordrs:
+                if ordr.get("price") != self._dct_inst.get("quote").get("theoretical_price"):
+                    self._lst_orders_sent.append({"id": None, "cl_ord_id": self._profit_dll.send_cancel_order(
+                        conta=dct_pos_threads.get("broker").get("account"),
+                        broker=dct_pos_threads.get("broker").get("id"),
+                        senha=dct_pos_threads.get("broker").get("password"),
+                        cl_ord_id=ordr.get("cl_ord_id")
+                    )})
 
         # exit point.
         # TODO:
-        #  fazer a saida (monitorar fila para zerar no primeiro tick contra.
+
+        '''
+        pass
