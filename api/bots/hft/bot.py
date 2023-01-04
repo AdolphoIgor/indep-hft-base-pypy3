@@ -28,16 +28,14 @@ class Bot(Thread):
         self._dct_ord_status = self._profit_dll.get_dct_order_status()
 
         self._lst_sbl = [(alg.get("symbol"), alg.get("stock_market")) for alg in algo.get("threads")]
-        self._position_mgr = PositionMgr(self._lst_orders_sent, algo, self._dct_ord_status)
+        self._position_mgr = PositionMgr(self._lst_orders_sent, algo, self._dct_ord_status, config_prov)
 
         # we will always have to be quotes for every bot created.
         lst_req = self._algo.get("req_instruments", [])
-        if "quote" not in lst_req:
-            lst_req.append("quote")
-
-        if "orders" not in lst_req:
-            #del lst_req[lst_req.index("orders")]
-            lst_req.append("orders")
+        lst_req.extend(["quote"])
+        lst_req = list(set(lst_req))
+        if "orders" in lst_req:
+            del lst_req[lst_req.index("orders")]
 
     def _execute(self):
         pass
@@ -63,9 +61,6 @@ class Bot(Thread):
 
                     time.sleep(0.2)
 
-            finally:
-                self.__get_lst_orders()
-
         self.__unsubscribe()
         logger.info(f"The algo name: {self.name} was finalized.")
 
@@ -78,30 +73,6 @@ class Bot(Thread):
         if qtd_ast != self._qtd_exp:
             str_cpl = f"{qtd_ast} was given" if qtd_ast == 1 else f"{qtd_ast} were given"
             raise BotInitializationException(f"The algo: {self.name} requires {self._qtd_exp} asset(s) but {str_cpl}.")
-
-    def __get_lst_orders(self):
-        dct_exsts = self._dct_inst.get("orders", {})
-        if len(dct_exsts) == self._qtd_exp:
-            return
-
-        lst_sbl_f = [sbl[0] for sbl in self._lst_sbl]
-        for subs in self._config_prov.get_internal_provider_data("instruments"):
-            if subs.get("type") == "orders":
-                for k, v in subs.get("value").items():
-                    if k in lst_sbl_f and not dct_exsts.get(k):
-                        dct_exsts[k] = v
-
-                break
-
-        if not dct_exsts:
-            return
-
-        if dct_exsts:
-            dct_res = {"orders": dct_exsts}
-            self._dct_inst.update(dct_res)
-
-            if len(dct_exsts) == self._qtd_exp:
-                self._position_mgr.set_dct_orders(dct_res)
 
     def __get_instruments(self):
         logger.info(f"Waiting for instruments for the algo: {self.name}...")
@@ -124,10 +95,6 @@ class Bot(Thread):
                             lst_found.append(False)
 
                 dct_res[inst.get("type")] = dct_val
-
-            dct_orders = dct_res.get("orders")
-            if dct_orders:
-                self._position_mgr.set_dct_orders(dct_res)
 
             if all(lst_found):
                 self._dct_inst.update(dct_res)

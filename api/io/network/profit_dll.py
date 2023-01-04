@@ -248,11 +248,11 @@ class ProfitDLL:
 
     # Valores do Status das callbacks HistoryCallback e OrderChangeCallback.
     _dct_order_status = {
-        0: 'bstNew', 1: 'bstPartiallyFilled', 2: 'bstFilled', 3: 'bstDoneForDay', 4: 'bstCanceled', 5: 'bstReplaced',
-        6: 'bstPendingCancel', 7: 'bstStopped', 8: 'bstRejected', 9: 'bstSuspended', 10: 'bstPendingNew',
-        11: 'bstCalculated', 12: 'bstExpired', 13: 'bstAcceptedForBidding', 14: 'bstPendingReplace',
-        15: 'bstPartiallyFilledCanceleds', 16: 'bstReceived', 17: 'bstPartiallyFilledExpired', 200: 'bstUnknown',
-        201: 'bstHadesCreated', 202: 'bstBrokerSent', 203: 'bstClientCreated', 204: 'bstOrderNotCreated'
+        0: 'New', 1: 'PartiallyFilled', 2: 'Filled', 3: 'DoneForDay', 4: 'Canceled', 5: 'Replaced',
+        6: 'PendingCancel', 7: 'Stopped', 8: 'Rejected', 9: 'Suspended', 10: 'PendingNew',
+        11: 'Calculated', 12: 'Expired', 13: 'AcceptedForBidding', 14: 'PendingReplace',
+        15: 'PartiallyFilledCanceleds', 16: 'Received', 17: 'PartiallyFilledExpired', 200: 'Unknown',
+        201: 'HadesCreated', 202: 'BrokerSent', 203: 'ClientCreated', 204: 'OrderNotCreated'
     }
 
     def __init__(self, config_prov: InternalConfigProviders):

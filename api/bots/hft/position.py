@@ -1,6 +1,8 @@
 import json
 import sys
 
+from api.jobs.internal_config_provider import InternalConfigProviders
+
 
 class PositionMgr:
     POS_INIT = -1
@@ -19,14 +21,15 @@ class PositionMgr:
     _lst_closed_positions = []
 
     # for every processed cl_ord_id
-    _lst_used_clordid = []
+    _lst_used_profit_id = []
 
     # holds the pointer to the lists orders of profitdll.
-    _dct_orders = None
+    _dct_orders = {}
 
-    def __init__(self, lst_sent_orders: list, algo: dict, dct_ord_status: dict):
+    def __init__(self, lst_sent_orders: list, algo: dict, dct_ord_status: dict, config_prov: InternalConfigProviders):
         self._dct_ord_status = dct_ord_status
         self._lst_sent_orders = lst_sent_orders
+        self._config_prov = config_prov
 
         # position summary
         self._dct_pos_mgr = algo.copy()
@@ -51,9 +54,23 @@ class PositionMgr:
                 }
             )
 
-    def set_dct_orders(self, dct_orders: dict):
-        if self._dct_orders is None:
-            self._dct_orders = dct_orders
+    def __get_internal_lst_orders_pointer(self):
+        if len(self._lst_threads) > len(self._dct_orders.get("orders", {})):
+            dct_exsts = {}
+            lst_sbl_f = [thr.get("symbol") for thr in self._lst_threads]
+            for subs in self._config_prov.get_internal_provider_data("instruments"):
+                if subs.get("type") == "orders":
+                    for k, v in subs.get("value").items():
+                        if k in lst_sbl_f and not dct_exsts.get(k):
+                            dct_exsts[k] = v
+
+                    break
+
+            if len(self._lst_threads) == len(dct_exsts):
+                self._dct_orders = {"orders": dct_exsts}
+                return True
+
+        return False
 
     def __print_state(self):
         print("---------------------------------------------------------------")
@@ -65,8 +82,8 @@ class PositionMgr:
         json_formatted_str = json.dumps(self._lst_closed_positions, indent=2)
         print(json_formatted_str)
         print("")
-        print("-->> _lst_used_clordid")
-        json_formatted_str = json.dumps(self._lst_used_clordid, indent=2)
+        print("-->> _lst_used_profit_id")
+        json_formatted_str = json.dumps(self._lst_used_profit_id, indent=2)
         print(json_formatted_str)
         print("")
         print("-->> lst_orders")
@@ -88,7 +105,7 @@ class PositionMgr:
             thr.get("position")["limit_qty_order_used"] += qtd_traded
 
         thr.get("position")["has_ord_rem"] = \
-            thr.get("start_param").get("limit_qty_order") > thr.get("position")["limit_qty_order_used"]
+            thr.get("start_param").get("order_limit_qty") > thr.get("position")["limit_qty_order_used"]
 
         gettrace = getattr(sys, 'gettrace', None)
         if not gettrace() is None:
@@ -98,16 +115,16 @@ class PositionMgr:
             print("---------------------------------------------------------------")
 
     def __get_updated_status(self, lst_status: list, lst_open_arms_status: list, bol_closing=False) -> int:
-        if 'bstRejected' in lst_status:
+        if 'Rejected' in lst_status:
             return self.POS_REJECTED
-        elif 'bstCanceled' in lst_status:
+        elif 'Canceled' in lst_status:
             return self.POS_CANCELED
-        elif 'bstPartiallyFilled' in lst_status:
+        elif 'PartiallyFilled' in lst_status:
             return self.POS_PRT_EXEC if bol_closing else self.POS_PRT_OPENED
-        elif all([True if i == 'bstFilled' else False for i in lst_status]) and len(lst_status) >= len(
+        elif all([True if i == 'Filled' else False for i in lst_status]) and len(lst_status) >= len(
                 lst_open_arms_status):
             return self.POS_EXECUTED if bol_closing else self.POS_OPENED
-        elif 'bstFilled' in lst_status:
+        elif 'Filled' in lst_status:
             return self.POS_PRT_EXEC if bol_closing else self.POS_PRT_OPENED
 
         return self.POS_NEW
@@ -149,16 +166,20 @@ class PositionMgr:
         lst_arms_ordrs = []
 
         for ord_id in set([i.get("id") for i in lst_ordrs]):
-            for cl_ord_id in [i.get("cl_ord_id") for i in lst_ordrs if i.get("id") == ord_id]:
+            for profit_id in [i.get("profit_id") for i in lst_ordrs if i.get("id") == ord_id]:
                 dct_arm = {}
 
-                lst_ord_id = [ordr for ordr in lst_orders if ordr.get("cl_ord_id") == cl_ord_id]
+                lst_ord_id = [ordr for ordr in lst_orders if ordr.get("profit_id") == profit_id]
                 if not lst_ord_id:
                     continue
 
                 item = lst_ord_id[-1]
 
-                dct_arm["id"] = cl_ord_id
+                if item.get("status") == 'Rejected':
+                    lst_arms_ordrs.append(item)
+                    continue
+
+                dct_arm["id"] = profit_id
                 dct_arm["symbol"] = item.get("symbol")
                 dct_arm["status"] = item.get("status")
                 dct_arm["side"] = item.get("side")
@@ -172,7 +193,7 @@ class PositionMgr:
                 lst_arms_ordrs.extend(lst_ord_id)
                 lst_arms.append(dct_arm)
                 lst_status.append(item.get("status"))
-                self._lst_used_clordid.append(cl_ord_id)
+                self._lst_used_profit_id.append(profit_id)
 
             status = self.__get_updated_status(lst_status, lst_open_arms_status=[])
             self._lst_opened_positions.append(
@@ -188,7 +209,7 @@ class PositionMgr:
             )
 
             # updates the global position data
-            if status not in [self.POS_INIT, self.POS_NEW]:
+            if status in [self.POS_PRT_OPENED, self.POS_OPENED]:
                 self._dct_pos_mgr.get("position")["qtd_open_positions"] += 1
 
         for sor in lst_ordrs:
@@ -206,27 +227,27 @@ class PositionMgr:
                     pos.get("open_status") in [self.POS_NEW, self.POS_PRT_OPENED]]:
             for arm in pos.get("open_arms"):
                 for ordr in lst_orders:
-                    if ordr.get("cl_ord_id") == arm.get("id"):
+                    if ordr.get("profit_id") == arm.get("id"):
 
                         status = ordr.get("status")
 
-                        if status in ["bstCanceled", "bstRejected"]:
+                        if status in ["Canceled", "Rejected"]:
                             arm["traded_qtd"] -= ordr.get("traded_qtd")
                         else:
                             arm["traded_qtd"] = ordr.get("traded_qtd")
 
-                        if status in ["bstPartiallyFilled", "bstFilled", "bstRejected", "bstCanceled"]:
+                        if status in ["PartiallyFilled", "Filled", "Rejected", "Canceled"]:
                             arm["status"] = status
                             lst_arms_ordrs.append(ordr)
 
                         if arm["qtd"] == arm.get("traded_qtd"):
-                            arm["status"] = "bstFilled"
+                            arm["status"] = "Filled"
 
                         arm.get("orders").append(ordr)
 
         if len(lst_arms_ordrs) > 0:
             for ordr in lst_arms_ordrs:
-                mpl = -1 if ordr.get("status") == "bstCanceled" else 1
+                mpl = -1 if ordr.get("status") == "Canceled" else 1
                 self.__update_arm(ordr.get("symbol"), (ordr.get("traded_qtd") * mpl))
                 lst_orders.remove(ordr)
 
@@ -238,10 +259,9 @@ class PositionMgr:
         if not lst_orders or not self._lst_opened_positions:
             return
 
+        lst_arms_ordrs = []
         for pos in [pos for pos in self._lst_opened_positions
                     if pos.get("close_status") in [self.POS_INIT, self.POS_PRT_EXEC]]:
-
-            lst_arms_ordrs = []
 
             for arm in pos.get("open_arms"):
                 side = "B" if arm.get("side") == "S" else "S"
@@ -250,11 +270,11 @@ class PositionMgr:
                 lst_sel_ordrs = [
                     ordr for ordr in lst_orders
                     if ordr.get("symbol") == symbol and ordr.get("side") == side and
-                       ordr.get("status") in ["bstPartiallyFilled", "bstFilled", "bstCanceled", "bstRejected"]]
+                       ordr.get("status") in ["PartiallyFilled", "Filled", "Canceled", "Rejected"]]
 
                 if pos.get("close_status") == self.POS_INIT:
-                    lst_sel_ordrs = [
-                        ordr for ordr in lst_sel_ordrs if ordr.get("cl_ord_id") not in self._lst_used_clordid]
+                    lst_sel_ordrs = [ordr for ordr in lst_sel_ordrs
+                                     if ordr.get("profit_id") not in self._lst_used_profit_id]
 
                 if len(lst_sel_ordrs) == 0:
                     continue
@@ -284,23 +304,23 @@ class PositionMgr:
 
                 lst_traded = []
                 for item in lst_filter:
-                    if item.get("status") in ["bstPartiallyFilled", "bstFilled"]:
+                    if item.get("status") in ["PartiallyFilled", "Filled"]:
                         if dct_arm["traded_qtd"] >= arm["traded_qtd"]:
                             break
 
-                        cl_ord_id = item.get("cl_ord_id")
+                        profit_id = item.get("profit_id")
                         traded_qtd = item.get("traded_qtd")
 
-                        if self._lst_used_clordid[-1] != cl_ord_id:
+                        if self._lst_used_profit_id[-1] != profit_id:
                             if dct_arm["traded_qtd"] + item.get("qtd") > arm["traded_qtd"]:
                                 continue
 
-                            self._lst_used_clordid.append(cl_ord_id)
-                            dct_arm["id"] = cl_ord_id
+                            self._lst_used_profit_id.append(profit_id)
+                            dct_arm["id"] = profit_id
 
                             dct_arm["traded_qtd"] += traded_qtd
 
-                            if item.get("status") == "bstFilled":
+                            if item.get("status") == "Filled":
                                 lst_traded.append(traded_qtd)
 
                         else:
@@ -314,18 +334,10 @@ class PositionMgr:
                     # updates the arm/thread position data(ordr.get("traded_qtd") * mpl)
                 self.__update_arm(symbol, -(dct_arm["traded_qtd"] - orig_qtd_traded))
 
-                dct_arm["status"] = "bstFilled" if dct_arm["traded_qtd"] == arm["qtd"] else "bstPartiallyFilled"
+                dct_arm["status"] = "Filled" if dct_arm["traded_qtd"] == arm["qtd"] else "PartiallyFilled"
 
                 if pos.get("close_status") == self.POS_INIT:
                     pos["close_arms"].append(dct_arm)
-
-            for ordr in lst_arms_ordrs:
-                lst_orders.remove(ordr)
-
-            for ord_id in set([ordr.get("cl_ord_id") for ordr in lst_arms_ordrs]):
-                dct_ordr = {"id": None, "cl_ord_id": ord_id}
-                if dct_ordr in self._lst_sent_orders:
-                    self._lst_sent_orders.remove(dct_ordr)
 
             # updates position status
             lst_status = []
@@ -335,6 +347,13 @@ class PositionMgr:
             pos["close_arms_status"] = lst_status
             pos["close_status"] = self.__get_updated_status(lst_status, bol_closing=True,
                                                             lst_open_arms_status=pos.get("open_arms_status"))
+        for ordr in lst_arms_ordrs:
+            lst_orders.remove(ordr)
+
+        for ord_id in set([ordr.get("profit_id") for ordr in lst_arms_ordrs]):
+            dct_ordr = {"id": None, "profit_id": ord_id}
+            if dct_ordr in self._lst_sent_orders:
+                self._lst_sent_orders.remove(dct_ordr)
 
         for pos in [pos for pos in self._lst_opened_positions if pos.get("close_status") == self.POS_EXECUTED]:
             # updates the global position data
@@ -343,25 +362,32 @@ class PositionMgr:
             self._lst_opened_positions.remove(pos)
 
     def proc_positions(self):
-        if not self._dct_orders:
-            return
+        self.__get_internal_lst_orders_pointer()
 
-        lst_orders = []
-        for lst in list(self._dct_orders.get("orders").values()):
-            lst_orders.extend(lst)
+        try:
+            lst_orders = []
+            for lst in list(self._dct_orders.get("orders").values()):
+                lst_orders.extend(lst)
 
-        lst_orders.sort(key=(lambda x: x.get("date")))
+            lst_orders.sort(key=(lambda x: x.get("date")))
+            lst_orders_orig = lst_orders[:]
 
-        self._proc_new_positions(lst_orders)
-        self._proc_upd_new_positions(lst_orders)
-        self._proc_close_positions(lst_orders)
-        self._proc_lated_orders(lst_orders)
+            self._proc_new_positions(lst_orders)
+            self._proc_upd_new_positions(lst_orders)
+            self._proc_close_positions(lst_orders)
+            self._proc_lated_orders(lst_orders)
 
-        '''
-        gettrace = getattr(sys, 'gettrace', None)
-        if not gettrace() is None:
-            self.__print_state()
-        '''
+            dct_orders = self._dct_orders.get("orders")
+            lst_orders = [i for i in lst_orders_orig if i not in lst_orders]
+            for ordr in lst_orders:
+                lst_sbl = dct_orders.get(ordr.get("symbol"))
+                if ordr in lst_sbl:
+                    lst_sbl.remove(ordr)
+
+        except Exception:
+            return False
+
+        return True
 
     def update_fin_result(self):
         lst_whole = [pos for pos in self._lst_opened_positions]
