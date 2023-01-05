@@ -53,8 +53,7 @@
           "stock_market": "F",
           "broker_id": "15002",
           "start_param": {
-            "order_op_qty": 5,
-            "order_limit_qty": 20
+            "order_op_qty": 5
           }
         },
         {
@@ -62,8 +61,7 @@
           "stock_market": "F",
           "broker_id": "15002",
           "start_param": {
-            "order_op_qty": 25,
-            "order_limit_qty": 100
+            "order_op_qty": 25
           }
         }
       ],

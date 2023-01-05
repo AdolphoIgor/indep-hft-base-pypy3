@@ -822,11 +822,9 @@ class ProfitDLL:
         if action == 4:
             if bool(array_buy):
                 lst_book[0] = decript(array_buy)
-                # logger.debug(f"array_buy-{asset_id.ticker}-{lst_book[0][:5]}")
 
             if bool(array_sell):
                 lst_book[1] = decript(array_sell)
-                # logger.debug(f"array_sell-{asset_id.ticker}-{lst_book[1][:5]}")
 
             return
 
@@ -899,11 +897,9 @@ class ProfitDLL:
         if action == 4:
             if bool(array_buy):
                 lst_book[0] = decript(array_buy)
-                # logger.debug(f"array_buy-{asset_id.ticker}-{lst_book[0][:5]}")
 
             if bool(array_sell):
                 lst_book[1] = decript(array_sell)
-                # logger.debug(f"array_sell-{asset_id.ticker}-{lst_book[1][:5]}")
 
             return
 
@@ -1006,7 +1002,7 @@ class ProfitDLL:
             "corretora": corretora, "qtd": qtd, "traded_qtd": traded_qtd, "leaves_qtd": leaves_qtd, "side": side,
             "price": price, "stop_price": stop_price, "avg_price": avg_price, "profit_id": profit_id,
             "tipo_ordem": tipo_ordem, "conta": conta, "titular": titular, "cl_ord_id": cl_ord_id, "status": status,
-            "date": date, "symbol": asset_id.ticker,
+            "date": date, "symbol": asset_id.ticker
         }
         print(f"history_callback -> {dct}")
 
@@ -1025,7 +1021,7 @@ class ProfitDLL:
                 "corretora": corretora, "qtd": qtd, "traded_qtd": traded_qtd, "leaves_qtd": leaves_qtd, "side": side,
                 "price": price, "stop_price": stop_price, "avg_price": avg_price, "profit_id": profit_id,
                 "tipo_ordem": tipo_ordem, "conta": conta, "titular": titular, "cl_ord_id": cl_ord_id, "status": status,
-                "date": date, "symbol": asset_id.ticker,
+                "date": date, "symbol": asset_id.ticker
             })
         else:
             order.update({
@@ -1059,7 +1055,7 @@ class ProfitDLL:
             "corretora": corretora, "qtd": qtd, "traded_qtd": traded_qtd, "leaves_qtd": leaves_qtd, "side": side,
             "price": price, "stop_price": stop_price, "avg_price": avg_price, "profit_id": profit_id,
             "tipo_ordem": tipo_ordem, "conta": conta, "titular": titular, "cl_ord_id": cl_ord_id, "status": status,
-            "date": date, "symbol": asset_id.ticker,
+            "date": date, "text_message": text_message, "symbol": asset_id.ticker
         }
         print(f"order_change_callback -> {dct}")
 
@@ -1078,7 +1074,7 @@ class ProfitDLL:
                 "corretora": corretora, "qtd": qtd, "traded_qtd": traded_qtd, "leaves_qtd": leaves_qtd, "side": side,
                 "price": price, "stop_price": stop_price, "avg_price": avg_price, "profit_id": profit_id,
                 "tipo_ordem": tipo_ordem, "conta": conta, "titular": titular, "cl_ord_id": cl_ord_id, "status": status,
-                "date": date, "text_message": text_message, "symbol": asset_id.ticker,
+                "date": date, "text_message": text_message, "symbol": asset_id.ticker
             })
         else:
             order.update({
@@ -1271,7 +1267,6 @@ def new_trade_callback(asset_id, date, trade_number, price, vol, qtd, buy_agent,
 
 @WINFUNCTYPE(None, TAssetID, c_double, c_int, c_int)
 def tiny_book_callback(asset_id, price, qtd, side):
-    # print(f"tiny_book_callback -> {asset_id.ticker}-{price}-{qtd}-{side}")
     if prov_conn:
         prov_conn.tiny_book_callback(asset_id, price, qtd, side)
 
