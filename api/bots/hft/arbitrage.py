@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from api.bots.hft.bot import Bot
-from api.bots.hft.position import PositionMgr
+from api.bots.tr.bot import Bot
+from api.bots.tr.position import PositionMgr
 from api.jobs.internal_config_provider import InternalConfigProviders
 
 

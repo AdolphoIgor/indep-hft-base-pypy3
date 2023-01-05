@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from api.bots.hft.bot import Bot
-from api.bots.hft.bot_momentum import BotMomentum
+from api.bots.tr.bot import Bot
+from api.bots.tr.bot_momentum import BotMomentum
 from api.jobs.internal_config_provider import InternalConfigProviders
 
 
@@ -32,11 +32,16 @@ class QueueEnding(BotMomentum):
            Recomendação: INDICE, MINI-INDICE, DOLAR E MINI-DOLAR (Na situação de dolar @ R$ 4,00~6,00.), ações e opções
            com baixa liquidez.
 
+           ATENÇÂO: Este tipo de operação é para somente uma operação simultanea.
+
         """
-        '''
+
         # entry point.
         self._arms = self._position_mgr.get_pos_arms()
-        if self._is_asset_state(["opened"]) and self._arms[0].get("position").get("has_ord_rem"):
+        if not self._is_asset_state(["opened"]):
+            return
+
+        if self._arms[0].get("position").get("has_ord_rem"):
             lst_lp = self._dct_inst.get("lp")
             lst_mm = self._momentum.get_momentum(self._dct_inst.get("tt"))
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
@@ -44,42 +49,46 @@ class QueueEnding(BotMomentum):
             # [[[price, qtd, count], [price, qtd, count]], [[price, qtd, count], [price, qtd, count]]]
             lst_sides = None
             # buy
-            if lst_mm[3] and lst_lp[0][0][1] <= self._qtd_ff:
+            if lst_mm[3] and lst_lp[1][0][1] <= self._qtd_ff:
                 lst_sides = [lst_lp[1][0][0], lst_lp[1][1][0], lst_lp[0][0][0]]
 
+                self._lst_orders_sent.append({"id": timestamp, "cl_ord_id": self._profit_dll.send_buy_order(
+                    conta=self._tpl_arm[0], broker=self._tpl_arm[1], senha=self._tpl_arm[2], ativo=self._tpl_arm[3],
+                    bolsa=self._tpl_arm[4], preco=lst_sides[0], qtd=self._tpl_arm[5])})
+
             # sell
-            elif lst_mm[4] and lst_lp[1][1][1] <= self._qtd_ff:
+            elif lst_mm[4] and lst_lp[0][0][1] <= self._qtd_ff:
                 lst_sides = [lst_lp[0][0][0], lst_lp[0][1][0], lst_lp[1][0][0]]
 
-            self._lst_orders_sent.append({"id": timestamp, "cl_ord_id": self._profit_dll.send_buy_order(
-                conta=self._tpl_arm[0], broker=self._tpl_arm[1], senha=self._tpl_arm[2], ativo=self._tpl_arm[3],
-                bolsa=self._tpl_arm[4], preco=lst_lp[0][0][0], qtd=self._tpl_arm[5]
-            )})
-            self._lst_orders_sent.append({"id": timestamp, "cl_ord_id": self._profit_dll.send_sell_order(
-                conta=self._tpl_arm[0], broker=self._tpl_arm[1], senha=self._tpl_arm[2], ativo=self._tpl_arm[3],
-                bolsa=self._tpl_arm[4], preco=lst_lp[0][0][1], qtd=self._tpl_arm[5]
-            )})
+                self._lst_orders_sent.append({"id": timestamp, "cl_ord_id": self._profit_dll.send_sell_order(
+                    conta=self._tpl_arm[0], broker=self._tpl_arm[1], senha=self._tpl_arm[2], ativo=self._tpl_arm[3],
+                    bolsa=self._tpl_arm[4], preco=lst_sides[0], qtd=self._tpl_arm[5])})
 
             self._position_mgr.proc_positions()
 
-            # Se a ordem nova ficou fora da formação do preço teórico, cancela e espera novo sinal.
+            # Se a ordem não foi executada, cancela o trade.
             lst_new_ordrs = [
                 ordr for pos in self._position_mgr.get_lst_positions([PositionMgr.POS_NEW], [PositionMgr.POS_INIT])
-                for ordr in pos.get("open_arms")
-                if ordr.get("status") == "bstNew"
+                for ordr in pos.get("open_arms") if ordr.get("status") == "bstNew"
             ]
 
-            for ordr in lst_new_ordrs:
-                if ordr.get("price") != self._dct_inst.get("quote").get("theoretical_price"):
+            if lst_new_ordrs:
+                for ordr in lst_new_ordrs:
                     self._lst_orders_sent.append({"id": None, "cl_ord_id": self._profit_dll.send_cancel_order(
-                        conta=dct_pos_threads.get("broker").get("account"),
-                        broker=dct_pos_threads.get("broker").get("id"),
-                        senha=dct_pos_threads.get("broker").get("password"),
+                        conta=self._tpl_arm[0], broker=self._tpl_arm[1], senha=self._tpl_arm[2],
                         cl_ord_id=ordr.get("cl_ord_id")
                     )})
+
+                return
+
+        self._position_mgr.proc_positions()
+
+        # se a ordem foi executada, é hora de pendurar a saída e
+        lst_new_ordrs = [
+            ordr for pos in self._position_mgr.get_lst_positions([PositionMgr.POS_OPENED])
+            for ordr in pos.get("open_arms") if ordr.get("status") == "bstNew"
+        ]
 
         # exit point.
         # TODO:
 
-        '''
-        pass

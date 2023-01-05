@@ -1,4 +1,4 @@
-from api.bots.hft.bot import Bot
+from api.bots.tr.bot import Bot
 from api.jobs.internal_config_provider import InternalConfigProviders
 
 

@@ -1,8 +1,8 @@
 import time
 
 from api.bots.hft.arbitrage import Arbitrage
-from api.bots.hft.arbitrage_auction import ArbitrageAuction
-from api.bots.hft.auction import Auction
+from api.bots.tr.arbitrage_auction import ArbitrageAuction
+from api.bots.tr.auction import Auction
 from api.jobs.internal_config_provider import InternalConfigProviders
 from api.jobs.job import Job
 
