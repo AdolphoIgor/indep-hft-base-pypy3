@@ -44,6 +44,7 @@
       "algo_class": "Arbitrage",
       "is_day_trade": true,
       "debug_mode": true,
+      "time_limit": "18:25:00",
       "req_instruments": [
         "spread"
       ],
