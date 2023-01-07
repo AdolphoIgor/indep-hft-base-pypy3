@@ -1,14 +1,13 @@
 import time
 
 from api.bots.hft.arbitrage import Arbitrage
-from api.bots.tr.arbitrage_auction import ArbitrageAuction
 from api.bots.tr.auction import Auction
 from api.jobs.internal_config_provider import InternalConfigProviders
 from api.jobs.job import Job
 
 
 class ExecutorJob(Job):
-    __lst_used_classes = [Arbitrage, Auction, ArbitrageAuction]
+    __lst_used_classes = [Arbitrage, Auction]
 
     def __init__(self, config_prov: InternalConfigProviders, order):
         super().__init__(config_prov, order)

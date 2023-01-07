@@ -1,14 +1,15 @@
 from datetime import datetime
 
-from api.bots.tr.bot import Bot
+from api.bots.tr.tr_bot import TRBot
 from api.bots.tr.bot_momentum import BotMomentum
+from api.bots.tr.position import PositionMgr
 from api.jobs.internal_config_provider import InternalConfigProviders
 
 
 class QueueEnding(BotMomentum):
 
     def __init__(self, name, daemon, algo: dict, config_prov: InternalConfigProviders):
-        super().__init__(name, daemon, algo, Bot.ONE_ARM, config_prov)
+        super().__init__(name, daemon, algo, TRBot.ONE_ARM, config_prov)
 
         self._arms = self._position_mgr.get_pos_arms()
         self._tpl_arm = (
@@ -47,7 +48,6 @@ class QueueEnding(BotMomentum):
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
 
             # [[[price, qtd, count], [price, qtd, count]], [[price, qtd, count], [price, qtd, count]]]
-            lst_sides = None
             # buy
             if lst_mm[3] and lst_lp[1][0][1] <= self._qtd_ff:
                 lst_sides = [lst_lp[1][0][0], lst_lp[1][1][0], lst_lp[0][0][0]]
@@ -91,4 +91,3 @@ class QueueEnding(BotMomentum):
 
         # exit point.
         # TODO:
-

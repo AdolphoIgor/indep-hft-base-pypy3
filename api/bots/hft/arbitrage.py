@@ -2,15 +2,15 @@ import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 
-from api.bots.hft.bot import Bot
+from api.bots.hft.hft_bot import HFTBot
 from api.jobs.internal_config_provider import InternalConfigProviders
 from api.logger import logger
 
 
-class Arbitrage(Bot):
+class Arbitrage(HFTBot):
 
     def __init__(self, name, daemon, algo: dict, config_prov: InternalConfigProviders):
-        super().__init__(name, daemon, algo, Bot.TWO_ARM, config_prov)
+        super().__init__(name, daemon, algo, HFTBot.TWO_ARM, config_prov)
 
         self._arms = self._algo.get("threads")
         self._tpl_arm_0 = (
@@ -209,7 +209,7 @@ class Arbitrage(Bot):
                     for rem in lst_rem:
                         lst_orders.remove(rem)
 
-            except Exception as e:
+            except Exception:
                 logger.error(traceback.format_exc())
 
             lst_orders.remove(ordr)

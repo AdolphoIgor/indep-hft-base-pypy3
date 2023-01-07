@@ -1,11 +1,11 @@
 from datetime import datetime
 
-from api.bots.tr.bot import Bot
+from api.bots.tr.tr_bot import TRBot
 from api.bots.tr.position import PositionMgr
 from api.jobs.internal_config_provider import InternalConfigProviders
 
 
-class Auction(Bot):
+class Auction(TRBot):
     """
         For details on the B3 auction:
         https://www.bmf.com.br/bmfbovespa/pages/boletim1/bd_manual/RegrasPregao.asp
@@ -16,7 +16,7 @@ class Auction(Bot):
     """
 
     def __init__(self, name, daemon, algo: dict, config_prov: InternalConfigProviders):
-        super().__init__(name, daemon, algo, Bot.ONE_ARM, config_prov)
+        super().__init__(name, daemon, algo, TRBot.ONE_ARM, config_prov)
         self._lst_entry_signal = []
 
     def _execute(self):

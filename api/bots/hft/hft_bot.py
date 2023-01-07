@@ -6,7 +6,7 @@ from api.jobs.internal_config_provider import InternalConfigProviders
 from api.logger import logger
 
 
-class Bot(Thread):
+class HFTBot(Thread):
     ONE_ARM = 1
     TWO_ARM = 2
 
