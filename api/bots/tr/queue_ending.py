@@ -69,7 +69,7 @@ class QueueEnding(BotMomentum):
             # Se a ordem não foi executada, cancela o trade.
             lst_new_ordrs = [
                 ordr for pos in self._position_mgr.get_lst_positions([PositionMgr.POS_NEW], [PositionMgr.POS_INIT])
-                for ordr in pos.get("open_arms") if ordr.get("status") == "bstNew"
+                for ordr in pos.get("open_arms") if ordr.get("status") == "New"
             ]
 
             if lst_new_ordrs:
@@ -86,7 +86,7 @@ class QueueEnding(BotMomentum):
         # se a ordem foi executada, é hora de pendurar a saída e
         lst_new_ordrs = [
             ordr for pos in self._position_mgr.get_lst_positions([PositionMgr.POS_OPENED])
-            for ordr in pos.get("open_arms") if ordr.get("status") == "bstNew"
+            for ordr in pos.get("open_arms") if ordr.get("status") == "New"
         ]
 
         # exit point.

@@ -119,7 +119,7 @@ class Auction(TRBot):
             lst_new_ordrs = [
                 ordr for pos in self._position_mgr.get_lst_positions([PositionMgr.POS_NEW], [PositionMgr.POS_INIT])
                 for ordr in pos.get("open_arms")
-                if ordr.get("status") == "bstNew"
+                if ordr.get("status") == "New"
             ]
 
             for ordr in lst_new_ordrs:
@@ -143,7 +143,7 @@ class Auction(TRBot):
                 lst_new_ordrs = [
                     ordr for pos in self._position_mgr.get_lst_positions([PositionMgr.POS_NEW], [PositionMgr.POS_INIT])
                     for ordr in pos.get("open_arms")
-                    if ordr.get("status") == "bstNew"
+                    if ordr.get("status") == "New"
                 ]
 
                 for ordr in lst_new_ordrs:
@@ -159,43 +159,44 @@ class Auction(TRBot):
             """
                 pegar a ordem executada e ainda não zerada e já colocar a ordem de saída GAIN no nivel certo...
             """
-            lst_exec_ordrs = [
-                ordr for pos in self._position_mgr.get_lst_positions(
-                    [PositionMgr.POS_OPENED], [PositionMgr.POS_INIT])
-                for ordr in pos.get("open_arms")
-                if ordr.get("status") in ["bstPartiallyFilled", "bstFilled"]
-            ]
-
-            for ordr in lst_exec_ordrs:
-                # se a ordem foi executada parcialmente (na abertura), cancelar o saldo restante
-                if ordr.get("qtd") != ordr.get("traded_qtd"):
-                    self._lst_orders_sent.append({"id": None, "cl_ord_id": self._profit_dll.send_cancel_order(
-                        conta=dct_pos_threads.get("broker").get("account"),
-                        broker=dct_pos_threads.get("broker").get("id"),
-                        senha=dct_pos_threads.get("broker").get("password"),
-                        cl_ord_id=ordr.get("cl_ord_id")
-                    )})
-
-                if ordr.get("side") == "B":
-                    self._lst_orders_sent.append({"id": None, "cl_ord_id": self._profit_dll.send_sell_order(
-                        conta=dct_pos_threads.get("broker").get("account"),
-                        broker=dct_pos_threads.get("broker").get("id"),
-                        senha=dct_pos_threads.get("broker").get("password"),
-                        ativo=dct_pos_threads.get("symbol"),
-                        bolsa=dct_pos_threads.get("stock_market"),
-                        preco=self._lst_entry_signal[3][2],
-                        qtd=ordr.get("traded_qtd")
-                    )})
-                else:
-                    self._lst_orders_sent.append({"id": None, "cl_ord_id": self._profit_dll.send_buy_order(
-                        conta=dct_pos_threads.get("broker").get("account"),
-                        broker=dct_pos_threads.get("broker").get("id"),
-                        senha=dct_pos_threads.get("broker").get("password"),
-                        ativo=dct_pos_threads.get("symbol"),
-                        bolsa=dct_pos_threads.get("stock_market"),
-                        preco=self._lst_entry_signal[3][2],
-                        qtd=ordr.get("traded_qtd")
-                    )})
+            if self._position_mgr.get_pos().get("qtd_open_positions") > 0:
+                lst_exec_ordrs = [
+                    ordr for pos in self._position_mgr.get_lst_positions(
+                        [PositionMgr.POS_OPENED], [PositionMgr.POS_INIT])
+                    for ordr in pos.get("open_arms")
+                    if ordr.get("status") in ["PartiallyFilled", "Filled"]
+                ]
+    
+                for ordr in lst_exec_ordrs:
+                    # se a ordem foi executada parcialmente (na abertura), cancelar o saldo restante
+                    if ordr.get("qtd") != ordr.get("traded_qtd"):
+                        self._lst_orders_sent.append({"id": None, "cl_ord_id": self._profit_dll.send_cancel_order(
+                            conta=dct_pos_threads.get("broker").get("account"),
+                            broker=dct_pos_threads.get("broker").get("id"),
+                            senha=dct_pos_threads.get("broker").get("password"),
+                            cl_ord_id=ordr.get("cl_ord_id")
+                        )})
+    
+                    if ordr.get("side") == "B":
+                        self._lst_orders_sent.append({"id": None, "cl_ord_id": self._profit_dll.send_sell_order(
+                            conta=dct_pos_threads.get("broker").get("account"),
+                            broker=dct_pos_threads.get("broker").get("id"),
+                            senha=dct_pos_threads.get("broker").get("password"),
+                            ativo=dct_pos_threads.get("symbol"),
+                            bolsa=dct_pos_threads.get("stock_market"),
+                            preco=self._lst_entry_signal[3][2],
+                            qtd=ordr.get("traded_qtd")
+                        )})
+                    else:
+                        self._lst_orders_sent.append({"id": None, "cl_ord_id": self._profit_dll.send_buy_order(
+                            conta=dct_pos_threads.get("broker").get("account"),
+                            broker=dct_pos_threads.get("broker").get("id"),
+                            senha=dct_pos_threads.get("broker").get("password"),
+                            ativo=dct_pos_threads.get("symbol"),
+                            bolsa=dct_pos_threads.get("stock_market"),
+                            preco=self._lst_entry_signal[3][2],
+                            qtd=ordr.get("traded_qtd")
+                        )})
 
             """
                 monitorar a fila de execução, se chegar a 80% enviar ordem stop e cancelar a ordem de saída GAIN.
@@ -206,7 +207,7 @@ class Auction(TRBot):
                 lst_new_ordrs = [
                     ordr for pos in self._position_mgr.get_lst_positions(
                         [PositionMgr.POS_OPENED], [PositionMgr.POS_NEW, PositionMgr.POS_PRT_EXEC])
-                    for ordr in pos.get("open_arms") if ordr.get("status") in ["bstNew", "bstPartiallyFilled"]
+                    for ordr in pos.get("open_arms") if ordr.get("status") in ["New", "PartiallyFilled"]
                 ]
 
                 '''
