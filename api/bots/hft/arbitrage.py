@@ -2,7 +2,7 @@ import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 
-from api.bots.tr.bot import Bot
+from api.bots.hft.bot import Bot
 from api.jobs.internal_config_provider import InternalConfigProviders
 from api.logger import logger
 

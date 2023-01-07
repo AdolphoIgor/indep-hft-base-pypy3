@@ -2,7 +2,6 @@ import time
 from threading import Thread
 
 from api.bots.tr.exceptions import BotInitializationException
-from api.bots.tr.position import PositionMgr
 from api.jobs.internal_config_provider import InternalConfigProviders
 from api.logger import logger
 
@@ -10,11 +9,8 @@ from api.logger import logger
 class Bot(Thread):
     ONE_ARM = 1
     TWO_ARM = 2
-    TREE_ARM = 3
-    FOUR_ARM = 4
 
     _dct_inst = {}
-    _lst_orders_sent = []
 
     def __init__(self, name, daemon, algo: dict, qtd_exp: int, config_prov: InternalConfigProviders):
         super().__init__(name=name, daemon=daemon)
@@ -28,14 +24,11 @@ class Bot(Thread):
         self._dct_ord_status = self._profit_dll.get_dct_order_status()
 
         self._lst_sbl = [(alg.get("symbol"), alg.get("stock_market")) for alg in algo.get("threads")]
-        self._position_mgr = PositionMgr(self._lst_orders_sent, algo, self._dct_ord_status, config_prov)
 
         # we will always have to be quotes for every bot created.
         lst_req = self._algo.get("req_instruments", [])
-        lst_req.extend(["quote"])
-        lst_req = list(set(lst_req))
-        if "orders" in lst_req:
-            del lst_req[lst_req.index("orders")]
+        lst_req.extend(["quote", "orders"])
+        self._algo["req_instruments"] = list(set(lst_req))
 
     def _execute(self):
         pass
@@ -48,7 +41,7 @@ class Bot(Thread):
         self._profit_dll.set_enabled_log_to_debug(self._algo.get("debug_mode", False))
 
         self.__subscribe()
-        self.__get_instruments()
+        self._get_instruments()
 
         while self._config_prov.get_keep_running() and self._algo.get("enabled"):
             try:
@@ -64,6 +57,17 @@ class Bot(Thread):
         self.__unsubscribe()
         logger.info(f"The algo name: {self.name} was finalized.")
 
+    def _print_positions(self):
+        dct_ret = {}
+        for sbl in self._algo.get("threads"):
+            dct_brkr = sbl.get("broker")
+            _, ret = self._profit_dll.get_position(conta=dct_brkr.get("account"), broker=dct_brkr.get("id"),
+                                                   ativo=sbl.get("symbol"), bolsa=dct_brkr.get("stock_market"))
+            dct_ret.update(ret)
+
+        if dct_ret:
+            logger.info(f"Algo {self.name} Actual position: {dct_ret}")
+
     def __test_qtd_assets(self):
         qtd_ast = len(set(self._lst_sbl))
 
@@ -74,7 +78,7 @@ class Bot(Thread):
             str_cpl = f"{qtd_ast} was given" if qtd_ast == 1 else f"{qtd_ast} were given"
             raise BotInitializationException(f"The algo: {self.name} requires {self._qtd_exp} asset(s) but {str_cpl}.")
 
-    def __get_instruments(self):
+    def _get_instruments(self):
         logger.info(f"Waiting for instruments for the algo: {self.name}...")
 
         while True:
