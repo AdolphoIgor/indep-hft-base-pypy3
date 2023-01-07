@@ -61,10 +61,12 @@ class Bot(Thread):
         dct_ret = {}
         for sbl in self._algo.get("threads"):
             dct_brkr = sbl.get("broker")
-            dct_ret.update(self._profit_dll.get_position(conta=dct_brkr.get("account"), broker=dct_brkr.get("id"),
-                                                         ativo=sbl.get("symbol"), bolsa=dct_brkr.get("stock_market")))
+            _, ret = self._profit_dll.get_position(conta=dct_brkr.get("account"), broker=dct_brkr.get("id"),
+                                                   ativo=sbl.get("symbol"), bolsa=dct_brkr.get("stock_market"))
+            dct_ret.update(ret)
 
-        logger.info(f"Algo {self.name} Actual position: {dct_ret}")
+        if dct_ret:
+            logger.info(f"Algo {self.name} Actual position: {dct_ret}")
 
     def __test_qtd_assets(self):
         qtd_ast = len(set(self._lst_sbl))
