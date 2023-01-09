@@ -62,7 +62,7 @@ class HFTBot(Thread):
         for sbl in self._algo.get("threads"):
             dct_brkr = sbl.get("broker")
             _, ret = self._profit_dll.get_position(conta=dct_brkr.get("account"), broker=dct_brkr.get("id"),
-                                                   ativo=sbl.get("symbol"), bolsa=dct_brkr.get("stock_market"))
+                                                   ativo=sbl.get("symbol"), bolsa=sbl.get("stock_market"))
             dct_ret.update(ret)
 
         if dct_ret:

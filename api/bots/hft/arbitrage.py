@@ -91,8 +91,7 @@ class Arbitrage(HFTBot):
         # entry point
         if b_in_session and not self._lst_orders_0 and not self._lst_orders_1:
             lst_signal, lst_spread = self._get_signal()
-            # TODO: Retirar
-            lst_signal = [True, False]
+            # lst_signal = [True, False]
             if any(lst_signal):
                 if lst_signal[0]:
                     lst_sides = self._lst_sides[0]
@@ -145,11 +144,12 @@ class Arbitrage(HFTBot):
         '''
         # exit point
         if self._lst_orders_0 and self._lst_orders_1:
+            self._print_positions()
+
             lst_signal, lst_spread = self._get_signal()
-            # TODO: Retirar
-            lst_signal = [False, False]
+            # lst_signal = [False, False]
             if not any(lst_signal) or not self._is_asset_state(["opened"]):
-                with ThreadPoolExecutor(max_workers=1) as executor:
+                with ThreadPoolExecutor(max_workers=2) as executor:
                     lst_thr = [executor.submit(self._proc_orders_list, lst[1], lst[0])
                                for lst in [(self._lst_orders_0, lst_spread[0]), (self._lst_orders_1, lst_spread[1])]]
 
@@ -162,9 +162,6 @@ class Arbitrage(HFTBot):
                         if rslt:
                             logger.info(rslt)
 
-            if not self._lst_orders_0 and not self._lst_orders_1:
-                self._print_positions()
-
     def _proc_orders_list(self, lst_spread: list, lst_orders: list):
         lst_copy = lst_orders[::-1]
         for ordr in lst_copy:
@@ -174,7 +171,7 @@ class Arbitrage(HFTBot):
             status = ordr.get("status")
 
             text_message = ordr.get('text_message', '')
-            if status == "Rejected" and text_message:
+            if status in ["Rejected", "OrderNotCreated"] and text_message:
                 logger.error(f"Error in Arbitrage. Symbol: {symbol}. Msg: {text_message}.")
 
             try:
