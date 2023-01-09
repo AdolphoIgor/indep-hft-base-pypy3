@@ -41,6 +41,7 @@ class Arbitrage(HFTBot):
         self._lst_orders_1 = None
 
         self._time_limit = datetime.strptime(self._algo.get("time_limit"), "%H:%M:%S")
+        self._first_exec = True
 
     def _init_orders_instruments(self):
         if not self._dct_orders:
@@ -77,10 +78,11 @@ class Arbitrage(HFTBot):
 
     def _execute(self):
 
-        # TODO: impor limite maximo de negociação, apos este momento não abre mais operações e encerra as que tiverem
-        # abertas.
-
         self._init_orders_instruments()
+        if self._first_exec:
+            self._lst_orders_0.clear()
+            self._lst_orders_1.clear()
+            self._first_exec = False
 
         # if it has been a previous negotiation still opened, must be keep it running in order to finish it.
         if not self._is_asset_state(["opened"]) and self._dct_orders and not (self._lst_orders_0 or self._lst_orders_1):
@@ -93,6 +95,7 @@ class Arbitrage(HFTBot):
             lst_signal, lst_spread = self._get_signal()
             # lst_signal = [True, False]
             if any(lst_signal):
+                print(lst_spread)
                 if lst_signal[0]:
                     lst_sides = self._lst_sides[0]
                     lst_prices = [lst_spread[0][0][0], lst_spread[0][0][1], lst_spread[1][1][0], lst_spread[1][1][1]]
