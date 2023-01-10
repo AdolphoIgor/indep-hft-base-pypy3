@@ -100,6 +100,8 @@ class Arbitrage(HFTBot):
             # lst_signal = [True, False]
             if any(lst_signal):
                 print(lst_spread)
+
+                # Compra = 1, Venda = 2
                 if lst_signal[0]:
                     lst_sides = self._lst_sides[0]
                     lst_prices = [lst_spread[0][0][0], lst_spread[0][0][1], lst_spread[1][1][0], lst_spread[1][1][1]]
@@ -107,14 +109,15 @@ class Arbitrage(HFTBot):
                     lst_sides = self._lst_sides[1]
                     lst_prices = [lst_spread[1][0][0], lst_spread[1][0][1], lst_spread[0][1][0], lst_spread[0][1][1]]
 
-                if lst_prices[0] < lst_sides[0][-1] and lst_prices[1] < lst_sides[1][-1]:
+                if lst_prices[0] < (lst_sides[0][-1] * 3) or lst_prices[2] < (lst_sides[1][-1] * 3):
                     return
 
-                self._profit_dll.send_buy_order(
-                    conta=lst_sides[0][0], broker=lst_sides[0][1], senha=lst_sides[0][2], ativo=lst_sides[0][3],
-                    bolsa=lst_sides[0][4], preco=lst_prices[1], qtd=lst_sides[0][5])
-
                 self._profit_dll.send_sell_order(
+                    conta=lst_sides[0][0], broker=lst_sides[0][1], senha=lst_sides[0][2], ativo=lst_sides[0][3],
+                    bolsa=lst_sides[0][4], preco=lst_prices[1], qtd=lst_sides[0][5]
+                )
+
+                self._profit_dll.send_buy_order(
                     conta=lst_sides[1][0], broker=lst_sides[1][1], senha=lst_sides[1][2], ativo=lst_sides[1][3],
                     bolsa=lst_sides[1][4], preco=lst_prices[3], qtd=lst_sides[1][5]
                 )
