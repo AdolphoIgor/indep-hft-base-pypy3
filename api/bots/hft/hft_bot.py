@@ -10,6 +10,10 @@ class HFTBot(Thread):
     ONE_ARM = 1
     TWO_ARM = 2
 
+    # Adjust to make an order start to act as a Market one.
+    AGR_DOL_ADJ = 8
+    AGR_IND_ADJ = 16
+
     _dct_inst = {}
 
     def __init__(self, name, daemon, algo: dict, qtd_exp: int, config_prov: InternalConfigProviders):
