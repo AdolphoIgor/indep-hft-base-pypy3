@@ -80,8 +80,12 @@ class Arbitrage(HFTBot):
 
         self._init_orders_instruments()
         if self._first_exec:
-            self._lst_orders_0.clear()
-            self._lst_orders_1.clear()
+            if self._lst_orders_0:
+                self._lst_orders_0.clear()
+
+            if self._lst_orders_1:
+                self._lst_orders_1.clear()
+
             self._first_exec = False
 
         # if it has been a previous negotiation still opened, must be keep it running in order to finish it.
