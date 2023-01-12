@@ -22,10 +22,11 @@ class InternalConfigProviders:
             "value": [
                 {"type": "orders", "value": {}},
                 {"type": "quote", "value": {}},
+                {"type": "spread_rt", "value": {}},
+                {"type": "spread", "value": {}},
                 {"type": "tt", "value": {}},
                 {"type": "lp", "value": {}},
                 {"type": "lo", "value": {}},
-                {"type": "spread", "value": {}},
                 {"type": "account", "value": {}},
                 {"type": "progress", "value": {}}
             ]
@@ -35,10 +36,10 @@ class InternalConfigProviders:
             "value": [
                 {"type": "orders", "value": []},
                 {"type": "quote", "value": []},
+                {"type": "spread", "value": []},
                 {"type": "tt", "value": []},
                 {"type": "lp", "value": []},
-                {"type": "lo", "value": []},
-                {"type": "spread", "value": []}
+                {"type": "lo", "value": []}
             ]
         }
     ]

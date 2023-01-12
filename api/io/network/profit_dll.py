@@ -269,6 +269,7 @@ class ProfitDLL:
         self._dct_orders = self._config_prov.get_internal_provider_data("orders", sublist=lst_instruments)
         self._dct_progress = self._config_prov.get_internal_provider_data("progress", sublist=lst_instruments)
         self._dct_spread = self._config_prov.get_internal_provider_data("spread", sublist=lst_instruments)
+        self._dct_spread_rt = self._config_prov.get_internal_provider_data("spread_rt", sublist=lst_instruments)
 
         self._b_ativo = False
         self._b_market_connected = False
@@ -788,31 +789,28 @@ class ProfitDLL:
 
     def price_book_callback(self, asset_id, action, position, side, qtd, count, price, array_sell, array_buy):
         def decript(price_array):
-            price_array_descripted = []
-            n_qtd = price_array[0]
-            n_tam = price_array[1]
+            price_array_decripted = []
 
             arr = cast(price_array, POINTER(c_char))
             frame = bytearray()
-            for i in range(n_tam):
+            for i in range(price_array[1]):
                 c = arr[i]
                 frame.append(c[0])
 
             start = 8
-            for i in range(n_qtd):
+            for i in range(price_array[0]):
                 i_price = struct.unpack("d", frame[start:start + 8])[0]
                 start += 8
                 i_qtd = struct.unpack("i", frame[start:start + 4])[0]
                 start += 4
                 i_count = struct.unpack("i", frame[start:start + 4])[0]
-                price_array_descripted.append([i_price, i_qtd, i_count])
+                start += 4
 
-            return price_array_descripted
+                price_array_decripted.append([i_price, i_qtd, i_count])
 
-        '''
-        logger.debug(f"price_book_callback-{asset_id.ticker}, {action}, {position}, {side}, {qtd}, {count}, "
-                     f"{price}")
-        '''
+            return price_array_decripted
+
+        # print(f"price_book_callback-{asset_id.ticker}, {action}, {position}, {side}, {qtd}, {count}, {price}")
 
         lst_book = self._dct_lp.get(asset_id.ticker, None)
         if not lst_book:
@@ -850,21 +848,29 @@ class ProfitDLL:
         elif action == 3:
             del lst_book_side[-position - 1:]
 
+        lst_spread_rt = self._dct_spread_rt.get(asset_id.ticker, None)
+        if not lst_spread_rt:
+            lst_spread_rt = [None, None]
+            self._dct_spread_rt[asset_id.ticker] = lst_spread_rt
+
+        # print(f"symbol: {asset_id.ticker}, side: {side}, value: {lst_book[side][::-1][0][:2]}, action: {action}, "
+        #       f"price: {price}, qtd: {qtd}, count: {count}")
+
+        lst_spread_rt[side] = lst_book[side][::-1][0][:2][::-1]
+
     def offer_book_callback(self, asset_id, action, position, side, qtd, agent, offer_id, price, has_price, has_qtd,
                             has_date, has_offer_id, has_agent, date, array_sell, array_buy):
         def decript(price_array):
-            price_array_descripted = []
-            n_qtd = price_array[0]
-            n_tam = price_array[1]
+            price_array_decripted = []
 
             arr = cast(price_array, POINTER(c_char))
             frame = bytearray()
-            for i in range(n_tam):
+            for i in range(price_array[1]):
                 c = arr[i]
                 frame.append(c[0])
 
             start = 8
-            for i in range(n_qtd):
+            for i in range(price_array[0]):
                 i_price = struct.unpack("d", frame[start:start + 8])[0]
                 start += 8
                 i_qtd = struct.unpack("i", frame[start:start + 4])[0]
@@ -878,9 +884,9 @@ class ProfitDLL:
                 i_date = frame[start:start + date_length]
                 start += date_length
 
-                price_array_descripted.append([i_price, i_qtd, i_agent, i_offer_id, i_date])
+                price_array_decripted.append([i_price, i_qtd, i_agent, i_offer_id, i_date])
 
-            return price_array_descripted
+            return price_array_decripted
 
         '''
         logger.debug(f"offer_book_callback-{asset_id.ticker}, {action}, {position}, {side}, {qtd}, {agent}, "
