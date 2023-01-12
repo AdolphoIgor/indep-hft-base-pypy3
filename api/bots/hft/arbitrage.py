@@ -129,25 +129,20 @@ class Arbitrage(HFTBot):
                 if lst_prices[0] < (tpl_sides[0][-1] * multpl) or lst_prices[2] < (tpl_sides[1][-1] * multpl):
                     return
 
-                print(f"lst_signal:{lst_signal}")
-                print(f"lst_sprd:{self._lst_sprd}")
-                print(f"tpl_sides:{tpl_sides}")
-                print(f"lst_prices:{lst_prices}")
+                logger.debug(f"lst_signal:{lst_signal}")
+                logger.debug(f"lst_sprd:{self._lst_sprd}")
+                logger.debug(f"tpl_sides:{tpl_sides}")
+                logger.debug(f"lst_prices:{lst_prices}")
 
-                lst_conf_signal = self._get_signal()
-                if lst_signal == lst_conf_signal:
-                    self._profit_dll.send_sell_order(
-                        conta=tpl_sides[0][0], broker=tpl_sides[0][1], senha=tpl_sides[0][2], ativo=tpl_sides[0][3],
-                        bolsa=tpl_sides[0][4], preco=lst_prices[1] - HFTBot.AGR_DOL_ADJ, qtd=tpl_sides[0][5]
-                    )
+                self._profit_dll.send_sell_order(
+                    conta=tpl_sides[0][0], broker=tpl_sides[0][1], senha=tpl_sides[0][2], ativo=tpl_sides[0][3],
+                    bolsa=tpl_sides[0][4], preco=lst_prices[1] - HFTBot.AGR_DOL_ADJ, qtd=tpl_sides[0][5]
+                )
 
-                    self._profit_dll.send_buy_order(
-                        conta=tpl_sides[1][0], broker=tpl_sides[1][1], senha=tpl_sides[1][2], ativo=tpl_sides[1][3],
-                        bolsa=tpl_sides[1][4], preco=lst_prices[3] + HFTBot.AGR_DOL_ADJ, qtd=tpl_sides[1][5]
-                    )
-
-                print(f"lst_conf_signal:{lst_conf_signal}")
-                print(f"lst_sprd:{self._lst_sprd}")
+                self._profit_dll.send_buy_order(
+                    conta=tpl_sides[1][0], broker=tpl_sides[1][1], senha=tpl_sides[1][2], ativo=tpl_sides[1][3],
+                    bolsa=tpl_sides[1][4], preco=lst_prices[3] + HFTBot.AGR_DOL_ADJ, qtd=tpl_sides[1][5]
+                )
 
                 self._pos_opened = True
 
