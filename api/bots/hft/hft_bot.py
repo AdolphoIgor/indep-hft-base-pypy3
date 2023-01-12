@@ -29,9 +29,9 @@ class HFTBot(Thread):
 
         self._lst_sbl = [(alg.get("symbol"), alg.get("stock_market")) for alg in algo.get("threads")]
 
-        # we will always have to be quotes for every bot created.
+        # we will always have to need orders, and quotes for every bot created.
         lst_req = self._algo.get("req_instruments", [])
-        lst_req.extend(["quote", "orders"])
+        lst_req.extend(["orders", "quote"])
         self._algo["req_instruments"] = list(set(lst_req))
 
     def _execute(self):
