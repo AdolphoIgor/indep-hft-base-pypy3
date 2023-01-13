@@ -107,8 +107,7 @@ class Arbitrage(HFTBot):
         b_in_session = datetime.now().time() <= self._time_limit.time()
 
         # entry point --------------------------------------------------------------------------------------------------
-        if b_in_session and not self._pos_opened and not self._lst_orders_0 and not self._lst_orders_1:
-            tpl_sides, lst_prices = None, None
+        if b_in_session and not self._pos_opened:
 
             # S1B2
             if (self._lst_sprd[0][0][1] - self._lst_sprd[1][1][1]) > 1:
@@ -193,8 +192,6 @@ class Arbitrage(HFTBot):
                         conta=tpl_sides[1][0], broker=tpl_sides[1][1], senha=tpl_sides[1][2], ativo=tpl_sides[1][3],
                         bolsa=tpl_sides[1][4], preco=lst_ord[1] + HFTBot.AGR_DOL_ADJ, qtd=tpl_sides[1][5]
                     )
-
-                    self._pos_opened = False
 
                     break
 
