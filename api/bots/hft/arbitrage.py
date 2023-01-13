@@ -83,10 +83,6 @@ class Arbitrage(HFTBot):
 
             self._first_exec = False
 
-    def _get_signal(self):
-        return [(self._lst_sprd[0][0][1] - self._lst_sprd[1][1][1]) > 1,
-                (self._lst_sprd[1][0][1] - self._lst_sprd[0][1][1]) > 1]
-
     @staticmethod
     def __get_order_w_status(lst_orders: list, status: str):
         dct_ordr = None
@@ -112,39 +108,47 @@ class Arbitrage(HFTBot):
 
         # entry point --------------------------------------------------------------------------------------------------
         if b_in_session and not self._pos_opened and not self._lst_orders_0 and not self._lst_orders_1:
-            lst_signal = self._get_signal()
-            # lst_signal = [True, False]
+            tpl_sides, lst_prices = None, None
 
-            if any(lst_signal):
-                if lst_signal[0]:
-                    tpl_sides = self._tpl_sides[0]
-                    lst_prices = [self._lst_sprd[0][0][0], self._lst_sprd[0][0][1],
-                                  self._lst_sprd[1][1][0], self._lst_sprd[1][1][1]]
-                else:
-                    tpl_sides = self._tpl_sides[1]
-                    lst_prices = [self._lst_sprd[1][0][0], self._lst_sprd[1][0][1],
-                                  self._lst_sprd[0][1][0], self._lst_sprd[0][1][1]]
-
-                multpl = 3
-                if lst_prices[0] < (tpl_sides[0][-1] * multpl) or lst_prices[2] < (tpl_sides[1][-1] * multpl):
-                    return
-
-                logger.debug(f"lst_signal:{lst_signal}")
-                logger.debug(f"lst_sprd:{self._lst_sprd}")
-                logger.debug(f"tpl_sides:{tpl_sides}")
-                logger.debug(f"lst_prices:{lst_prices}")
+            # S1B2
+            if (self._lst_sprd[0][0][1] - self._lst_sprd[1][1][1]) > 1:
 
                 self._profit_dll.send_sell_order(
-                    conta=tpl_sides[0][0], broker=tpl_sides[0][1], senha=tpl_sides[0][2], ativo=tpl_sides[0][3],
-                    bolsa=tpl_sides[0][4], preco=lst_prices[1] - HFTBot.AGR_DOL_ADJ, qtd=tpl_sides[0][5]
+                    conta=self._tpl_sides[0][0][0], broker=self._tpl_sides[0][0][1], senha=self._tpl_sides[0][0][2],
+                    ativo=self._tpl_sides[0][0][3], bolsa=self._tpl_sides[0][0][4],
+                    preco=self._lst_sprd[0][0][1] - HFTBot.AGR_DOL_ADJ, qtd=self._tpl_sides[0][0][5]
                 )
 
                 self._profit_dll.send_buy_order(
-                    conta=tpl_sides[1][0], broker=tpl_sides[1][1], senha=tpl_sides[1][2], ativo=tpl_sides[1][3],
-                    bolsa=tpl_sides[1][4], preco=lst_prices[3] + HFTBot.AGR_DOL_ADJ, qtd=tpl_sides[1][5]
+                    conta=self._tpl_sides[0][1][0], broker=self._tpl_sides[0][1][1], senha=self._tpl_sides[0][1][2],
+                    ativo=self._tpl_sides[0][1][3], bolsa=self._tpl_sides[0][1][4],
+                    preco=self._lst_sprd[1][1][1] + HFTBot.AGR_DOL_ADJ, qtd=self._tpl_sides[0][1][5]
                 )
 
                 self._pos_opened = True
+
+                logger.debug(f"spread:{[self._lst_sprd[0][0][1], self._lst_sprd[1][1][1]]}")
+                logger.debug(f"sides:{[self._tpl_sides[0][0], self._tpl_sides[0][1]]}")
+
+            # S2B1
+            if (self._lst_sprd[1][0][1] - self._lst_sprd[0][1][1]) > 1:
+
+                self._profit_dll.send_sell_order(
+                    conta=self._tpl_sides[1][0][0], broker=self._tpl_sides[1][0][1], senha=self._tpl_sides[1][0][2],
+                    ativo=self._tpl_sides[1][0][3], bolsa=self._tpl_sides[1][0][4],
+                    preco=self._lst_sprd[1][0][1] - HFTBot.AGR_DOL_ADJ, qtd=self._tpl_sides[1][0][5]
+                )
+
+                self._profit_dll.send_buy_order(
+                    conta=self._tpl_sides[1][1][0], broker=self._tpl_sides[1][1][1], senha=self._tpl_sides[1][1][2],
+                    ativo=self._tpl_sides[1][1][3], bolsa=self._tpl_sides[1][1][4],
+                    preco=self._lst_sprd[0][1][1] + HFTBot.AGR_DOL_ADJ, qtd=self._tpl_sides[1][1][5]
+                )
+
+                self._pos_opened = True
+
+                logger.debug(f"spread:{[self._lst_sprd[1][0][1], self._lst_sprd[0][1][1]]}")
+                logger.debug(f"sides:{[self._tpl_sides[1][0], self._tpl_sides[1][1]]}")
 
         self._init_orders_instruments()
 
