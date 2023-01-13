@@ -104,9 +104,6 @@ class Arbitrage(HFTBot):
         if not self._lst_sprd:
             self._lst_sprd = list(self._dct_inst.get("spread_rt").values())
 
-        logger.debug(f"SPREAD_RT: {list(self._dct_inst.get('spread_rt').values())}")
-        logger.debug(f"SPREAD: {list(self._dct_inst.get('spread').values())}")
-
         b_in_session = datetime.now().time() <= self._time_limit.time()
 
         # entry point --------------------------------------------------------------------------------------------------
