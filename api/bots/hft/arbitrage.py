@@ -126,8 +126,8 @@ class Arbitrage(HFTBot):
 
                 self._pos_opened = True
 
-                logger.debug(f"spread:{[self._lst_sprd[0][0][1], self._lst_sprd[1][1][1]]}")
-                logger.debug(f"sides:{[self._tpl_sides[0][0], self._tpl_sides[0][1]]}")
+                logger.debug(f"ENTRADA->SIDES: {[self._tpl_sides[0][0], self._tpl_sides[0][1]]}")
+                logger.debug(f"ENTRADA->SPREAD: :{[self._lst_sprd[0][0][1], self._lst_sprd[1][1][1]]}")
 
             # S2B1
             if (self._lst_sprd[1][0][1] - self._lst_sprd[0][1][1]) > 1:
@@ -146,8 +146,8 @@ class Arbitrage(HFTBot):
 
                 self._pos_opened = True
 
-                logger.debug(f"spread:{[self._lst_sprd[1][0][1], self._lst_sprd[0][1][1]]}")
-                logger.debug(f"sides:{[self._tpl_sides[1][0], self._tpl_sides[1][1]]}")
+                logger.debug(f"ENTRADA->SIDES: {[self._tpl_sides[1][0], self._tpl_sides[1][1]]}")
+                logger.debug(f"ENTRADA->SPREAD: {[self._lst_sprd[1][0][1], self._lst_sprd[0][1][1]]}")
 
         self._init_orders_instruments()
 
@@ -192,6 +192,9 @@ class Arbitrage(HFTBot):
                         conta=tpl_sides[1][0], broker=tpl_sides[1][1], senha=tpl_sides[1][2], ativo=tpl_sides[1][3],
                         bolsa=tpl_sides[1][4], preco=lst_ord[1] + HFTBot.AGR_DOL_ADJ, qtd=tpl_sides[1][5]
                     )
+
+                    logger.debug(f"SAIDA->SIDES: {tpl_sides}")
+                    logger.debug(f"SAIDA->SPREAD: {lst_ord}")
 
                     break
 

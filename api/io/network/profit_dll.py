@@ -1010,7 +1010,7 @@ class ProfitDLL:
             "tipo_ordem": tipo_ordem, "conta": conta, "titular": titular, "cl_ord_id": cl_ord_id, "status": status,
             "date": date, "symbol": asset_id.ticker
         }
-        print(f"history_callback -> {dct}")
+        logger.debug(f"history_callback -> {dct}")
 
         lst_orders = self._dct_orders.get(asset_id.ticker, [])
         if not lst_orders:
@@ -1063,7 +1063,7 @@ class ProfitDLL:
             "tipo_ordem": tipo_ordem, "conta": conta, "titular": titular, "cl_ord_id": cl_ord_id, "status": status,
             "date": date, "text_message": text_message, "symbol": asset_id.ticker
         }
-        print(f"order_change_callback -> {dct}")
+        logger.debug(f"order_change_callback -> {dct}")
 
         lst_orders = self._dct_orders.get(asset_id.ticker, [])
         if not lst_orders:
