@@ -46,7 +46,7 @@
       "debug_mode": true,
       "time_limit": "18:25:00",
       "req_instruments": [
-        "lp", "spread_rt"
+        "lp", "spread_rt", "spread"
       ],
       "threads": [
         {
