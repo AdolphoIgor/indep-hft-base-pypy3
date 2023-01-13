@@ -13,6 +13,9 @@ class Arbitrage(HFTBot):
     def __init__(self, name, daemon, algo: dict, config_prov: InternalConfigProviders):
         super().__init__(name, daemon, algo, HFTBot.TWO_ARM, config_prov)
 
+        self._threshold_opening = self._algo.get("threshold_opening", 0)
+        self._threshold_closing = self._algo.get("threshold_closing", 0)
+
         self._arms = self._algo.get("threads")
         self._tpl_arm_0 = (
             self._arms[0].get("broker").get("account"),
@@ -45,6 +48,15 @@ class Arbitrage(HFTBot):
         self._time_limit = datetime.strptime(self._algo.get("time_limit"), "%H:%M:%S")
         self._first_exec = True
         self._pos_opened = False
+
+        self._tick_value = self._algo.get("threshold_closing", 0)
+        self._agr_adj_value = self._algo.get("threshold_closing", 0)
+        self._agr_adj_type = self._algo.get("threshold_closing", 0)
+
+        if self._algo["agr_adj_type"] == "tick":
+            self.agr_adj = self._algo["tick_value"] * self._algo["agr_adj_value"]
+        elif self._algo["agr_adj_type"] == "perc":
+            self.agr_adj = round(self._algo["agr_adj_value"] / 100, 2)
 
     def _init_orders_instruments(self):
         if not self._dct_orders:
@@ -110,18 +122,18 @@ class Arbitrage(HFTBot):
         if b_in_session and not self._pos_opened:
 
             # S1B2
-            if (self._lst_sprd[0][0][1] - self._lst_sprd[1][1][1]) > 1:
+            if (self._lst_sprd[0][0][1] - self._lst_sprd[1][1][1]) > self._threshold_opening:
 
                 self._profit_dll.send_sell_order(
                     conta=self._tpl_sides[0][0][0], broker=self._tpl_sides[0][0][1], senha=self._tpl_sides[0][0][2],
                     ativo=self._tpl_sides[0][0][3], bolsa=self._tpl_sides[0][0][4],
-                    preco=self._lst_sprd[0][0][1] - HFTBot.AGR_DOL_ADJ, qtd=self._tpl_sides[0][0][5]
+                    preco=self._lst_sprd[0][0][1] - self.agr_adj, qtd=self._tpl_sides[0][0][5]
                 )
 
                 self._profit_dll.send_buy_order(
                     conta=self._tpl_sides[0][1][0], broker=self._tpl_sides[0][1][1], senha=self._tpl_sides[0][1][2],
                     ativo=self._tpl_sides[0][1][3], bolsa=self._tpl_sides[0][1][4],
-                    preco=self._lst_sprd[1][1][1] + HFTBot.AGR_DOL_ADJ, qtd=self._tpl_sides[0][1][5]
+                    preco=self._lst_sprd[1][1][1] + self.agr_adj, qtd=self._tpl_sides[0][1][5]
                 )
 
                 self._pos_opened = True
@@ -130,18 +142,17 @@ class Arbitrage(HFTBot):
                 logger.debug(f"ENTRADA->SPREAD: :{[self._lst_sprd[0][0][1], self._lst_sprd[1][1][1]]}")
 
             # S2B1
-            if (self._lst_sprd[1][0][1] - self._lst_sprd[0][1][1]) > 1:
-
+            if (self._lst_sprd[1][0][1] - self._lst_sprd[0][1][1]) > self._threshold_opening:
                 self._profit_dll.send_sell_order(
                     conta=self._tpl_sides[1][0][0], broker=self._tpl_sides[1][0][1], senha=self._tpl_sides[1][0][2],
                     ativo=self._tpl_sides[1][0][3], bolsa=self._tpl_sides[1][0][4],
-                    preco=self._lst_sprd[1][0][1] - HFTBot.AGR_DOL_ADJ, qtd=self._tpl_sides[1][0][5]
+                    preco=self._lst_sprd[1][0][1] - self.agr_adj, qtd=self._tpl_sides[1][0][5]
                 )
 
                 self._profit_dll.send_buy_order(
                     conta=self._tpl_sides[1][1][0], broker=self._tpl_sides[1][1][1], senha=self._tpl_sides[1][1][2],
                     ativo=self._tpl_sides[1][1][3], bolsa=self._tpl_sides[1][1][4],
-                    preco=self._lst_sprd[0][1][1] + HFTBot.AGR_DOL_ADJ, qtd=self._tpl_sides[1][1][5]
+                    preco=self._lst_sprd[0][1][1] + self.agr_adj, qtd=self._tpl_sides[1][1][5]
                 )
 
                 self._pos_opened = True
@@ -180,17 +191,17 @@ class Arbitrage(HFTBot):
                                   (dct_ord_0.get("avg_price") - self._lst_sprd[0][1][1])
                             lst_ord = [self._lst_sprd[1][0][1], self._lst_sprd[0][1][1]]
 
-                        if res > 1:
+                        if res > self._threshold_closing:
                             break
 
                     self._profit_dll.send_sell_order(
                         conta=tpl_sides[0][0], broker=tpl_sides[0][1], senha=tpl_sides[0][2], ativo=tpl_sides[0][3],
-                        bolsa=tpl_sides[0][4], preco=lst_ord[0] - HFTBot.AGR_DOL_ADJ, qtd=tpl_sides[0][5]
+                        bolsa=tpl_sides[0][4], preco=lst_ord[0] - self.agr_adj, qtd=tpl_sides[0][5]
                     )
 
                     self._profit_dll.send_buy_order(
                         conta=tpl_sides[1][0], broker=tpl_sides[1][1], senha=tpl_sides[1][2], ativo=tpl_sides[1][3],
-                        bolsa=tpl_sides[1][4], preco=lst_ord[1] + HFTBot.AGR_DOL_ADJ, qtd=tpl_sides[1][5]
+                        bolsa=tpl_sides[1][4], preco=lst_ord[1] + self.agr_adj, qtd=tpl_sides[1][5]
                     )
 
                     logger.debug(f"SAIDA->SIDES: {tpl_sides}")
@@ -245,12 +256,12 @@ class Arbitrage(HFTBot):
                     if ordr.get("side") == 2:
                         self._profit_dll.send_buy_order(conta=arm[0], broker=arm[1], senha=arm[2],
                                                         ativo=arm[3], bolsa=arm[4],
-                                                        preco=lst_spread[1][1] - HFTBot.AGR_DOL_ADJ,
+                                                        preco=lst_spread[1][1] - self.agr_adj,
                                                         qtd=ordr.get("qtd"))
                     else:
                         self._profit_dll.send_sell_order(conta=arm[0], broker=arm[1], senha=arm[2],
                                                          ativo=arm[3], bolsa=arm[4],
-                                                         preco=lst_spread[0][1] + HFTBot.AGR_DOL_ADJ,
+                                                         preco=lst_spread[0][1] + self.agr_adj,
                                                          qtd=ordr.get("qtd"))
 
                     lst_rem = [rem for rem in lst_orders if rem.get("profit_id") == ordr.get("profit_id")]

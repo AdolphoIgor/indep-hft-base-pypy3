@@ -45,12 +45,17 @@
       "is_day_trade": true,
       "debug_mode": true,
       "time_limit": "18:25:00",
+      "threshold_opening": 1,
+      "threshold_closing": 1,
+      "tick_value": 0.5,
+      "agr_adj_value": 30,
+      "agr_adj_type": "tick",
       "req_instruments": [
         "lp", "spread_rt"
       ],
       "threads": [
         {
-          "symbol": "DOLFUT",
+          "symbol": "DOLG23",
           "stock_market": "F",
           "broker_id": "15002",
           "start_param": {
@@ -58,7 +63,121 @@
           }
         },
         {
-          "symbol": "WDOFUT",
+          "symbol": "WDOG23",
+          "stock_market": "F",
+          "broker_id": "15002",
+          "start_param": {
+            "order_op_qty": 25
+          }
+        }
+      ],
+      "stop_parameters": {
+        "stop_op": -125.00,
+        "stop_limit": -500.00
+      }
+    },
+    {
+      "name": "Arbitrage IND-WIN",
+      "enabled": true,
+      "algo_class": "Arbitrage",
+      "is_day_trade": true,
+      "debug_mode": true,
+      "time_limit": "18:25:00",
+      "threshold_opening": 10,
+      "threshold_closing": 10,
+      "tick_value": 5,
+      "agr_adj_value": 30,
+      "agr_adj_type": "tick",
+      "req_instruments": [
+        "lp", "spread_rt"
+      ],
+      "threads": [
+        {
+          "symbol": "INDFUT",
+          "stock_market": "F",
+          "broker_id": "15002",
+          "start_param": {
+            "order_op_qty": 5
+          }
+        },
+        {
+          "symbol": "WINFUT",
+          "stock_market": "F",
+          "broker_id": "15002",
+          "start_param": {
+            "order_op_qty": 25
+          }
+        }
+      ],
+      "stop_parameters": {
+        "stop_op": -125.00,
+        "stop_limit": -500.00
+      }
+    },
+    {
+      "name": "Arbitrage ISP-WSP",
+      "enabled": false,
+      "algo_class": "Arbitrage",
+      "is_day_trade": true,
+      "debug_mode": true,
+      "time_limit": "18:25:00",
+      "threshold_opening": 0.25,
+      "threshold_closing": 0.25,
+      "tick_value": 0.25,
+      "agr_adj_value": 30,
+      "agr_adj_type": "tick",
+      "req_instruments": [
+        "lp", "spread_rt"
+      ],
+      "threads": [
+        {
+          "symbol": "ISPFUT",
+          "stock_market": "F",
+          "broker_id": "15002",
+          "start_param": {
+            "order_op_qty": 1
+          }
+        },
+        {
+          "symbol": "WSPFUT",
+          "stock_market": "F",
+          "broker_id": "15002",
+          "start_param": {
+            "order_op_qty": 5
+          }
+        }
+      ],
+      "stop_parameters": {
+        "stop_op": -125.00,
+        "stop_limit": -500.00
+      }
+    },
+    {
+      "name": "Arbitrage EUR-WEU",
+      "enabled": false,
+      "algo_class": "Arbitrage",
+      "is_day_trade": true,
+      "debug_mode": true,
+      "time_limit": "18:25:00",
+      "threshold_opening": 0.1,
+      "threshold_closing": 0.1,
+      "tick_value": 0.1,
+      "agr_adj_value": 30,
+      "agr_adj_type": "tick",
+      "req_instruments": [
+        "lp", "spread_rt"
+      ],
+      "threads": [
+        {
+          "symbol": "EURFUT",
+          "stock_market": "F",
+          "broker_id": "15002",
+          "start_param": {
+            "order_op_qty": 5
+          }
+        },
+        {
+          "symbol": "WEUFUT",
           "stock_market": "F",
           "broker_id": "15002",
           "start_param": {

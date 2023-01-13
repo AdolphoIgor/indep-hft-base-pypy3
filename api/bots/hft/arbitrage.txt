@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------------------------------------------------
 Ativos para arbitragem e horarios de negociação:
 ------------------------------------------------------------------------------------------------------------------------
-DOLFUT - WDOFUT -> 09:00 - 18:30
-INDFUT - WINFUT -> 09:00 - 18:25
-ISPFUT - WSPFUT -> 09:00 - 18:00
-EURFUT - WEUFUT -> 09:00 - 18:00
+DOLFUT - WDOFUT -> 09:00 - 18:30 -> INT. PONTOS: 0,5 EM 0,5 PTS -> EQUIVALENCIA: 5 DOL == 25 WDO
+INDFUT - WINFUT -> 09:00 - 18:25 -> INT. PONTOS: 5 EM 5 PTS -> EQUIVALENCIA: 5 IND == 25 WIN
+ISPFUT - WSPFUT -> 09:00 - 18:00 -> INT. PONTOS: 0,25 EM 0,25 PTS -> EQUIVALENCIA: 1 ISP == 5 WSP
+EURFUT - WEUFUT -> 09:00 - 18:00 -> INT. PONTOS: 0,1 EM 0,1 PTS -> EQUIVALENCIA: 5 ISP == 25 WSP
