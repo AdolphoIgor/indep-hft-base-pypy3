@@ -856,7 +856,7 @@ class ProfitDLL:
         # print(f"symbol: {asset_id.ticker}, side: {side}, value: {lst_book[side][::-1][0][:2]}, action: {action}, "
         #       f"price: {price}, qtd: {qtd}, count: {count}")
 
-        if lst_book[side][::-1][0]:
+        if lst_book[side]:
             lst_spread_rt[side] = lst_book[side][::-1][0][:2][::-1]
 
     def offer_book_callback(self, asset_id, action, position, side, qtd, agent, offer_id, price, has_price, has_qtd,
