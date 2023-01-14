@@ -1,4 +1,5 @@
 import time
+from datetime import datetime
 from threading import Thread
 
 from api.bots.tr.exceptions import BotInitializationException
@@ -6,7 +7,7 @@ from api.jobs.internal_config_provider import InternalConfigProviders
 from api.logger import logger
 
 
-class HFTBot(Thread):
+class Bot(Thread):
     ONE_ARM = 1
     TWO_ARM = 2
 
@@ -14,6 +15,7 @@ class HFTBot(Thread):
 
     def __init__(self, name, daemon, algo: dict, qtd_exp: int, config_prov: InternalConfigProviders):
         super().__init__(name=name, daemon=daemon)
+
         self._algo = algo
         self._qtd_exp = qtd_exp
         self._config_prov = config_prov
@@ -23,12 +25,30 @@ class HFTBot(Thread):
         self._dct_asset_state = self._profit_dll.get_asset_state()
         self._dct_ord_status = self._profit_dll.get_dct_order_status()
 
-        self._lst_sbl = [(alg.get("symbol"), alg.get("stock_market")) for alg in algo.get("threads")]
+        self._lst_sbl_mkt = [(alg.get("symbol"), alg.get("stock_market")) for alg in algo.get("threads")]
+        self._lst_sbl = [sbl[0] for sbl in self._lst_sbl_mkt]
+
+        if self._algo["agr_adj_type"] == "tick":
+            self._agr_adj = self._algo["tick_value"] * self._algo["agr_adj_value"]
+        elif self._algo["agr_adj_type"] == "perc":
+            self._agr_adj = round(self._algo["agr_adj_value"] / 100, 2)
+
+        self._time_limit = datetime.strptime(self._algo.get("time_limit"), "%H:%M:%S")
 
         # we will always have to need orders, and quotes for every bot created.
         lst_req = self._algo.get("req_instruments", [])
         lst_req.extend(["orders", "quote"])
+        for inst in ["lp"]:
+            if inst in lst_req:
+                lst_req.append("spread_rt")
+
         self._algo["req_instruments"] = list(set(lst_req))
+
+        # Restricts to only the assets managed by the current instance.
+        self.__lst_subs = [subs for subs in self._config_prov.get_internal_provider_data("instruments")
+                           if subs.get("type") in self._algo.get("req_instruments")]
+
+        self.__missing_lst_ordrs = True
 
     def _execute(self):
         pass
@@ -41,11 +61,12 @@ class HFTBot(Thread):
         self._profit_dll.set_enabled_log_to_debug(self._algo.get("debug_mode", False))
 
         self.__subscribe()
-        self._get_instruments()
+        self.__init_instruments()
 
         while self._config_prov.get_keep_running() and self._algo.get("enabled"):
             try:
                 self._execute()
+                self._init_orders_instruments()
 
             except Exception:
                 if self._profit_dll and not self._profit_dll.is_connected():
@@ -69,7 +90,7 @@ class HFTBot(Thread):
             logger.info(f"Algo {self.name} Actual position: {dct_ret}")
 
     def __test_qtd_assets(self):
-        qtd_ast = len(set(self._lst_sbl))
+        qtd_ast = len(set(self._lst_sbl_mkt))
 
         if qtd_ast == 0:
             raise BotInitializationException(f"The algo: {self.name} requires at least 1 asset but 0 was given.")
@@ -78,25 +99,25 @@ class HFTBot(Thread):
             str_cpl = f"{qtd_ast} was given" if qtd_ast == 1 else f"{qtd_ast} were given"
             raise BotInitializationException(f"The algo: {self.name} requires {self._qtd_exp} asset(s) but {str_cpl}.")
 
-    def _get_instruments(self):
+    def __init_instruments(self):
         logger.info(f"Waiting for instruments for the algo: {self.name}...")
 
         while True:
             dct_res = {}
-            lst_sbl_f = [sbl[0] for sbl in self._lst_sbl]
-            lst_subs = [subs for subs in self._config_prov.get_internal_provider_data("instruments")
-                        if subs.get("type") in self._algo.get("req_instruments")]
             lst_found = []
-            for inst in lst_subs:
+            for inst in self.__lst_subs:
+                if inst.get("type") == "orders":
+                    continue
+
                 dct_val = {}
-                for sbl in lst_sbl_f:
+                for sbl in self._lst_sbl:
+                    b_found = False
                     value = inst.get("value").get(sbl)
                     if value:
                         dct_val[sbl] = value
-                        lst_found.append(True)
-                    else:
-                        if not inst.get("type") == "orders":
-                            lst_found.append(False)
+                        b_found = True
+
+                    lst_found.append(b_found)
 
                 dct_res[inst.get("type")] = dct_val
 
@@ -106,15 +127,36 @@ class HFTBot(Thread):
 
         logger.info(f"All de instruments for the algo: {self.name} has been received.")
 
+    def _init_orders_instruments(self):
+        if self.__missing_lst_ordrs:
+            logger.info(f"Waiting for recover the symbol's list of orders for the algo: {self.name}...")
+
+            for inst in self.__lst_subs:
+                if inst.get("type") == "orders":
+                    for sbl in self._lst_sbl:
+                        if not self._dct_inst.get("orders", {}).get(sbl):
+                            lst_ordrs = inst.get("value").get(sbl, [])
+                            if lst_ordrs:
+                                lst_ordrs.clear()
+                                self._dct_inst.update({inst.get("type"): {sbl: lst_ordrs}})
+
+                    break
+
+            if len(self._dct_inst.get("orders", {})) == len(self._lst_sbl):
+                self.__missing_lst_ordrs = False
+                logger.info(f"All of the  symbol's list of orders for the algo: {self.name} were recovered.")
+
+            else:
+                logger.info(f"There is/are symbol's list of orders missing for the algo: {self.name}. I'll try again.")
+
+            for k, lst_ordr in self._dct_inst.get("orders").items():
+                lst_ordr.clear()
+
     def __subscribe(self):
         logger.info(f"Subscribing instruments for the algo: {self.name}...")
 
-        # Restricts to only the assets managed by the current instance.
-        lst_subs = [subs for subs in self._config_prov.get_internal_provider_data("subscriptions")
-                    if subs.get("type") in self._algo.get("req_instruments")]
-
-        for sbs in lst_subs:
-            for sbl in self._lst_sbl:
+        for sbs in self.__lst_subs:
+            for sbl in self._lst_sbl_mkt:
                 inst = sbs.get("value")
                 if inst.count(sbl[0]) == 0:
                     if sbs.get("type") == "quote":
@@ -130,16 +172,14 @@ class HFTBot(Thread):
                         self._profit_dll.subscribe_offer_book(ticker=sbl[0], bolsa=sbl[1])
                         inst.append(sbl[0])
 
+        time.sleep(1)
         logger.info(f"Instruments subscription for the algo: {self.name} done.")
 
     def __unsubscribe(self):
         logger.info(f"Unsubscribing instruments for the algo: {self.name}...")
 
-        lst_subs = [subs for subs in self._config_prov.get_internal_provider_data("subscriptions")
-                    if subs.get("type") in self._algo.get("req_instruments")]
-
-        for sbs in lst_subs:
-            for sbl in self._lst_sbl:
+        for sbs in self.__lst_subs:
+            for sbl in self._lst_sbl_mkt:
                 inst = sbs.get("value")
                 if inst.count(sbl[0]) == 1:
                     if sbs.get("type") == "quote":
@@ -171,3 +211,13 @@ class HFTBot(Thread):
                 break
 
         return ret_bol
+
+    @staticmethod
+    def _get_order_w_status(lst_orders: list, status: str):
+        dct_ordr = None
+        for ordr in lst_orders[::-1]:
+            if ordr.get("status") == status:
+                dct_ordr = ordr
+                break
+
+        return dct_ordr

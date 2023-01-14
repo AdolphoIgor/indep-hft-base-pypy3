@@ -1,7 +1,8 @@
 from datetime import datetime
 
-from api.bots.tr.tr_bot import TRBot
+from api.bots.bot import Bot
 from api.bots.tr.position import PositionMgr
+from api.bots.tr.tr_bot import TRBot
 from api.jobs.internal_config_provider import InternalConfigProviders
 
 
@@ -16,7 +17,7 @@ class Auction(TRBot):
     """
 
     def __init__(self, name, daemon, algo: dict, config_prov: InternalConfigProviders):
-        super().__init__(name, daemon, algo, TRBot.ONE_ARM, config_prov)
+        super().__init__(name, daemon, algo, Bot.ONE_ARM, config_prov)
         self._lst_entry_signal = []
         self._dct_pos_threads = self._position_mgr.get_pos_arms()
 

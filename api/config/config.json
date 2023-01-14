@@ -50,9 +50,7 @@
       "tick_value": 0.5,
       "agr_adj_value": 30,
       "agr_adj_type": "tick",
-      "req_instruments": [
-        "lp", "spread_rt"
-      ],
+      "req_instruments": ["lp"],
       "threads": [
         {
           "symbol": "DOLG23",

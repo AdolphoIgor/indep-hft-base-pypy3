@@ -267,10 +267,9 @@ class PositionMgr:
                 side = "B" if arm.get("side") == "S" else "S"
                 symbol = arm.get("symbol")
 
-                lst_sel_ordrs = [
-                    ordr for ordr in lst_orders
-                    if ordr.get("symbol") == symbol and ordr.get("side") == side and
-                       ordr.get("status") in ["PartiallyFilled", "Filled", "Canceled", "Rejected"]]
+                lst_sel_ordrs = [ordr for ordr in lst_orders if ordr.get("symbol") == symbol
+                                 and ordr.get("side") == side and
+                                 ordr.get("status") in ["PartiallyFilled", "Filled", "Canceled", "Rejected"]]
 
                 if pos.get("close_status") == self.POS_INIT:
                     lst_sel_ordrs = [ordr for ordr in lst_sel_ordrs
