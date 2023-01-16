@@ -119,9 +119,6 @@ class Bot(Thread):
             dct_res = {}
             lst_found = []
             for inst in self.__lst_inst:
-                # if inst.get("type") == "orders":
-                #    continue
-
                 dct_val = {}
                 for sbl in self._lst_sbl:
                     b_found = False
