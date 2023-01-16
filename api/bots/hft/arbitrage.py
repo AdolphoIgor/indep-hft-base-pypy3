@@ -49,6 +49,10 @@ class Arbitrage(Bot):
     def _initilize(self):
         self._lst_sprd_rt = list(self._dct_inst.get("spread_rt").values())
 
+        # TODO: como a lista de ordens e comum a todos os bots, creio que seja melhor transferir para a superclasse
+        #  e aplicar uma rotina para eliminar todos as ordens, exceto as ultimas (inverter a lista) atendidas e nao
+        #  zeradas...
+
         # when the system were interrupted after opened orders, they must be cleaned.
         for _, lst_ordr in self._dct_inst.get("orders", {}).items():
             lst_ordr.clear()
