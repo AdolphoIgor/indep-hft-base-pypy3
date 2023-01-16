@@ -28,7 +28,8 @@ class InternalConfigProviders:
                 {"type": "lp", "value": {}},
                 {"type": "lo", "value": {}},
                 {"type": "account", "value": {}},
-                {"type": "progress", "value": {}}
+                {"type": "progress", "value": {}},
+                {"type": "ranking", "value": {}}
             ]
         },
         {
@@ -36,10 +37,12 @@ class InternalConfigProviders:
             "value": [
                 {"type": "orders", "value": []},
                 {"type": "quote", "value": []},
+                {"type": "spread_rt", "value": []},
                 {"type": "spread", "value": []},
                 {"type": "tt", "value": []},
                 {"type": "lp", "value": []},
-                {"type": "lo", "value": []}
+                {"type": "lo", "value": []},
+                {"type": "ranking", "value": []}
             ]
         }
     ]

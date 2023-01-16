@@ -50,7 +50,7 @@
       "tick_value": 0.5,
       "agr_adj_value": 30,
       "agr_adj_type": "tick",
-      "req_instruments": ["lp"],
+      "req_instruments": ["spread_rt"],
       "threads": [
         {
           "symbol": "DOLG23",
@@ -76,7 +76,7 @@
     },
     {
       "name": "Arbitrage IND-WIN",
-      "enabled": true,
+      "enabled": false,
       "algo_class": "Arbitrage",
       "is_day_trade": true,
       "debug_mode": true,
@@ -86,9 +86,7 @@
       "tick_value": 5,
       "agr_adj_value": 30,
       "agr_adj_type": "tick",
-      "req_instruments": [
-        "lp", "spread_rt"
-      ],
+      "req_instruments": ["spread_rt"],
       "threads": [
         {
           "symbol": "INDFUT",
@@ -114,7 +112,7 @@
     },
     {
       "name": "Arbitrage ISP-WSP",
-      "enabled": true,
+      "enabled": false,
       "algo_class": "Arbitrage",
       "is_day_trade": true,
       "debug_mode": true,
@@ -124,9 +122,7 @@
       "tick_value": 0.25,
       "agr_adj_value": 30,
       "agr_adj_type": "tick",
-      "req_instruments": [
-        "lp", "spread_rt"
-      ],
+      "req_instruments": ["spread_rt"],
       "threads": [
         {
           "symbol": "ISPFUT",
@@ -152,7 +148,7 @@
     },
     {
       "name": "Arbitrage EUR-WEU",
-      "enabled": true,
+      "enabled": false,
       "algo_class": "Arbitrage",
       "is_day_trade": true,
       "debug_mode": true,
@@ -162,9 +158,7 @@
       "tick_value": 0.1,
       "agr_adj_value": 30,
       "agr_adj_type": "tick",
-      "req_instruments": [
-        "lp", "spread_rt"
-      ],
+      "req_instruments": ["spread_rt"],
       "threads": [
         {
           "symbol": "EURFUT",

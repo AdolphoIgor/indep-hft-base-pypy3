@@ -40,11 +40,14 @@ class Arbitrage(Bot):
             (self._tpl_arm_1, self._tpl_arm_0)
         )
 
-        self._lst_sprd_rt = list(self._dct_inst.get("spread_rt").values())
+        self._lst_sprd_rt = None
         self._pos_opened = False
 
         self._lst_orders_0 = None
         self._lst_orders_1 = None
+
+    def _initilize(self):
+        self._lst_sprd_rt = list(self._dct_inst.get("spread_rt").values())
 
     def _execute(self):
         if not self._lst_orders_0:

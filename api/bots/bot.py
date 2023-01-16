@@ -22,6 +22,8 @@ class Bot(Thread):
 
         self._config = self._config_prov.get_internal_provider_data("config")
         self._profit_dll = self._config.get("prov_conn")
+        self._profit_dll.set_day_trade(self._algo.get("is_day_trade", False))
+        self._profit_dll.set_enabled_log_to_debug(self._algo.get("debug_mode", False))
         self._dct_asset_state = self._profit_dll.get_asset_state()
         self._dct_ord_status = self._profit_dll.get_dct_order_status()
 
@@ -35,33 +37,43 @@ class Bot(Thread):
 
         self._time_limit = datetime.strptime(self._algo.get("time_limit"), "%H:%M:%S")
 
-        # we will always have to need orders, and quotes for every bot created.
+        # "orders", "tt" are some instruments already avaliable after the ticker subscribing (so their derivatives).
         lst_req = self._algo.get("req_instruments", [])
-        lst_req.extend(["orders", "quote"])
-        for inst in ["lp"]:
-            if inst in lst_req:
-                lst_req.append("spread_rt")
+        if "spread_rt" in lst_req:
+            lst_req.append("lp")
 
+        if "ranking" in lst_req:
+            lst_req.append("tt")
+
+        # we will always have to need orders, and quotes for every bot created.
+        lst_req.extend(["orders", "quote"])
         self._algo["req_instruments"] = list(set(lst_req))
 
         # Restricts to only the assets managed by the current instance.
-        self.__lst_subs = [subs for subs in self._config_prov.get_internal_provider_data("instruments")
-                           if subs.get("type") in self._algo.get("req_instruments")]
+        self.__lst_inst = [inst for inst in self._config_prov.get_internal_provider_data("instruments")
+                           if inst.get("type") in self._algo.get("req_instruments")]
+
+        self.__lst_subs = [sub for sub in self._config_prov.get_internal_provider_data("subscriptions")
+                           if sub.get("type") in self._algo.get("req_instruments")]
 
         self.__missing_lst_ordrs = True
 
     def _execute(self):
         pass
 
+    def _initilize(self):
+        """
+            Just use it inhe subclass to implement required-once initialization for the bots.
+        :return:
+        """
+        pass
+
     def run(self):
         logger.info(f"Initializing the algo name: {self.name}...")
         self.__test_qtd_assets()
-
-        self._profit_dll.set_day_trade(self._algo.get("is_day_trade", False))
-        self._profit_dll.set_enabled_log_to_debug(self._algo.get("debug_mode", False))
-
         self.__subscribe()
         self.__init_instruments()
+        self._initilize()
 
         while self._config_prov.get_keep_running() and self._algo.get("enabled"):
             try:
@@ -105,7 +117,7 @@ class Bot(Thread):
         while True:
             dct_res = {}
             lst_found = []
-            for inst in self.__lst_subs:
+            for inst in self.__lst_inst:
                 if inst.get("type") == "orders":
                     continue
 
@@ -128,10 +140,12 @@ class Bot(Thread):
         logger.info(f"All de instruments for the algo: {self.name} has been received.")
 
     def _init_orders_instruments(self):
+        """
+            It were made protected, so it can be called whenever you want besides being called at the end
+            of self._execute() method.
+        """
         if self.__missing_lst_ordrs:
-            logger.info(f"Waiting for recover the symbol's list of orders for the algo: {self.name}...")
-
-            for inst in self.__lst_subs:
+            for inst in self.__lst_inst:
                 if inst.get("type") == "orders":
                     for sbl in self._lst_sbl:
                         if not self._dct_inst.get("orders", {}).get(sbl):
@@ -146,12 +160,6 @@ class Bot(Thread):
                 self.__missing_lst_ordrs = False
                 logger.info(f"All of the  symbol's list of orders for the algo: {self.name} were recovered.")
 
-            else:
-                logger.info(f"There is/are symbol's list of orders missing for the algo: {self.name}. I'll try again.")
-
-            for k, lst_ordr in self._dct_inst.get("orders").items():
-                lst_ordr.clear()
-
     def __subscribe(self):
         logger.info(f"Subscribing instruments for the algo: {self.name}...")
 
@@ -162,15 +170,14 @@ class Bot(Thread):
                     if sbs.get("type") == "quote":
                         self._profit_dll.subscribe_ticker(ticker=sbl[0], bolsa=sbl[1])
                         self._profit_dll.get_last_daily_close(ticker=sbl[0], bolsa=sbl[1])
-                        inst.append(sbl[0])
 
                     elif sbs.get("type") == "lp":
                         self._profit_dll.subscribe_price_book(ticker=sbl[0], bolsa=sbl[1])
-                        inst.append(sbl[0])
 
                     elif sbs.get("type") == "lo":
                         self._profit_dll.subscribe_offer_book(ticker=sbl[0], bolsa=sbl[1])
-                        inst.append(sbl[0])
+
+                    inst.append(sbl[0])
 
         time.sleep(1)
         logger.info(f"Instruments subscription for the algo: {self.name} done.")
@@ -181,18 +188,17 @@ class Bot(Thread):
         for sbs in self.__lst_subs:
             for sbl in self._lst_sbl_mkt:
                 inst = sbs.get("value")
-                if inst.count(sbl[0]) == 1:
-                    if sbs.get("type") == "quote":
-                        self._profit_dll.unsubscribe_ticker(ticker=sbl[0], bolsa=sbl[1])
-                        inst.remove(sbl[0])
+                if sbs.get("type") == "quote":
+                    self._profit_dll.unsubscribe_ticker(ticker=sbl[0], bolsa=sbl[1])
 
-                    elif sbs.get("type") == "lp":
-                        self._profit_dll.unsubscribe_price_book(ticker=sbl[0], bolsa=sbl[1])
-                        inst.remove(sbl[0])
+                elif sbs.get("type") == "lp":
+                    self._profit_dll.unsubscribe_price_book(ticker=sbl[0], bolsa=sbl[1])
 
-                    elif sbs.get("type") == "lo":
-                        self._profit_dll.unsubscribe_offer_book(ticker=sbl[0], bolsa=sbl[1])
-                        inst.remove(sbl[0])
+                elif sbs.get("type") == "lo":
+                    self._profit_dll.unsubscribe_offer_book(ticker=sbl[0], bolsa=sbl[1])
+
+                inst.remove(sbl[0])
+                self._dct_inst.get(sbs.get("type"), {}).pop(sbl[0])
 
         logger.info(f"Instruments unsubscription for the algo: {self.name} done.")
 
