@@ -49,12 +49,11 @@ class Arbitrage(Bot):
     def _initilize(self):
         self._lst_sprd_rt = list(self._dct_inst.get("spread_rt").values())
 
-    def _execute(self):
-        if not self._lst_orders_0:
-            self._lst_orders_0 = self._dct_inst.get("orders", {}).get(self._lst_sbl[0], None)
+        # when the system were interrupted after opened orders, they must be cleaned.
+        for _, lst_ordr in self._dct_inst.get("orders", {}).items():
+            lst_ordr.clear()
 
-        if not self._lst_orders_1:
-            self._lst_orders_1 = self._dct_inst.get("orders", {}).get(self._lst_sbl[1], None)
+    def _execute(self):
 
         # if it has been a previous negotiation still opened, must be keep it running in order to finish it.
         if not self._is_asset_state(["opened"]) and not (self._lst_orders_0 or self._lst_orders_1):
@@ -104,10 +103,15 @@ class Arbitrage(Bot):
                 logger.debug(f"ENTRADA->SIDES: {[self._tpl_sides[1][0], self._tpl_sides[1][1]]}")
                 logger.debug(f"ENTRADA->SPREAD: {[self._lst_sprd_rt[1][0][1], self._lst_sprd_rt[0][1][1]]}")
 
-            self._init_orders_instruments()
+            return
 
         # exit point ---------------------------------------------------------------------------------------------------
         if self._pos_opened:
+            if not self._lst_orders_0:
+                self._lst_orders_0 = self._dct_inst.get("orders", {}).get(self._lst_sbl[0], None)
+
+            if not self._lst_orders_1:
+                self._lst_orders_1 = self._dct_inst.get("orders", {}).get(self._lst_sbl[1], None)
 
             b_tried = False
             dct_ord_0, dct_ord_1 = None, None

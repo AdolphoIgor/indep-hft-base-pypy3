@@ -78,9 +78,10 @@ class Bot(Thread):
         while self._config_prov.get_keep_running() and self._algo.get("enabled"):
             try:
                 self._execute()
-                self._init_orders_instruments()
 
             except Exception:
+                self.__init_orders_instruments()
+
                 if self._profit_dll and not self._profit_dll.is_connected():
                     if not self._config.get("conn_broken_rep"):
                         self._config["conn_broken_rep"] = True
@@ -118,8 +119,8 @@ class Bot(Thread):
             dct_res = {}
             lst_found = []
             for inst in self.__lst_inst:
-                if inst.get("type") == "orders":
-                    continue
+                # if inst.get("type") == "orders":
+                #    continue
 
                 dct_val = {}
                 for sbl in self._lst_sbl:
@@ -129,7 +130,8 @@ class Bot(Thread):
                         dct_val[sbl] = value
                         b_found = True
 
-                    lst_found.append(b_found)
+                    if not inst.get("type") == "orders":
+                        lst_found.append(b_found)
 
                 dct_res[inst.get("type")] = dct_val
 
@@ -139,7 +141,10 @@ class Bot(Thread):
 
         logger.info(f"All de instruments for the algo: {self.name} has been received.")
 
-    def _init_orders_instruments(self):
+    def _get_missing_lst_ordrs(self):
+        return self.__missing_lst_ordrs
+
+    def __init_orders_instruments(self):
         """
             It were made protected, so it can be called whenever you want besides being called at the end
             of self._execute() method.
@@ -147,13 +152,14 @@ class Bot(Thread):
         if self.__missing_lst_ordrs:
             for inst in self.__lst_inst:
                 if inst.get("type") == "orders":
+                    dct_order = {}
                     for sbl in self._lst_sbl:
                         if not self._dct_inst.get("orders", {}).get(sbl):
                             lst_ordrs = inst.get("value").get(sbl, [])
                             if lst_ordrs:
-                                lst_ordrs.clear()
-                                self._dct_inst.update({inst.get("type"): {sbl: lst_ordrs}})
+                                dct_order[sbl] = lst_ordrs
 
+                    self._dct_inst.update({inst.get("type"): dct_order})
                     break
 
             if len(self._dct_inst.get("orders", {})) == len(self._lst_sbl):
