@@ -597,9 +597,11 @@ class ProfitDLL:
         dct_quote["description"] = description
         dct_quote["min_order_qtd"] = min_order_qtd
         dct_quote["max_order_qtd"] = max_order_qtd
+        # TODO: substituir o default de start_param.get("order_op_qty", dct_quote["lote"]) com o valor de lote
         dct_quote["lote"] = lote
         dct_quote["security_type"] = security_type
         dct_quote["security_sub_type"] = security_sub_type
+        # TODO: inclui min_price_increment no lugar da varável "tick_value" da variável algos (config.json)
         dct_quote["min_price_increment"] = min_price_increment
         dct_quote["contract_multiplier"] = contract_multiplier
         dct_quote["valid_date"] = valid_date
@@ -933,6 +935,10 @@ class ProfitDLL:
 
             lst_tt.append([trade_number, date, price, qtd, buy_agent, sell_agent])
 
+            # TODO: calcular o saldo da agressão total aqui e atualizar valor em dct_quote["saldo_agressao"]
+            # TODO: calcular o saldo ranking (novo instrumento) com as seguintes informações:
+            #  [time (a cada minuto), agente, qtd_acum, prc_medio, sd_agressao, sd_passivo]
+
     def order_change_callback(self, asset_id, corretora, qtd, traded_qtd, leaves_qtd, side, price, stop_price,
                               avg_price, profit_id, tipo_ordem, conta, titular, cl_ord_id, status, date, text_message):
         self.find_lim_ord_pos_book_offer(tipo_ordem, status, asset_id, side, price, date, cl_ord_id)
@@ -989,6 +995,10 @@ class ProfitDLL:
 
             lst_tt.append([trade_number, date, price, qtd, buy_agent, sell_agent])
 
+            # TODO: calcular o saldo da agressão total aqui e atualizar valor em dct_quote["saldo_agressao"]
+            # TODO: calcular o saldo ranking (novo instrumento) com as seguintes informações:
+            #  [time (a cada minuto), agente, qtd_acum, prc_medio, sd_agressao, sd_passivo]
+
     def tiny_book_callback(self, asset_id, price, qtd, side):
         lst_spread = self._dct_spread.get(asset_id.ticker, None)
         if not lst_spread:
@@ -1009,6 +1019,8 @@ class ProfitDLL:
         if not dct_quote:
             self._dct_quote[asset_id.ticker] = dct_quote
 
+        # TODO: temos: vol, vol_buyer, vol_seller, qtd, qtd_buyer, qtd_seller, negocios, neg_buyer, neg_seller mas
+        #  não temos o saldo da agressão.
         dct_quote.update({"date": date, "open_val": open_val, "high": high, "low": low, "close": close, "vol": vol,
                           "ajuste": ajuste, "max_limit": max_limit, "min_limit": min_limit, "vol_buyer": vol_buyer,
                           "vol_seller": vol_seller, "qtd": qtd, "negocios": negocios, "contratos_open": contratos_open,
