@@ -997,6 +997,14 @@ class ProfitDLL:
             # TODO: calcular o saldo ranking (novo instrumento) com as seguintes informações:
             #  [time (a cada minuto), agente, qtd_acum, prc_medio, sd_agressao, sd_passivo]
 
+            # TODO: logica do TTOO.
+            '''
+            Para implementar a ordem original é só ir de negocio em negocio, se o agressor é o mesmo ele agrega
+            se não for o mesmo ele para de agregar
+            ele faz isso se for dentro do mesmo segundo
+            se passar mais tempo ele nao agrega mais
+            '''
+
     def tiny_book_callback(self, asset_id, price, qtd, side):
         lst_spread = self._dct_spread.get(asset_id.ticker, None)
         if not lst_spread:
