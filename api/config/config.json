@@ -44,13 +44,27 @@
       "algo_class": "Arbitrage",
       "is_day_trade": true,
       "debug_mode": true,
-      "time_limit": "18:25:00",
       "threshold_opening": 1,
-      "threshold_closing": 1,
+      "threshold_closing": [
+        {
+          "time": "17:45:00",
+          "value": 1.0
+        },
+        {
+          "time": "18:00:00",
+          "value": 0.5
+        },
+        {
+          "time": "18:15:00",
+          "value": 0.0
+        }
+      ],
       "tick_value": 0.5,
       "agr_adj_value": 30,
       "agr_adj_type": "tick",
-      "req_instruments": ["spread_rt"],
+      "req_instruments": [
+        "spread_rt"
+      ],
       "threads": [
         {
           "symbol": "DOLG23",
@@ -80,13 +94,27 @@
       "algo_class": "Arbitrage",
       "is_day_trade": true,
       "debug_mode": true,
-      "time_limit": "18:25:00",
       "threshold_opening": 10,
-      "threshold_closing": 10,
+      "threshold_closing": [
+        {
+          "time": "17:45:00",
+          "value": 10
+        },
+        {
+          "time": "18:00:00",
+          "value": 5
+        },
+        {
+          "time": "18:15:00",
+          "value": 0
+        }
+      ],
       "tick_value": 5,
       "agr_adj_value": 30,
       "agr_adj_type": "tick",
-      "req_instruments": ["spread_rt"],
+      "req_instruments": [
+        "spread_rt"
+      ],
       "threads": [
         {
           "symbol": "INDFUT",
@@ -116,13 +144,27 @@
       "algo_class": "Arbitrage",
       "is_day_trade": true,
       "debug_mode": true,
-      "time_limit": "18:25:00",
       "threshold_opening": 0.25,
-      "threshold_closing": 0.25,
+      "threshold_closing": [
+        {
+          "time": "17:45:00",
+          "value": 0.50
+        },
+        {
+          "time": "18:00:00",
+          "value": 0.25
+        },
+        {
+          "time": "18:15:00",
+          "value": 0
+        }
+      ],
       "tick_value": 0.25,
       "agr_adj_value": 30,
       "agr_adj_type": "tick",
-      "req_instruments": ["spread_rt"],
+      "req_instruments": [
+        "spread_rt"
+      ],
       "threads": [
         {
           "symbol": "ISPFUT",
@@ -152,13 +194,27 @@
       "algo_class": "Arbitrage",
       "is_day_trade": true,
       "debug_mode": true,
-      "time_limit": "18:25:00",
       "threshold_opening": 0.1,
-      "threshold_closing": 0.1,
+      "threshold_closing": [
+        {
+          "time": "17:45:00",
+          "value": 0.2
+        },
+        {
+          "time": "18:00:00",
+          "value": 0.1
+        },
+        {
+          "time": "18:15:00",
+          "value": 0
+        }
+      ],
       "tick_value": 0.1,
       "agr_adj_value": 30,
       "agr_adj_type": "tick",
-      "req_instruments": ["spread_rt"],
+      "req_instruments": [
+        "spread_rt"
+      ],
       "threads": [
         {
           "symbol": "EURFUT",

@@ -597,11 +597,9 @@ class ProfitDLL:
         dct_quote["description"] = description
         dct_quote["min_order_qtd"] = min_order_qtd
         dct_quote["max_order_qtd"] = max_order_qtd
-        # TODO: substituir o default de start_param.get("order_op_qty", dct_quote["lote"]) com o valor de lote
         dct_quote["lote"] = lote
         dct_quote["security_type"] = security_type
         dct_quote["security_sub_type"] = security_sub_type
-        # TODO: inclui min_price_increment no lugar da varável "tick_value" da variável algos (config.json)
         dct_quote["min_price_increment"] = min_price_increment
         dct_quote["contract_multiplier"] = contract_multiplier
         dct_quote["valid_date"] = valid_date

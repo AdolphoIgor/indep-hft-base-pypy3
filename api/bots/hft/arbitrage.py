@@ -1,7 +1,6 @@
 import time
 import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime
 
 from api.bots.bot import Bot
 from api.jobs.internal_config_provider import InternalConfigProviders
@@ -14,7 +13,6 @@ class Arbitrage(Bot):
         super().__init__(name, daemon, algo, Bot.TWO_ARM, config_prov)
 
         self._threshold_opening = self._algo.get("threshold_opening", 0)
-        self._threshold_closing = self._algo.get("threshold_closing", 0)
 
         self._arms = self._algo.get("threads")
         self._tpl_arm_0 = (
@@ -63,14 +61,11 @@ class Arbitrage(Bot):
         if not self._is_asset_state(["opened"]) and not (self._lst_orders_0 or self._lst_orders_1):
             return
 
-        b_in_session = datetime.now().time() <= self._time_limit.time()
-
         # entry point --------------------------------------------------------------------------------------------------
-        if b_in_session and not self._pos_opened:
+        if self._b_in_session and not self._pos_opened:
 
             # S1B2
             if (self._lst_sprd_rt[0][0][1] - self._lst_sprd_rt[1][1][1]) > self._threshold_opening:
-
                 self._profit_dll.send_sell_order(
                     conta=self._tpl_sides[0][0][0], broker=self._tpl_sides[0][0][1], senha=self._tpl_sides[0][0][2],
                     ativo=self._tpl_sides[0][0][3], bolsa=self._tpl_sides[0][0][4],
@@ -143,7 +138,7 @@ class Arbitrage(Bot):
                                   (dct_ord_0.get("avg_price") - self._lst_sprd_rt[0][1][1])
                             lst_ord = [self._lst_sprd_rt[1][0][1], self._lst_sprd_rt[0][1][1]]
 
-                        if res > self._threshold_closing:
+                        if res > self._thrshld_value_limit:
                             break
 
                     self._profit_dll.send_sell_order(

@@ -35,7 +35,10 @@ class Bot(Thread):
         elif self._algo["agr_adj_type"] == "perc":
             self._agr_adj = round(self._algo["agr_adj_value"] / 100, 2)
 
-        self._time_limit = datetime.strptime(self._algo.get("time_limit"), "%H:%M:%S")
+        self._lst_thrshld_clsg = self._algo["threshold_closing"]
+        self._thrshld_time_limit = datetime.strptime(self._lst_thrshld_clsg[0].get("time"), "%H:%M:%S")
+        self._thrshld_value_limit = self._lst_thrshld_clsg[0].get("value")
+        self._b_in_session = False
 
         # "orders", "tt" are some instruments already avaliable after the ticker subscribing (so their derivatives).
         lst_req = self._algo.get("req_instruments", [])
@@ -68,6 +71,16 @@ class Bot(Thread):
         """
         pass
 
+    def __calc_session_time(self):
+        self._b_in_session = datetime.now().time() <= self._thrshld_time_limit.time()
+        if self._b_in_session:
+            return
+
+        for trhs in self._lst_thrshld_clsg[1:]:
+            if datetime.now().time() <= datetime.strptime(trhs.get("time"), "%H:%M:%S").time():
+                self._thrshld_value_limit = trhs.get("value")
+                break
+
     def run(self):
         logger.info(f"Initializing the algo name: {self.name}...")
         self.__test_qtd_assets()
@@ -77,6 +90,7 @@ class Bot(Thread):
 
         while self._config_prov.get_keep_running() and self._algo.get("enabled"):
             try:
+                self.__calc_session_time()
                 self._execute()
 
             except Exception:
