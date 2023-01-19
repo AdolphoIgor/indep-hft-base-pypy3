@@ -87,6 +87,12 @@ class Auction(TRBot):
 
             return [side, qtd, nivel_p_dentro, lst_niv_menor_liq]
 
+        # TODO: GetAllTicker -> vai retornar todos os tickers de cada bolsa (B e/ou F)
+        self._profit_dll.get_all_ticker()
+
+        # Recuperar e abrir threads para executar o algo.
+        # Não pode executar com nenhum outro algo simultaneamente, ou seja, tem que ter corretora exclusiva
+
         while self._is_asset_state(["auctioned"]):
             if self._dct_pos_threads[0].get("position").get("has_ord_rem"):
                 self._lst_entry_signal = get_entry_signal()
