@@ -166,7 +166,7 @@ class Arbitrage(Bot):
                             if not self._ord_time_limit:
                                 start_date = min((dct_ord_0.get("date"), dct_ord_1.get("date")))
                                 self._ord_time_limit = datetime.strptime(start_date, '%d/%m/%Y %H:%M:%S.%f') + \
-                                                       timedelta(minutes=30)
+                                    timedelta(minutes=30)
 
                             if datetime.now().time() > self._ord_time_limit.time():
                                 self._thrshld_value_limit = abs(dct_ord_0.get("avg_price") - dct_ord_1.get("avg_price"))
