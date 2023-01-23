@@ -49,6 +49,15 @@ class Auction(Bot):
         return [side, qtd, nivel_p_dentro, lst_niv_menor_liq]
 
     def _execute(self):
+        """
+            {
+                "date": date, "open_val": open_val, "high": high, "low": low, "close": close, "vol": vol,
+                "ajuste": ajuste, "max_limit": max_limit, "min_limit": min_limit, "vol_buyer": vol_buyer,
+                "vol_seller": vol_seller, "qtd": qtd, "negocios": negocios, "contratos_open": contratos_open,
+                "qtd_buyer": qtd_buyer, "qtd_seller": qtd_seller, "neg_buyer": neg_buyer,
+                "neg_seller": neg_seller
+            }
+        """
         lst_auctd_sbls = [sbl for sbl, quote in self._dct_inst.get("quote").item() if quote.get("state") == "auctioned"]
 
         lst_retornos = []

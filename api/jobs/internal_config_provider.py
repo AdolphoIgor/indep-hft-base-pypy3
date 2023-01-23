@@ -37,6 +37,7 @@ class InternalConfigProviders:
             "value": [
                 {"type": "orders", "value": []},
                 {"type": "quote", "value": []},
+                {"type": "quote_adtl", "value": []},
                 {"type": "spread_rt", "value": []},
                 {"type": "spread", "value": []},
                 {"type": "tt", "value": []},

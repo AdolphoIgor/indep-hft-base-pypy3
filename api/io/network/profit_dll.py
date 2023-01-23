@@ -449,7 +449,7 @@ class ProfitDLL:
         b_enabled = c_int(1 if b_enabled else 0)
         return self._profit_dll.SetEnabledLogToDebug(b_enabled), b_enabled
 
-    def request_ticker_info(self, ativo: str, bolsa: str):
+    def request_ticker_info(self, ticker: str, bolsa: str):
         """
             Is designed ask for new information about an asset.
 
@@ -458,7 +458,7 @@ class ProfitDLL:
             :return: Triggers self._asset_list_info_callback(), and
             self._asset_list_callback()
         """
-        return self._profit_dll.RequestTickerInfo(c_wchar_p(ativo), c_wchar_p(bolsa))
+        return self._profit_dll.RequestTickerInfo(c_wchar_p(ticker), c_wchar_p(bolsa))
 
     def get_all_ticker(self, bolsa: str):
         """
