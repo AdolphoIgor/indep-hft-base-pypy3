@@ -192,7 +192,6 @@ class ProfitDLL:
                     self._profit_dll.SetChangeStateTickerCallback(change_state_ticker_callback)
                     self._profit_dll.SetTheoreticalPriceCallback(set_theoretical_price_callback)
 
-                    # logger.info("DLL Connected.")
                     break
 
         except Exception as e:
@@ -338,7 +337,7 @@ class ProfitDLL:
             return result, ret
 
         n_tam = result[1]
-        logger.info(f"qtd: {n_qtd}, n_tam: {n_tam}")
+        # logger.debug(f"qtd: {n_qtd}, n_tam: {n_tam}")
 
         arr = cast(result, POINTER(c_char))
         frame = bytearray()
@@ -411,7 +410,7 @@ class ProfitDLL:
             ret['available'] = struct.unpack("i", frame[start:start + 4])[0]
             start += 4
 
-            logger.info(ret)
+            # logger.debug(ret)
 
         return result, ret
 
@@ -560,7 +559,7 @@ class ProfitDLL:
         dct_quote["last"] = price
         dct_quote["trade_number"] = trade_number
 
-        logger.info(f"change_cotation_callback -> {dct_quote}")
+        # logger.debug(f"change_cotation_callback -> {dct_quote}")
 
     def asset_list_callback(self, asset_id, name):
         dct_quote = self._dct_quote.get(asset_id.ticker, {})
@@ -569,7 +568,7 @@ class ProfitDLL:
 
         dct_quote["description"] = name
 
-        logger.info(f"asset_list_callback -> {dct_quote}")
+        # logger.debug(f"asset_list_callback -> {dct_quote}")
 
     def asset_list_info_callback(self, asset_id, name, description, min_order_qtd, max_order_qtd, lote, security_type,
                                  security_sub_type, min_price_increment, contract_multiplier, valid_date, isin):
@@ -591,7 +590,7 @@ class ProfitDLL:
         dct_quote["security_type_desc"] = self._dct_asset_sec_type.get(security_type)
         dct_quote["security_sub_type_desc"] = self._dct_asset_sec_type.get(security_sub_type)
 
-        logger.info(f"asset_list_info_callback -> {dct_quote}")
+        # logger.debug(f"asset_list_info_callback -> {dct_quote}")
 
     def asset_list_info_callback_v2(self, asset_id, name, description, min_order_qtd, max_order_qtd, lote,
                                     security_type, security_sub_type, min_price_increment, contract_multiplier,
@@ -617,7 +616,7 @@ class ProfitDLL:
         dct_quote["security_type_desc"] = self._dct_asset_sec_type.get(security_type)
         dct_quote["security_sub_type_desc"] = self._dct_asset_sec_type.get(security_sub_type)
 
-        logger.info(f"asset_list_info_callback_v2 -> {dct_quote}")
+        # logger.debug(f"asset_list_info_callback_v2 -> {dct_quote}")
 
     def adjust_history_callback(self, asset_id, value, adj_type, observ, dt_ajuste, dt_delib, dt_pagamento, aff_price):
         dct_quote = self._dct_quote.get(asset_id.ticker, {})
@@ -628,7 +627,7 @@ class ProfitDLL:
         if aff_price:
             dct_quote["last"] = dct_quote.get("last", 0) + value
 
-        logger.info(f"adjust_history_callback -> {dct_quote}")
+        # logger.debug(f"adjust_history_callback -> {dct_quote}")
 
     def adjust_history_callback_v2(self, asset_id, value, adj_type, observ, dt_ajuste, dt_delib, dt_pagamento, flags,
                                    mult):
@@ -668,7 +667,7 @@ class ProfitDLL:
 
             dct_quote["last"] = round(last_prc, 2)
 
-        logger.info(f"adjust_history_callback_v2 -> {dct_quote}")
+        # logger.debug(f"adjust_history_callback_v2 -> {dct_quote}")
 
     def change_state_ticker_callback(self, asset_id, date, state):
         dct_quote = self._dct_quote.get(asset_id.ticker, {})
@@ -679,7 +678,7 @@ class ProfitDLL:
         dct_quote["state"] = state
         dct_quote["desc_state"] = self._dct_asset_state.get(state)
 
-        logger.info(f"change_state_ticker_callback -> {dct_quote}")
+        # logger.debug(f"change_state_ticker_callback -> {dct_quote}")
 
     def price_book_callback(self, asset_id, action, position, side, qtd, count, price, array_sell, array_buy):
         def decript(price_array):
@@ -836,7 +835,7 @@ class ProfitDLL:
         dct_quote["theoretical_price"] = theoretical_price
         dct_quote["theoretical_qtd"] = theoretical_qtd
 
-        logger.info(f"set_theoretical_price_callback -> {dct_quote}")
+        # logger.debug(f"set_theoretical_price_callback -> {dct_quote}")
 
     def state_callback(self, type_val, result):
         # 0 : connStLogin (Notify Login Change)
@@ -1049,7 +1048,7 @@ class ProfitDLL:
                           "neg_seller": neg_seller
                           })
 
-        logger.info(f"new_daily_callback -> {dct_quote}")
+        # logger.debug(f"new_daily_callback -> {dct_quote}")
 
 # WHEN THE PROFITDLL WILL BE INITIATED, PLEASE SET THAT REFERENCE HERE.
 # THAT WOULD ALLOW TO THE CALLBACKS TO FORWARD THOSE CALLS TO THE PYTHON DLL.

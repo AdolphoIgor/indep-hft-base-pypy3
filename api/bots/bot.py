@@ -104,9 +104,10 @@ class Bot(Thread):
                         dct_thr_cpy = thr.copy()
                         dct_thr_cpy["symbol"] = quote.get("symbol")
 
-                        if quote.get("security_type_desc") == 0:
+                        if quote.get("security_type_desc") == 'Future':
                             dct_thr_cpy["stock_market"] = "F"
-                        elif quote.get("security_type_desc") == 5:
+
+                        elif quote.get("security_type_desc") == 'Stock':
                             dct_thr_cpy["stock_market"] = "B"
 
                         dct_thr_cpy.get("start_param")["order_op_qty"] *= quote.get("lote")
@@ -118,10 +119,10 @@ class Bot(Thread):
         for thr in self._algo.get("threads"):
             if not thr.get("symbol") == "":
                 dct_quote = self._dct_inst.get("quote", {}).get(thr.get("symbol"))
-                if dct_quote.get("security_type_desc") == 0:
+                if dct_quote.get("security_type_desc") == 'Future':
                     thr["agr_adj"] = thr.get("tick_size") * self.AGR_BMF
 
-                elif dct_quote.get("security_type_desc") == 5:
+                elif dct_quote.get("security_type_desc") == 'Stock':
                     thr["agr_adj"] = self.AGR_BOV
 
     def __calc_session_time(self):

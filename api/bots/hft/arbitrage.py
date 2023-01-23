@@ -38,7 +38,7 @@ class Arbitrage(Bot):
             self._arms[0].get("symbol"),
             self._arms[0].get("stock_market"),
             self._arms[0].get("start_param").get("order_op_qty"),
-            self._arms[0].get("start_param").get("agr_adj"),
+            self._arms[0].get("agr_adj"),
             self._arms[0].get("tick_size")
         )
 
@@ -49,7 +49,7 @@ class Arbitrage(Bot):
             self._arms[1].get("symbol"),
             self._arms[1].get("stock_market"),
             self._arms[1].get("start_param").get("order_op_qty"),
-            self._arms[1].get("start_param").get("agr_adj"),
+            self._arms[1].get("agr_adj"),
             self._arms[1].get("tick_size")
         )
 

@@ -70,7 +70,7 @@
         }
       ],
       "req_instruments": [
-        "spread_rt", "quote_adtl"
+        "spread_rt"
       ],
       "threads": [
         {
@@ -95,7 +95,7 @@
     },
     {
       "name": "Arbitrage IND-WIN",
-      "enabled": false,
+      "enabled": true,
       "algo_class": "Arbitrage",
       "is_day_trade": true,
       "debug_mode": true,
