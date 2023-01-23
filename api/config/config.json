@@ -49,7 +49,7 @@
   "algos": [
     {
       "name": "Arbitrage DOL-WDO",
-      "enabled": false,
+      "enabled": true,
       "algo_class": "Arbitrage",
       "is_day_trade": true,
       "debug_mode": true,
@@ -70,13 +70,14 @@
         }
       ],
       "req_instruments": [
-        "spread_rt"
+        "spread_rt", "quote_adtl"
       ],
       "threads": [
         {
           "symbol": "DOLG23",
           "stock_market": "F",
           "broker_id": "15002",
+          "tick_size": 0.5,
           "start_param": {
             "order_op_qty": 5
           }
@@ -85,6 +86,7 @@
           "symbol": "WDOG23",
           "stock_market": "F",
           "broker_id": "15002",
+          "tick_size": 0.5,
           "start_param": {
             "order_op_qty": 25
           }
@@ -121,6 +123,7 @@
           "symbol": "INDFUT",
           "stock_market": "F",
           "broker_id": "15002",
+          "tick_size": 5,
           "start_param": {
             "order_op_qty": 1
           }
@@ -129,6 +132,7 @@
           "symbol": "DOLFUT",
           "stock_market": "F",
           "broker_id": "15002",
+          "tick_size": 5,
           "start_param": {
             "order_op_qty": 5
           }
@@ -141,7 +145,6 @@
       "algo_class": "Auction",
       "is_day_trade": true,
       "debug_mode": true,
-      "threshold_opening": 1,
       "threshold_closing_mode": "manual",
       "threshold_closing": [
         {
@@ -161,6 +164,7 @@
           "symbol": "",
           "stock_market": "B",
           "broker_id": "15002",
+          "tick_size": 100,
           "start_param": {
             "order_op_qty": 1000
           }
@@ -169,6 +173,7 @@
           "symbol": "",
           "stock_market": "F",
           "broker_id": "15002",
+          "tick_size": 100,
           "start_param": {
             "order_op_qty": 1
           }

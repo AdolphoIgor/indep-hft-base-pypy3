@@ -41,6 +41,7 @@ class Bot(Thread):
         self._threshold_closing_mode = self._algo.get("threshold_closing_mode", "manual")
         self._thrshld_time_limit = datetime.strptime(self._lst_thrshld_clsg[0].get("time"), "%H:%M:%S")
         self._thrshld_value_limit = self._lst_thrshld_clsg[0].get("value")
+
         self._b_in_session = False
         self._pos_opened = False
 
@@ -51,6 +52,9 @@ class Bot(Thread):
 
         if "ranking" in lst_req:
             lst_req.append("tt")
+
+        if "quote_adtl" in lst_req:
+            lst_req.append("quote")
 
         # we will always have to need orders, and quotes for every bot created.
         lst_req.extend(["orders", "quote"])
@@ -114,9 +118,8 @@ class Bot(Thread):
         for thr in self._algo.get("threads"):
             if not thr.get("symbol") == "":
                 dct_quote = self._dct_inst.get("quote", {}).get(thr.get("symbol"))
-                thr["min_price_increment"] = dct_quote.get("min_price_increment")
                 if dct_quote.get("security_type_desc") == 0:
-                    thr["agr_adj"] = dct_quote.get("min_price_increment") * self.AGR_BMF
+                    thr["agr_adj"] = thr.get("tick_size") * self.AGR_BMF
 
                 elif dct_quote.get("security_type_desc") == 5:
                     thr["agr_adj"] = self.AGR_BOV
@@ -241,6 +244,9 @@ class Bot(Thread):
                     if sbs.get("type") == "quote":
                         self._profit_dll.subscribe_ticker(ticker=sbl[0], bolsa=sbl[1])
                         self._profit_dll.get_last_daily_close(ticker=sbl[0], bolsa=sbl[1])
+
+                    elif sbs.get("type") == "quote_adtl":
+                        self._profit_dll.request_ticker_info(ticker=sbl[0], bolsa=sbl[1])
 
                     elif sbs.get("type") == "lp":
                         self._profit_dll.subscribe_price_book(ticker=sbl[0], bolsa=sbl[1])
