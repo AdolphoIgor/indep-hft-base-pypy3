@@ -149,6 +149,7 @@ class ProfitDLL:
         self._dct_progress = self._config_prov.get_internal_provider_data("progress", sublist=lst_instruments)
         self._dct_spread = self._config_prov.get_internal_provider_data("spread", sublist=lst_instruments)
         self._dct_spread_rt = self._config_prov.get_internal_provider_data("spread_rt", sublist=lst_instruments)
+        self._dct_ranking = self._config_prov.get_internal_provider_data("ranking", sublist=lst_instruments)
 
         self._b_ativo = False
         self._b_market_connected = False
@@ -550,6 +551,7 @@ class ProfitDLL:
         return ret, val_close
 
     # CALLBACKS --------------------------------------------------------------------------------------------------------
+    # TODO: isso não faz sentido... atualizar o trade_number na cotação.... não faz sentido! Rever
     def change_cotation_callback(self, asset_id, date, trade_number, price):
         dct_quote = self._dct_quote.get(asset_id.ticker, {})
         if not dct_quote:
@@ -1025,8 +1027,6 @@ class ProfitDLL:
         if not dct_quote:
             self._dct_quote[asset_id.ticker] = dct_quote
 
-        # TODO: temos: vol, vol_buyer, vol_seller, qtd, qtd_buyer, qtd_seller, negocios, neg_buyer, neg_seller mas
-        #  não temos o saldo da agressão.
         dct_quote.update({"date": date, "open_val": open_val, "high": high, "low": low, "close": close, "vol": vol,
                           "ajuste": ajuste, "max_limit": max_limit, "min_limit": min_limit, "vol_buyer": vol_buyer,
                           "vol_seller": vol_seller, "qtd": qtd, "negocios": negocios, "contratos_open": contratos_open,

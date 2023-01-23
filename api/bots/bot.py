@@ -8,8 +8,12 @@ from api.logger import logger
 
 
 class Bot(Thread):
-    ONE_ARM = 1
-    TWO_ARM = 2
+    # CONSTANTS
+    ARM_ONE = 1
+    ARM_TWO = 2
+
+    AGR_BMF = 30
+    AGR_BOV = 1.15
 
     _dct_inst = {}
 
@@ -27,18 +31,18 @@ class Bot(Thread):
         self._dct_asset_state = self._profit_dll.get_asset_state()
         self._dct_ord_status = self._profit_dll.get_dct_order_status()
 
+        # When running bots which requires an entire stockmarket that method should take care of it
+        self.__run_entire_market()
+
         self._lst_sbl_mkt = [(alg.get("symbol"), alg.get("stock_market")) for alg in algo.get("threads")]
         self._lst_sbl = [sbl[0] for sbl in self._lst_sbl_mkt]
 
-        if self._algo["agr_adj_type"] == "tick":
-            self._agr_adj = self._algo["tick_value"] * self._algo["agr_adj_value"]
-        elif self._algo["agr_adj_type"] == "perc":
-            self._agr_adj = round(self._algo["agr_adj_value"] / 100, 2)
-
         self._lst_thrshld_clsg = self._algo["threshold_closing"]
+        self._threshold_closing_mode = self._algo.get("threshold_closing_mode", "manual")
         self._thrshld_time_limit = datetime.strptime(self._lst_thrshld_clsg[0].get("time"), "%H:%M:%S")
         self._thrshld_value_limit = self._lst_thrshld_clsg[0].get("value")
         self._b_in_session = False
+        self._pos_opened = False
 
         # "orders", "tt" are some instruments already avaliable after the ticker subscribing (so their derivatives).
         lst_req = self._algo.get("req_instruments", [])
@@ -62,14 +66,60 @@ class Bot(Thread):
         self.__missing_lst_ordrs = True
 
     def _execute(self):
+        """
+            This is where the trading algorithm runs.
+        """
         pass
 
     def _initilize(self):
         """
-            Just use it inhe subclass to implement required-once initialization for the bots.
-        :return:
+            Just use it in the subclass to implement required-once initialization for the bots.
         """
         pass
+
+    def __run_entire_market(self):
+        b_run = False
+        lst_threads = self._algo.get("threads")
+        for thr in lst_threads:
+            if not thr.get("symbol"):
+                self._profit_dll.get_all_ticker(thr.get("stock_market"))
+                lst_threads.remove(thr)
+                b_run = True
+
+        if b_run:
+            time.sleep(10)
+
+            for thr in lst_threads:
+                if not thr.get("symbol"):
+                    # In this cenario, the Market Auctions algo is always nunning alone, so, every instrument in
+                    # InternalConfigProviders belongs to it.
+                    lst_quotes = self._config_prov.get_internal_provider_data(
+                        "quote", sublist=self._config_prov.get_internal_provider_data("instruments"))
+
+                    for quote in lst_quotes:
+                        dct_thr_cpy = thr.copy()
+                        dct_thr_cpy["symbol"] = quote.get("symbol")
+
+                        if quote.get("security_type_desc") == 0:
+                            dct_thr_cpy["stock_market"] = "F"
+                        elif quote.get("security_type_desc") == 5:
+                            dct_thr_cpy["stock_market"] = "B"
+
+                        dct_thr_cpy.get("start_param")["order_op_qty"] *= quote.get("lote")
+
+                        lst_threads.append(dct_thr_cpy)
+
+    def __initialize_super(self):
+        # Get the multiplier in order to simulate an order at market. BM&F increase 30 ticks, Bovespa increase 15%.
+        for thr in self._algo.get("threads"):
+            if not thr.get("symbol") == "":
+                dct_quote = self._dct_inst.get("quote", {}).get(thr.get("symbol"))
+                thr["min_price_increment"] = dct_quote.get("min_price_increment")
+                if dct_quote.get("security_type_desc") == 0:
+                    thr["agr_adj"] = dct_quote.get("min_price_increment") * self.AGR_BMF
+
+                elif dct_quote.get("security_type_desc") == 5:
+                    thr["agr_adj"] = self.AGR_BOV
 
     def __calc_session_time(self):
         # TODO: (Avaliar a ideia)
@@ -87,9 +137,9 @@ class Bot(Thread):
 
     def run(self):
         logger.info(f"Initializing the algo name: {self.name}...")
-        self.__test_qtd_assets()
         self.__subscribe()
         self.__init_instruments()
+        self.__initialize_super()
         self._initilize()
 
         while self._config_prov.get_keep_running() and self._algo.get("enabled"):
@@ -120,8 +170,8 @@ class Bot(Thread):
         if dct_ret:
             logger.info(f"Algo {self.name} Actual position: {dct_ret}")
 
-    def __test_qtd_assets(self):
-        qtd_ast = len(set(self._lst_sbl_mkt))
+    def _test_qtd_assets(self):
+        qtd_ast = len(set(self._lst_sbl))
 
         if qtd_ast == 0:
             raise BotInitializationException(f"The algo: {self.name} requires at least 1 asset but 0 was given.")
