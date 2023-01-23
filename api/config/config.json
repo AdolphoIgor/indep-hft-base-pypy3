@@ -37,55 +37,16 @@
       }
     }
   ],
-  "algos": [
+  "brokers": [
     {
-      "name": "Market Auctions",
-      "enabled": false,
-      "algo_class": "Auction",
-      "is_day_trade": true,
-      "debug_mode": true,
-      "threshold_opening": 1,
-      "threshold_closing_mode": "auto",
-      "threshold_closing": [
-        {
-          "time": "17:45:00",
-          "value": 1.0
-        },
-        {
-          "time": "18:00:00",
-          "value": 0.5
-        },
-        {
-          "time": "18:15:00",
-          "value": 0.0
-        }
-      ],
-      "req_instruments": [
-        "spread_rt"
-      ],
-      "threads": [
-        {
-          "symbol": "",
-          "stock_market": "B",
-          "broker_id": "15002",
-          "start_param": {
-            "order_op_qty": 1000
-          }
-        },
-        {
-          "symbol": "",
-          "stock_market": "F",
-          "broker_id": "15002",
-          "start_param": {
-            "order_op_qty": 1
-          }
-        }
-      ],
-      "stop_parameters": {
-        "stop_op": -125.00,
-        "stop_limit": -500.00
-      }
-    },
+      "id": "15002",
+      "broker_name": "Nelogica",
+      "account": "102376375",
+      "username": "87723603134",
+      "password": "Air1945jc!3"
+    }
+  ],
+  "algos": [
     {
       "name": "Arbitrage DOL-WDO",
       "enabled": false,
@@ -93,6 +54,7 @@
       "is_day_trade": true,
       "debug_mode": true,
       "threshold_opening": 1,
+      "threshold_closing_mode": "auto",
       "threshold_closing": [
         {
           "time": "17:45:00",
@@ -127,20 +89,95 @@
             "order_op_qty": 25
           }
         }
+      ]
+    },
+    {
+      "name": "Arbitrage IND-WIN",
+      "enabled": false,
+      "algo_class": "Arbitrage",
+      "is_day_trade": true,
+      "debug_mode": true,
+      "threshold_opening": 10,
+      "threshold_closing_mode": "manual",
+      "threshold_closing": [
+        {
+          "time": "17:45:00",
+          "value": 5
+        },
+        {
+          "time": "18:00:00",
+          "value": -5
+        },
+        {
+          "time": "18:15:00",
+          "value": -10
+        }
+      ],
+      "req_instruments": [
+        "spread_rt"
+      ],
+      "threads": [
+        {
+          "symbol": "INDFUT",
+          "stock_market": "F",
+          "broker_id": "15002",
+          "start_param": {
+            "order_op_qty": 1
+          }
+        },
+        {
+          "symbol": "DOLFUT",
+          "stock_market": "F",
+          "broker_id": "15002",
+          "start_param": {
+            "order_op_qty": 5
+          }
+        }
+      ]
+    },
+    {
+      "name": "Market Auctions",
+      "enabled": false,
+      "algo_class": "Auction",
+      "is_day_trade": true,
+      "debug_mode": true,
+      "threshold_opening": 1,
+      "threshold_closing_mode": "manual",
+      "threshold_closing": [
+        {
+          "time": "16:45:00",
+          "value": 0.0
+        },
+        {
+          "time": "17:00:00",
+          "value": -100
+        }
+      ],
+      "req_instruments": [
+        "spread_rt"
+      ],
+      "threads": [
+        {
+          "symbol": "",
+          "stock_market": "B",
+          "broker_id": "15002",
+          "start_param": {
+            "order_op_qty": 1000
+          }
+        },
+        {
+          "symbol": "",
+          "stock_market": "F",
+          "broker_id": "15002",
+          "start_param": {
+            "order_op_qty": 1
+          }
+        }
       ],
       "stop_parameters": {
         "stop_op": -125.00,
         "stop_limit": -500.00
       }
-    }
-  ],
-  "brokers": [
-    {
-      "id": "15002",
-      "broker_name": "Nelogica",
-      "account": "102376375",
-      "username": "87723603134",
-      "password": "Air1945jc!3"
     }
   ]
 }
