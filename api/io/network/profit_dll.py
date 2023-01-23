@@ -551,7 +551,6 @@ class ProfitDLL:
         return ret, val_close
 
     # CALLBACKS --------------------------------------------------------------------------------------------------------
-    # TODO: isso não faz sentido... atualizar o trade_number na cotação.... não faz sentido! Rever
     def change_cotation_callback(self, asset_id, date, trade_number, price):
         dct_quote = self._dct_quote.get(asset_id.ticker, {})
         if not dct_quote:

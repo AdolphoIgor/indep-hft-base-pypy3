@@ -240,6 +240,7 @@ class Bot(Thread):
                 if inst.count(sbl[0]) == 0:
                     if sbs.get("type") == "quote":
                         self._profit_dll.subscribe_ticker(ticker=sbl[0], bolsa=sbl[1])
+                        self._profit_dll.request_ticker_info(ticker=sbl[0], bolsa=sbl[1])
                         self._profit_dll.get_last_daily_close(ticker=sbl[0], bolsa=sbl[1])
 
                     elif sbs.get("type") == "lp":
