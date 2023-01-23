@@ -597,11 +597,9 @@ class ProfitDLL:
         dct_quote["description"] = description
         dct_quote["min_order_qtd"] = min_order_qtd
         dct_quote["max_order_qtd"] = max_order_qtd
-        # TODO: substituir o default de start_param.get("order_op_qty", dct_quote["lote"]) com o valor de lote
         dct_quote["lote"] = lote
         dct_quote["security_type"] = security_type
         dct_quote["security_sub_type"] = security_sub_type
-        # TODO: inclui min_price_increment no lugar da varável "tick_value" da variável algos (config.json)
         dct_quote["min_price_increment"] = min_price_increment
         dct_quote["contract_multiplier"] = contract_multiplier
         dct_quote["valid_date"] = valid_date
@@ -998,6 +996,14 @@ class ProfitDLL:
             # TODO: calcular o saldo da agressão total aqui e atualizar valor em dct_quote["saldo_agressao"]
             # TODO: calcular o saldo ranking (novo instrumento) com as seguintes informações:
             #  [time (a cada minuto), agente, qtd_acum, prc_medio, sd_agressao, sd_passivo]
+
+            # TODO: logica do TTOO.
+            '''
+            Para implementar a ordem original é só ir de negocio em negocio, se o agressor é o mesmo ele agrega
+            se não for o mesmo ele para de agregar
+            ele faz isso se for dentro do mesmo segundo
+            se passar mais tempo ele nao agrega mais
+            '''
 
     def tiny_book_callback(self, asset_id, price, qtd, side):
         lst_spread = self._dct_spread.get(asset_id.ticker, None)
