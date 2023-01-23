@@ -7,7 +7,7 @@ from api.jobs.internal_config_provider import InternalConfigProviders
 class GoodQueuePlace(TRBot):
 
     def __init__(self, name, daemon, algo: dict, config_prov: InternalConfigProviders):
-        super().__init__(name, daemon, algo, Bot.ONE_ARM, config_prov)
+        super().__init__(name, daemon, algo, Bot.ARM_ONE, config_prov)
 
     def _execute(self):
         def get_smaller_level():

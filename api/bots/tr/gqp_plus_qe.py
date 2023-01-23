@@ -10,7 +10,7 @@ from api.jobs.internal_config_provider import InternalConfigProviders
 class GoodQueuePlaceWithQueueEnding(TRBot):
 
     def __init__(self, name, daemon, algo: dict, config_prov: InternalConfigProviders):
-        super().__init__(name, daemon, algo, Bot.ONE_ARM, config_prov)
+        super().__init__(name, daemon, algo, Bot.ARM_ONE, config_prov)
         self._dct_pos_threads = self._position_mgr.get_pos_arms()
 
         self._momentum = Momentum()

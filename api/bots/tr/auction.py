@@ -1,95 +1,70 @@
+import multiprocessing
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 
 from api.bots.bot import Bot
 from api.bots.tr.position import PositionMgr
-from api.bots.tr.tr_bot import TRBot
 from api.jobs.internal_config_provider import InternalConfigProviders
 
 
-class Auction(TRBot):
-    """
-        For details on the B3 auction:
-        https://www.bmf.com.br/bmfbovespa/pages/boletim1/bd_manual/RegrasPregao.asp
-        https://www.bmf.com.br/bmfbovespa/pages/boletim1/bd_manual/Tunel_leilao.asp
-        https://www.b3.com.br/pt_br/solucoes/plataformas/puma-trading-system/para-participantes-e-traders/regras-e-parametros-de-negociacao/parametros-dos-tuneis-de-negociacao/
-        https://www.b3.com.br/pt_br/solucoes/plataformas/puma-trading-system/para-participantes-e-traders/regras-e-parametros-de-negociacao/tuneis-de-negociacao/
-
-    """
+class Auction(Bot):
+    MAX_PROCESS = int(multiprocessing.cpu_count() / 2)
+    MAX_PROCESS_WORKERS = MAX_PROCESS * 16
 
     def __init__(self, name, daemon, algo: dict, config_prov: InternalConfigProviders):
-        super().__init__(name, daemon, algo, Bot.ONE_ARM, config_prov)
-        self._lst_entry_signal = []
-        self._dct_pos_threads = self._position_mgr.get_pos_arms()
+        super().__init__(name, daemon, algo, Bot.ARM_ONE, config_prov)
+
+    def __get_entry_signal(self):
+        lst_spread = self._dct_inst.get("spread")
+        lst_lp = [lst_spread[0], lst_spread[1]]
+        qtd = lst_lp[0][0][0] - lst_lp[1][0][0] + lst_lp[0][1][0] - lst_lp[1][1][0]
+
+        qtd = abs(qtd)
+        nivel_p_dentro = 2
+        lst_niv_menor_liq = None
+        side = "B" if qtd > 0 else "S"
+        while True:
+            if qtd <= 0:
+                break
+
+            try:
+                idx = 1 if side == "B" else 0
+                qtd_nivel = lst_lp[idx][nivel_p_dentro][0]
+                prc_nivel = lst_lp[idx][nivel_p_dentro][1]
+                qtd -= qtd_nivel
+
+            except Exception:
+                break
+
+            if nivel_p_dentro == 2:
+                lst_niv_menor_liq = [nivel_p_dentro, qtd_nivel, prc_nivel]
+
+            elif lst_niv_menor_liq[1] > qtd_nivel:
+                lst_niv_menor_liq[0] = nivel_p_dentro
+                lst_niv_menor_liq[1] = qtd_nivel
+                lst_niv_menor_liq[2] = prc_nivel
+
+            nivel_p_dentro += 1
+
+        return [side, qtd, nivel_p_dentro, lst_niv_menor_liq]
 
     def _execute(self):
-        # TODO: preciso saber como detectar o tempo restante do leião e da fase randomica.
+        lst_auctd_sbls = [sbl for sbl, quote in self._dct_inst.get("quote").item() if quote.get("state") == "auctioned"]
 
-        """
-            1) Aqui estou assumindo que entrou no leilão, na prorrogação ou fase randômica...
-            2) não importa saber o fim do leilão para lançar ordens, não estamos na pre-abertura ou pre-fechamento aqui,
-                portanto, o preço teórico deve ficar estável pois se mudar, teremos prorrogações e até a fase randomica.
-                2.1) Assim, é seguro lançar ordem e se o preço teorico mudar e a ordem ficar fora dele, basta cancela-la
-                2.2) Só vai entrar com outra ordem se os critérios para entrada estiverem de acordo com estabelecido.
+        lst_retornos = []
+        with ThreadPoolExecutor(max_workers=self.MAX_PROCESS_WORKERS) as executor:
+            lst_thr = [executor.submit(self._run_algo, symbol) for symbol in lst_auctd_sbls]
 
-            3) A saída vai tratar tanto o Gain quanto o Stop. O Stop sempre será a mercado no fim da fila, se der stop
-                tem que cancelar a ordem de gain (que é ordem limite) imediatamente depois.
+            for thread in as_completed(lst_thr):
+                lst_retornos.append((thread.result(), thread.exception()))
 
-            order = {
-                "corretora": corretora, "qtd": qtd, "traded_qtd": traded_qtd, "leaves_qtd": leaves_qtd,
-                "side": side, "price": price, "stop_price": stop_price, "avg_price": avg_price,
-                "profit_id": profit_id, "tipo_ordem": tipo_ordem, "conta": conta, "titular": titular,
-                "cl_ord_id": cl_ord_id, "status": status, "date": date, "symbol": asset_id.ticker,
-            }
+    def _run_algo(self, symbol: str):
+        dct_sbl_qt = self._dct_inst.get("quote").get(symbol)
 
-            dct_quote["theoretical_price"] = theoretical_price
-            dct_quote["theoretical_qtd"] = theoretical_qtd
+        while dct_sbl_qt.get("state") == "auctioned":
 
-            1. Em relação as perguntas. A fase randomica dos Leilões recebm qual status? Seria tcsAuctioned?
-                O status tcsAuctioned é informado no leilão de abertura e de final de pregão.
-
-            2. E em relação ao status tcsFrozen ou tcsInhibited, quando eles ocorrem?
-                O status tcsFrozen ocorre em momentos onde o mercado está pausado, e o status tcsInhibited ocorre em
-                momentos onde o horário não está disponível para negociações.
-
-        """
-
-        def get_entry_signal():
-            lst_spread = self._dct_inst.get("spread")
-            lst_lp = [lst_spread[0], lst_spread[1]]
-            qtd = lst_lp[0][0][0] - lst_lp[1][0][0] + lst_lp[0][1][0] - lst_lp[1][1][0]
-
-            qtd = abs(qtd)
-            nivel_p_dentro = 2
-            lst_niv_menor_liq = None
-            side = "B" if qtd > 0 else "S"
-            while True:
-                if qtd <= 0:
-                    break
-
-                try:
-                    idx = 1 if side == "B" else 0
-                    qtd_nivel = lst_lp[idx][nivel_p_dentro][0]
-                    prc_nivel = lst_lp[idx][nivel_p_dentro][1]
-                    qtd -= qtd_nivel
-
-                except Exception:
-                    break
-
-                if nivel_p_dentro == 2:
-                    lst_niv_menor_liq = [nivel_p_dentro, qtd_nivel, prc_nivel]
-
-                elif lst_niv_menor_liq[1] > qtd_nivel:
-                    lst_niv_menor_liq[0] = nivel_p_dentro
-                    lst_niv_menor_liq[1] = qtd_nivel
-                    lst_niv_menor_liq[2] = prc_nivel
-
-                nivel_p_dentro += 1
-
-            return [side, qtd, nivel_p_dentro, lst_niv_menor_liq]
-
-        while self._is_asset_state(["auctioned"]):
             if self._dct_pos_threads[0].get("position").get("has_ord_rem"):
-                self._lst_entry_signal = get_entry_signal()
+                self._lst_entry_signal = self.__get_entry_signal()
                 if self._lst_entry_signal[2] > 2:
                     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
                     if self._lst_entry_signal[0] == "B":

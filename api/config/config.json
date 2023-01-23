@@ -37,31 +37,38 @@
       }
     }
   ],
+  "brokers": [
+    {
+      "id": "15002",
+      "broker_name": "Nelogica",
+      "account": "102376375",
+      "username": "87723603134",
+      "password": "Air1945jc!3"
+    }
+  ],
   "algos": [
     {
       "name": "Arbitrage DOL-WDO",
-      "enabled": true,
+      "enabled": false,
       "algo_class": "Arbitrage",
       "is_day_trade": true,
       "debug_mode": true,
       "threshold_opening": 1,
+      "threshold_closing_mode": "auto",
       "threshold_closing": [
         {
           "time": "17:45:00",
-          "value": 1.0
+          "value": 0
         },
         {
           "time": "18:00:00",
-          "value": 0.5
+          "value": -0.5
         },
         {
           "time": "18:15:00",
-          "value": 0.0
+          "value": -1.0
         }
       ],
-      "tick_value": 0.5,
-      "agr_adj_value": 30,
-      "agr_adj_type": "tick",
       "req_instruments": [
         "spread_rt"
       ],
@@ -82,11 +89,7 @@
             "order_op_qty": 25
           }
         }
-      ],
-      "stop_parameters": {
-        "stop_op": -125.00,
-        "stop_limit": -500.00
-      }
+      ]
     },
     {
       "name": "Arbitrage IND-WIN",
@@ -95,23 +98,21 @@
       "is_day_trade": true,
       "debug_mode": true,
       "threshold_opening": 10,
+      "threshold_closing_mode": "manual",
       "threshold_closing": [
         {
           "time": "17:45:00",
-          "value": 10
-        },
-        {
-          "time": "18:00:00",
           "value": 5
         },
         {
+          "time": "18:00:00",
+          "value": -5
+        },
+        {
           "time": "18:15:00",
-          "value": 0
+          "value": -10
         }
       ],
-      "tick_value": 5,
-      "agr_adj_value": 30,
-      "agr_adj_type": "tick",
       "req_instruments": [
         "spread_rt"
       ],
@@ -121,131 +122,62 @@
           "stock_market": "F",
           "broker_id": "15002",
           "start_param": {
-            "order_op_qty": 5
+            "order_op_qty": 1
           }
         },
         {
-          "symbol": "WINFUT",
+          "symbol": "DOLFUT",
           "stock_market": "F",
           "broker_id": "15002",
           "start_param": {
-            "order_op_qty": 25
+            "order_op_qty": 5
           }
         }
-      ],
-      "stop_parameters": {
-        "stop_op": -125.00,
-        "stop_limit": -500.00
-      }
+      ]
     },
     {
-      "name": "Arbitrage ISP-WSP",
+      "name": "Market Auctions",
       "enabled": false,
-      "algo_class": "Arbitrage",
+      "algo_class": "Auction",
       "is_day_trade": true,
       "debug_mode": true,
-      "threshold_opening": 0.25,
+      "threshold_opening": 1,
+      "threshold_closing_mode": "manual",
       "threshold_closing": [
         {
-          "time": "17:45:00",
-          "value": 0.50
+          "time": "16:45:00",
+          "value": 0.0
         },
         {
-          "time": "18:00:00",
-          "value": 0.25
-        },
-        {
-          "time": "18:15:00",
-          "value": 0
+          "time": "17:00:00",
+          "value": -100
         }
       ],
-      "tick_value": 0.25,
-      "agr_adj_value": 30,
-      "agr_adj_type": "tick",
       "req_instruments": [
         "spread_rt"
       ],
       "threads": [
         {
-          "symbol": "ISPFUT",
+          "symbol": "",
+          "stock_market": "B",
+          "broker_id": "15002",
+          "start_param": {
+            "order_op_qty": 1000
+          }
+        },
+        {
+          "symbol": "",
           "stock_market": "F",
           "broker_id": "15002",
           "start_param": {
             "order_op_qty": 1
           }
-        },
-        {
-          "symbol": "WSPFUT",
-          "stock_market": "F",
-          "broker_id": "15002",
-          "start_param": {
-            "order_op_qty": 20
-          }
         }
       ],
       "stop_parameters": {
         "stop_op": -125.00,
         "stop_limit": -500.00
       }
-    },
-    {
-      "name": "Arbitrage EUR-WEU",
-      "enabled": false,
-      "algo_class": "Arbitrage",
-      "is_day_trade": true,
-      "debug_mode": true,
-      "threshold_opening": 0.1,
-      "threshold_closing": [
-        {
-          "time": "17:45:00",
-          "value": 0.2
-        },
-        {
-          "time": "18:00:00",
-          "value": 0.1
-        },
-        {
-          "time": "18:15:00",
-          "value": 0
-        }
-      ],
-      "tick_value": 0.1,
-      "agr_adj_value": 30,
-      "agr_adj_type": "tick",
-      "req_instruments": [
-        "spread_rt"
-      ],
-      "threads": [
-        {
-          "symbol": "EURFUT",
-          "stock_market": "F",
-          "broker_id": "15002",
-          "start_param": {
-            "order_op_qty": 5
-          }
-        },
-        {
-          "symbol": "WEUFUT",
-          "stock_market": "F",
-          "broker_id": "15002",
-          "start_param": {
-            "order_op_qty": 25
-          }
-        }
-      ],
-      "stop_parameters": {
-        "stop_op": -125.00,
-        "stop_limit": -500.00
-      }
-    }
-  ],
-  "brokers": [
-    {
-      "id": "15002",
-      "broker_name": "Nelogica",
-      "account": "102376375",
-      "username": "87723603134",
-      "password": "Air1945jc!3"
     }
   ]
 }
