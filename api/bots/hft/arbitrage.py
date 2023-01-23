@@ -183,6 +183,7 @@ class Arbitrage(Bot):
                         logger.info(rslt)
 
             self._pos_opened = not self._lst_orders_0 and not self._lst_orders_1
+            time.sleep(5)
 
     def _proc_orders_list(self, lst_spread: list, lst_orders: list):
         lst_copy = lst_orders[::-1]

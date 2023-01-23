@@ -46,7 +46,7 @@
       "debug_mode": true,
       "time_limit": "18:25:00",
       "threshold_opening": 1,
-      "threshold_closing": 1,
+      "threshold_closing": 0,
       "tick_value": 0.5,
       "agr_adj_value": 30,
       "agr_adj_type": "tick",
@@ -76,13 +76,13 @@
     },
     {
       "name": "Arbitrage IND-WIN",
-      "enabled": false,
+      "enabled": true,
       "algo_class": "Arbitrage",
       "is_day_trade": true,
       "debug_mode": true,
       "time_limit": "18:25:00",
       "threshold_opening": 10,
-      "threshold_closing": 10,
+      "threshold_closing": 0,
       "tick_value": 5,
       "agr_adj_value": 30,
       "agr_adj_type": "tick",
@@ -93,7 +93,7 @@
           "stock_market": "F",
           "broker_id": "15002",
           "start_param": {
-            "order_op_qty": 5
+            "order_op_qty": 1
           }
         },
         {
@@ -101,7 +101,7 @@
           "stock_market": "F",
           "broker_id": "15002",
           "start_param": {
-            "order_op_qty": 25
+            "order_op_qty": 5
           }
         }
       ],
