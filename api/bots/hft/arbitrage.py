@@ -151,6 +151,8 @@ class Arbitrage(Bot):
                         tpl_sides = self._tpl_sides[1]
 
                     while True:
+                        time.sleep(0.00001)
+
                         if dct_ord_0.get("side") == 1:
                             res = (self._lst_sprd_rt[0][0][1] - dct_ord_0.get("avg_price")) + \
                                   (dct_ord_1.get("avg_price") - self._lst_sprd_rt[1][1][1])
