@@ -1,6 +1,5 @@
 import multiprocessing
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime
 
 from api.bots.bot import Bot
 from api.bots.tr.position import PositionMgr
@@ -15,8 +14,8 @@ class Auction(Bot):
         super().__init__(name, daemon, algo, Bot.ARM_ONE, config_prov)
 
     def __get_entry_signal(self):
-        lst_spread = self._dct_inst.get("spread")
-        lst_lp = [lst_spread[0], lst_spread[1]]
+        lst_book = self._dct_inst.get("lp")
+        lst_lp = [lst_book[0], lst_book[1]]
         qtd = lst_lp[0][0][0] - lst_lp[1][0][0] + lst_lp[0][1][0] - lst_lp[1][1][0]
 
         qtd = abs(qtd)
@@ -49,6 +48,25 @@ class Auction(Bot):
         return [side, qtd, nivel_p_dentro, lst_niv_menor_liq]
 
     def _execute(self):
+        lst_act_sbls = [[sbl, quote] for sbl, quote in self._dct_inst.get("quote").item()
+                        if quote.get("state") == "auctioned"]
+
+        lst_act_sbls = lst_act_sbls.sort(key=(lambda x: x.get("vol")))[:self.MAX_PROCESS_WORKERS]
+
+        for sbl in lst_act_sbls:
+            for thr in self._algo.get("threads"):
+                if sbl[0] == thr.get("symbol"):
+                    sbl.append(thr)
+                    sbl.append({"pos_opened": False})
+
+        lst_retornos = []
+        with ThreadPoolExecutor(max_workers=self.MAX_PROCESS_WORKERS) as executor:
+            lst_thr = [executor.submit(self._run_algo, item) for item in lst_act_sbls]
+
+            for thread in as_completed(lst_thr):
+                lst_retornos.append((thread.result(), thread.exception()))
+
+    def _run_algo(self, item: tuple):
         """
             {
                 "date": date, "open_val": open_val, "high": high, "low": low, "close": close, "vol": vol,
@@ -58,62 +76,57 @@ class Auction(Bot):
                 "neg_seller": neg_seller
             }
         """
-        lst_auctd_sbls = [sbl for sbl, quote in self._dct_inst.get("quote").item() if quote.get("state") == "auctioned"]
+        str_symbol = item[0]
+        dct_quote = item[1]
+        dct_thr = item[2]
+        dct_vars = item[3]
 
-        lst_retornos = []
-        with ThreadPoolExecutor(max_workers=self.MAX_PROCESS_WORKERS) as executor:
-            lst_thr = [executor.submit(self._run_algo, symbol) for symbol in lst_auctd_sbls]
+        lst_orders = self._dct_inst.get("orders", {}).get(str_symbol, None)
 
-            for thread in as_completed(lst_thr):
-                lst_retornos.append((thread.result(), thread.exception()))
+        while dct_quote.get("state") == "auctioned":
+            self._lst_entry_signal = self.__get_entry_signal()
 
-    def _run_algo(self, symbol: str):
-        dct_sbl_qt = self._dct_inst.get("quote").get(symbol)
+            if self._lst_entry_signal[2] > 2 and not dct_vars.get("order_placed", False):
+                if self._lst_entry_signal[0] == "B":
+                    self._profit_dll.send_buy_order(
+                        conta=dct_thr.get("broker").get("account"),
+                        broker=dct_thr.get("broker").get("id"),
+                        senha=dct_thr.get("broker").get("password"),
+                        ativo=str_symbol,
+                        bolsa=dct_thr.get("stock_market"),
+                        preco=dct_quote.get("quote").get("theoretical_price"),
+                        qtd=dct_thr.get("start_param").get("order_op_qty")
+                    )
+                else:
+                    self._profit_dll.send_sell_order(
+                        conta=dct_thr.get("broker").get("account"),
+                        broker=dct_thr.get("broker").get("id"),
+                        senha=dct_thr.get("broker").get("password"),
+                        ativo=str_symbol,
+                        bolsa=dct_thr.get("stock_market"),
+                        preco=dct_quote.get("quote").get("theoretical_price"),
+                        qtd=dct_thr.get("start_param").get("order_op_qty")
+                    )
 
-        while dct_sbl_qt.get("state") == "auctioned":
-
-            if self._dct_pos_threads[0].get("position").get("has_ord_rem"):
-                self._lst_entry_signal = self.__get_entry_signal()
-                if self._lst_entry_signal[2] > 2:
-                    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
-                    if self._lst_entry_signal[0] == "B":
-                        self._lst_orders_sent.append({"id": timestamp, "cl_ord_id": self._profit_dll.send_buy_order(
-                            conta=self._dct_pos_threads.get("broker").get("account"),
-                            broker=self._dct_pos_threads.get("broker").get("id"),
-                            senha=self._dct_pos_threads.get("broker").get("password"),
-                            ativo=self._dct_pos_threads.get("symbol"),
-                            bolsa=self._dct_pos_threads.get("stock_market"),
-                            preco=self._dct_inst.get("quote").get("theoretical_price"),
-                            qtd=self._dct_pos_threads.get("start_param").get("order_op_qty")
-                        )})
-                    else:
-                        self._lst_orders_sent.append({"id": timestamp, "cl_ord_id": self._profit_dll.send_sell_order(
-                            conta=self._dct_pos_threads.get("broker").get("account"),
-                            broker=self._dct_pos_threads.get("broker").get("id"),
-                            senha=self._dct_pos_threads.get("broker").get("password"),
-                            ativo=self._dct_pos_threads.get("symbol"),
-                            bolsa=self._dct_pos_threads.get("stock_market"),
-                            preco=self._dct_inst.get("quote").get("theoretical_price"),
-                            qtd=self._dct_pos_threads.get("start_param").get("order_op_qty")
-                        )})
-
-            self._position_mgr.proc_positions()
+                dct_vars["order_placed"] = True
 
             # Se a ordem nova ficou fora da formação do preço teórico, cancela e espera novo sinal.
-            lst_new_ordrs = [
-                ordr for pos in self._position_mgr.get_lst_positions([PositionMgr.POS_NEW], [PositionMgr.POS_INIT])
-                for ordr in pos.get("open_arms")
-                if ordr.get("status") == "New"
-            ]
+            dct_ord_0 = self._get_order_w_status(lst_orders, "New")
+            if dct_ord_0:
+                if dct_ord_0.get("price") != dct_quote.get("theoretical_price"):
+                    self._profit_dll.send_cancel_order(
+                        conta=dct_thr.get("broker").get("account"),
+                        broker=dct_thr.get("broker").get("id"),
+                        senha=dct_thr.get("broker").get("password"),
+                        cl_ord_id=dct_ord_0.get("cl_ord_id")
+                    )
+                lst_orders.remove(dct_ord_0)
 
-            for ordr in lst_new_ordrs:
-                if ordr.get("price") != self._dct_inst.get("quote").get("theoretical_price"):
-                    self._lst_orders_sent.append({"id": None, "cl_ord_id": self._profit_dll.send_cancel_order(
-                        conta=self._dct_pos_threads.get("broker").get("account"),
-                        broker=self._dct_pos_threads.get("broker").get("id"),
-                        senha=self._dct_pos_threads.get("broker").get("password"),
-                        cl_ord_id=ordr.get("cl_ord_id")
-                    )})
+                dct_ord_0 = self._get_order_w_status(lst_orders, "Cancel")
+                if dct_ord_0:
+                    lst_orders.clear()
+
+                dct_vars["order_placed"] = False
 
         """
             A saída nunca será dentro do leilão, prorrogação ou fase randomica...
