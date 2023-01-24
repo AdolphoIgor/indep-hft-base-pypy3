@@ -13,7 +13,6 @@ class Arbitrage(Bot):
     def __init__(self, name, daemon, algo: dict, config_prov: InternalConfigProviders):
         super().__init__(name, daemon, algo, Bot.ARM_TWO, config_prov)
 
-        # TODO: não permitir valor negativo no threshold_opening;
         self._threshold_opening = self._algo.get("threshold_opening", 0)
         self._threshold_opening = 0 if self._threshold_opening < 0 else self._threshold_opening
 

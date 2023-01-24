@@ -51,7 +51,7 @@
       "name": "Arbitrage DOL-WDO",
       "enabled": true,
       "algo_class": "Arbitrage",
-      "threshold_opening": 0.5,
+      "threshold_opening": 1,
       "threshold_closing_mode": "auto",
       "threshold_auto_max_min": 30,
       "threshold_closing": [
@@ -92,7 +92,7 @@
       "name": "Arbitrage IND-WIN",
       "enabled": true,
       "algo_class": "Arbitrage",
-      "threshold_opening": 5,
+      "threshold_opening": 10,
       "threshold_closing_mode": "auto",
       "threshold_auto_max_min": 30,
       "threshold_closing": [

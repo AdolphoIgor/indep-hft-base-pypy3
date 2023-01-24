@@ -122,6 +122,8 @@ class Bot(Thread):
         for thr in self._algo.get("threads"):
             if not thr.get("symbol") == "":
                 dct_quote = self._dct_inst.get("quote", {}).get(thr.get("symbol"))
+
+                thr["lote"] = dct_quote.get("lote")
                 thr["min_price_increment"] = dct_quote.get("min_price_increment")
                 if dct_quote.get("security_type") == 0:
                     thr["agr_adj"] = dct_quote.get("min_price_increment") * self.AGR_BMF
