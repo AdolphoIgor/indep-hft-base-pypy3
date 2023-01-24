@@ -1078,8 +1078,8 @@ def asset_list_info_callback(asset_id, name, description, min_order_qtd, max_ord
                                            valid_date, isin)
 
 
-@WINFUNCTYPE(None, TAssetID, c_wchar_p, c_wchar_p, c_int, c_int, c_int, c_int, c_int, c_int, c_double, c_double,
-             c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p)
+@WINFUNCTYPE(None, TAssetID, c_wchar_p, c_wchar_p, c_int, c_int, c_int, c_int, c_int, c_double, c_double,
+             c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p)
 def asset_list_info_callback_v2(asset_id, name, description, min_order_qtd, max_order_qtd, lote,
                                 security_type, security_sub_type, min_price_increment, contract_multiplier,
                                 valid_date, isin, setor, sub_setor, segmento):
