@@ -207,6 +207,7 @@ class Arbitrage(Bot):
                                 logger.info(rslt)
 
                     self._pos_opened = False
+                    self._ord_time_limit = None
                     break
 
                 if b_tried:
