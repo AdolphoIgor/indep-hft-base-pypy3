@@ -39,7 +39,7 @@ class Arbitrage(Bot):
             self._arms[0].get("stock_market"),
             self._arms[0].get("start_param").get("order_op_qty"),
             self._arms[0].get("agr_adj"),
-            self._arms[0].get("tick_size")
+            self._arms[0].get("min_price_increment")
         )
 
         self._tpl_arm_1 = (
@@ -50,7 +50,7 @@ class Arbitrage(Bot):
             self._arms[1].get("stock_market"),
             self._arms[1].get("start_param").get("order_op_qty"),
             self._arms[1].get("agr_adj"),
-            self._arms[1].get("tick_size")
+            self._arms[1].get("min_price_increment")
         )
 
         self._tpl_sides = (
@@ -207,6 +207,7 @@ class Arbitrage(Bot):
                                 logger.info(rslt)
 
                     self._pos_opened = False
+                    self._ord_time_limit = None
                     break
 
                 if b_tried:

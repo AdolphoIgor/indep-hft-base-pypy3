@@ -45,7 +45,7 @@ class Bot(Thread):
         self._b_in_session = False
         self._pos_opened = False
 
-        # "orders", "tt" are some instruments already avaliable after the ticker subscribing (so their derivatives).
+        # "lp", "tt" are some instruments already avaliable after a derivative ticker subscribing.
         lst_req = self._algo.get("req_instruments", [])
         if "spread_rt" in lst_req:
             lst_req.append("lp")
@@ -87,7 +87,6 @@ class Bot(Thread):
         for thr in lst_threads:
             if not thr.get("symbol"):
                 self._profit_dll.get_all_ticker(thr.get("stock_market"))
-                lst_threads.remove(thr)
                 b_run = True
 
         if b_run:
@@ -102,27 +101,30 @@ class Bot(Thread):
 
                     for quote in lst_quotes:
                         dct_thr_cpy = thr.copy()
-                        dct_thr_cpy["symbol"] = quote.get("symbol")
+                        dct_thr_cpy["symbol"] = quote.get("name")
 
-                        if quote.get("security_type_desc") == 'Future':
+                        if quote.get("security_type") == 0:
                             dct_thr_cpy["stock_market"] = "F"
 
-                        elif quote.get("security_type_desc") == 'Stock':
+                        elif quote.get("security_type") == 5:
                             dct_thr_cpy["stock_market"] = "B"
 
                         dct_thr_cpy.get("start_param")["order_op_qty"] *= quote.get("lote")
 
                         lst_threads.append(dct_thr_cpy)
 
+                lst_threads.remove(thr)
+
     def __initialize_super(self):
         # Get the multiplier in order to simulate an order at market. BM&F increase 30 ticks, Bovespa increase 15%.
         for thr in self._algo.get("threads"):
             if not thr.get("symbol") == "":
                 dct_quote = self._dct_inst.get("quote", {}).get(thr.get("symbol"))
-                if dct_quote.get("security_type_desc") == 'Future':
-                    thr["agr_adj"] = thr.get("tick_size") * self.AGR_BMF
+                thr["min_price_increment"] = dct_quote.get("min_price_increment")
+                if dct_quote.get("security_type") == 0:
+                    thr["agr_adj"] = dct_quote.get("min_price_increment") * self.AGR_BMF
 
-                elif dct_quote.get("security_type_desc") == 'Stock':
+                elif dct_quote.get("security_type") == 5:
                     thr["agr_adj"] = self.AGR_BOV
 
     def __calc_session_time(self):
