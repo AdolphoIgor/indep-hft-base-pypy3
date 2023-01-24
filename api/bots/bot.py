@@ -26,8 +26,9 @@ class Bot(Thread):
 
         self._config = self._config_prov.get_internal_provider_data("config")
         self._profit_dll = self._config.get("prov_conn")
-        self._profit_dll.set_day_trade(self._algo.get("is_day_trade", False))
-        self._profit_dll.set_enabled_log_to_debug(self._algo.get("debug_mode", False))
+        self._profit_dll.set_day_trade(self._algo.get("is_day_trade", True))
+        self._profit_dll.set_enabled_log_to_debug(self._algo.get("debug_mode", True))
+
         self._dct_asset_state = self._profit_dll.get_asset_state()
         self._dct_ord_status = self._profit_dll.get_dct_order_status()
 
@@ -41,6 +42,7 @@ class Bot(Thread):
         self._threshold_closing_mode = self._algo.get("threshold_closing_mode", "manual")
         self._thrshld_time_limit = datetime.strptime(self._lst_thrshld_clsg[0].get("time"), "%H:%M:%S")
         self._thrshld_value_limit = self._lst_thrshld_clsg[0].get("value")
+        self._thrshld_auto_max_min = self._algo["threshold_auto_max_min"]
 
         self._b_in_session = False
         self._pos_opened = False

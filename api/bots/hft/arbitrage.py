@@ -13,7 +13,9 @@ class Arbitrage(Bot):
     def __init__(self, name, daemon, algo: dict, config_prov: InternalConfigProviders):
         super().__init__(name, daemon, algo, Bot.ARM_TWO, config_prov)
 
+        # TODO: não permitir valor negativo no threshold_opening;
         self._threshold_opening = self._algo.get("threshold_opening", 0)
+        self._threshold_opening = 0 if self._threshold_opening < 0 else self._threshold_opening
 
         self._arms = self._algo.get("threads")
         self._tpl_arm_0 = None
@@ -21,10 +23,6 @@ class Arbitrage(Bot):
         self._tpl_sides = None
 
         self._lst_sprd_rt = None
-
-        self._lst_orders_0 = None
-        self._lst_orders_1 = None
-
         self._ord_time_limit = None
 
     def _initilize(self):
@@ -79,14 +77,17 @@ class Arbitrage(Bot):
             if dct_ordr.get("qtd"):
                 lst_ordr.append(dct_ordr.get("last"))
 
+        lst_res = [True for sbl, lst in self._dct_inst.get("orders", {}).items() if lst]
+        self._pos_opened = len(lst_res) == self._qtd_exp and all(lst_res)
+
     def _execute(self):
 
         # if it has been a previous negotiation still opened, must be keep it running in order to finish it.
-        if not self._is_asset_state(["opened"]) and not (self._lst_orders_0 or self._lst_orders_1):
+        if not self._is_asset_state(["opened"]) and not self._pos_opened:
             return
 
         # entry point --------------------------------------------------------------------------------------------------
-        if self._b_in_session and not self._pos_opened and not self._lst_orders_0 and not self._lst_orders_1:
+        if self._b_in_session and not self._pos_opened:
 
             # S1B2
             if (self._lst_sprd_rt[0][0][1] - self._lst_sprd_rt[1][1][1]) > self._threshold_opening:
@@ -108,7 +109,7 @@ class Arbitrage(Bot):
                 logger.debug(f"ENTRADA->SPREAD: :{[self._lst_sprd_rt[0][0][1], self._lst_sprd_rt[1][1][1]]}")
 
             # S2B1
-            if (self._lst_sprd_rt[1][0][1] - self._lst_sprd_rt[0][1][1]) > self._threshold_opening:
+            elif (self._lst_sprd_rt[1][0][1] - self._lst_sprd_rt[0][1][1]) > self._threshold_opening:
                 self._profit_dll.send_sell_order(
                     conta=self._tpl_sides[1][0][0], broker=self._tpl_sides[1][0][1], senha=self._tpl_sides[1][0][2],
                     ativo=self._tpl_sides[1][0][3], bolsa=self._tpl_sides[1][0][4],
@@ -130,18 +131,16 @@ class Arbitrage(Bot):
 
         # exit point ---------------------------------------------------------------------------------------------------
         if self._pos_opened:
-            if not self._lst_orders_0:
-                self._lst_orders_0 = self._dct_inst.get("orders", {}).get(self._lst_sbl[0], None)
-
-            if not self._lst_orders_1:
-                self._lst_orders_1 = self._dct_inst.get("orders", {}).get(self._lst_sbl[1], None)
 
             b_tried = False
             dct_ord_0, dct_ord_1 = None, None
 
             while not dct_ord_0 or not dct_ord_1:
-                dct_ord_0 = self._get_order_w_status(self._lst_orders_0, "Filled")
-                dct_ord_1 = self._get_order_w_status(self._lst_orders_1, "Filled")
+                lst_orders_0 = self._dct_inst.get("orders").get(self._lst_sbl[0], None)
+                lst_orders_1 = self._dct_inst.get("orders").get(self._lst_sbl[1], None)
+
+                dct_ord_0 = self._get_order_w_status(lst_orders_0, "Filled")
+                dct_ord_1 = self._get_order_w_status(lst_orders_1, "Filled")
 
                 if dct_ord_0 and dct_ord_1:
                     # Compra = 1, Venda = 2
@@ -166,13 +165,13 @@ class Arbitrage(Bot):
                             if not self._ord_time_limit:
                                 start_date = min((dct_ord_0.get("date"), dct_ord_1.get("date")))
                                 self._ord_time_limit = datetime.strptime(start_date, '%d/%m/%Y %H:%M:%S.%f') + \
-                                    timedelta(minutes=30)
+                                    timedelta(minutes=self._thrshld_auto_max_min)
 
                             if datetime.now().time() > self._ord_time_limit.time():
                                 self._thrshld_value_limit = abs(dct_ord_0.get("avg_price") - dct_ord_1.get("avg_price"))
                             else:
                                 self._thrshld_value_limit = abs(dct_ord_0.get("avg_price") -
-                                                                dct_ord_1.get("avg_price")) + tpl_sides[0][6]
+                                                                dct_ord_1.get("avg_price")) + tpl_sides[0][7]
 
                         if res > self._thrshld_value_limit:
                             break
@@ -194,8 +193,8 @@ class Arbitrage(Bot):
 
                     with ThreadPoolExecutor(max_workers=Bot.ARM_TWO) as executor:
                         lst_thr = [executor.submit(self._proc_orders_list, lst[1], lst[0])
-                                   for lst in [(self._lst_orders_0, self._lst_sprd_rt[0]),
-                                               (self._lst_orders_1, self._lst_sprd_rt[1])]]
+                                   for lst in [(lst_orders_0, self._lst_sprd_rt[0]),
+                                               (lst_orders_1, self._lst_sprd_rt[1])]]
 
                         for thr in as_completed(lst_thr):
                             excpt = thr.exception()
