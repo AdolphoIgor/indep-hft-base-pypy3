@@ -1050,6 +1050,7 @@ class ProfitDLL:
 
         # logger.debug(f"new_daily_callback -> {dct_quote}")
 
+
 # WHEN THE PROFITDLL WILL BE INITIATED, PLEASE SET THAT REFERENCE HERE.
 # THAT WOULD ALLOW TO THE CALLBACKS TO FORWARD THOSE CALLS TO THE PYTHON DLL.
 prov_conn: ProfitDLL
