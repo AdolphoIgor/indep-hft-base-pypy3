@@ -9,7 +9,8 @@ class Directional(Bot):
     def __init__(self, name, daemon, algo: dict, config_prov: InternalConfigProviders):
         super().__init__(name, daemon, algo, Bot.ARM_ONE, config_prov)
 
-        self._start_time_limit = datetime.now() + timedelta(minutes=self._thrshld_opening_delay)
+        opening_delay = self._algo.get("start_param").get("threshold")["opening_delay"]
+        self._start_time_limit = datetime.now() + timedelta(minutes=opening_delay)
 
     def _initilize(self):
         self._test_qtd_assets()

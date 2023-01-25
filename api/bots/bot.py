@@ -38,12 +38,9 @@ class Bot(Thread):
         self._lst_sbl_mkt = [(alg.get("symbol"), alg.get("stock_market")) for alg in algo.get("threads")]
         self._lst_sbl = [sbl[0] for sbl in self._lst_sbl_mkt]
 
-        self._lst_thrshld_clsg = self._algo["threshold_closing"]
-        self._threshold_closing_mode = self._algo.get("threshold_closing_mode", "manual")
+        self._lst_thrshld_clsg = self._algo.get("stop_param").get("threshold")["closing_config"]
         self._thrshld_time_limit = datetime.strptime(self._lst_thrshld_clsg[0].get("time"), "%H:%M:%S")
         self._thrshld_value_limit = self._lst_thrshld_clsg[0].get("value")
-        self._thrshld_auto_max_min = self._algo["threshold_auto_minutes"]
-        self._thrshld_opening_delay = self._algo.get("threshold_opening_delay", 0)
 
         self._b_in_session = False
         self._pos_opened = False
@@ -124,10 +121,10 @@ class Bot(Thread):
             if not thr.get("symbol") == "":
                 dct_quote = self._dct_inst.get("quote", {}).get(thr.get("symbol"))
 
-                thr["lote"] = dct_quote.get("lote")
-                thr["min_price_increment"] = dct_quote.get("min_price_increment")
+                thr["lote"] = thr.get("lote")
+                thr["min_price_increment"] = thr.get("tick_size")
                 if dct_quote.get("security_type") == 0:
-                    thr["agr_adj"] = dct_quote.get("min_price_increment") * self.AGR_BMF
+                    thr["agr_adj"] = thr.get("tick_size") * self.AGR_BMF
 
                 elif dct_quote.get("security_type") == 5:
                     thr["agr_adj"] = self.AGR_BOV

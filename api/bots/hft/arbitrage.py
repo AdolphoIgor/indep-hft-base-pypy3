@@ -34,7 +34,7 @@ class Arbitrage(Bot):
             self._arms[0].get("broker").get("password"),
             self._arms[0].get("symbol"),
             self._arms[0].get("stock_market"),
-            self._arms[0].get("start_param").get("order_op_qty"),
+            self._arms[0].get("start_param").get("order_op_qty") * self._arms[0].get("lote"),
             self._arms[0].get("agr_adj"),
             self._arms[0].get("min_price_increment")
         )
@@ -45,7 +45,7 @@ class Arbitrage(Bot):
             self._arms[1].get("broker").get("password"),
             self._arms[1].get("symbol"),
             self._arms[1].get("stock_market"),
-            self._arms[1].get("start_param").get("order_op_qty"),
+            self._arms[1].get("start_param").get("order_op_qty") * self._arms[0].get("lote"),
             self._arms[1].get("agr_adj"),
             self._arms[1].get("min_price_increment")
         )
@@ -128,6 +128,9 @@ class Arbitrage(Bot):
                     else:
                         tpl_sides = self._tpl_sides[1]
 
+                    dcr_thshhld_cfg = self._algo.get("stop_param").get("threshold")
+                    closing_mode = dcr_thshhld_cfg.get("closing_mode", "manual")
+                    closing_limit = dcr_thshhld_cfg.get("closing_limit")
                     while True:
                         time.sleep(0.00001)
 
@@ -141,11 +144,11 @@ class Arbitrage(Bot):
                                   (dct_ord_0.get("avg_price") - self._lst_sprd_rt[0][1][1])
                             lst_ord = [self._lst_sprd_rt[1][0][1], self._lst_sprd_rt[0][1][1]]
 
-                        if self._threshold_closing_mode == "auto":
+                        if closing_mode == "auto":
                             if not self._ord_time_limit:
                                 start_date = min((dct_ord_0.get("date"), dct_ord_1.get("date")))
                                 self._ord_time_limit = datetime.strptime(start_date, '%d/%m/%Y %H:%M:%S.%f') + \
-                                    timedelta(minutes=self._thrshld_auto_max_min)
+                                    timedelta(minutes=closing_limit)
 
                             if datetime.now().time() > self._ord_time_limit.time():
                                 self._thrshld_value_limit = abs(dct_ord_0.get("avg_price") - dct_ord_1.get("avg_price"))

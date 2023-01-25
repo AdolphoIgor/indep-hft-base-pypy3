@@ -22,7 +22,7 @@ class QueueEnding(TRBot):
             self._arms[0].get("broker").get("password"),
             self._arms[0].get("symbol"),
             self._arms[0].get("stock_market"),
-            self._arms[0].get("start_param").get("order_op_qty")
+            self._arms[0].get("start_param").get("order_op_qty") * self._arms[0].get("lote")
         )
         self._qtd_ff = self._arms[0].get("start_param").get("order_op_qty") * 3
 
