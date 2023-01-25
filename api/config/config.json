@@ -57,7 +57,6 @@
       "threads": [
         {
           "symbol": "DOLFUT",
-          "enabled": false,
           "stock_market": "F",
           "broker_id": "15002",
           "tick_value": 0.5,
@@ -134,13 +133,13 @@
       ],
       "start_param": {
         "threshold": {
-          "opening_value": 1
+          "opening_value": 0.5
         }
       },
       "stop_param": {
         "threshold": {
           "closing_mode": "auto",
-          "closing_limit": 30,
+          "closing_limit": 15,
           "closing_config": [
             {
               "time": "17:45:00",
@@ -196,7 +195,7 @@
       "stop_param": {
         "threshold": {
           "closing_mode": "auto",
-          "closing_limit": 30,
+          "closing_limit": 15,
           "closing_config": [
             {
               "time": "17:45:00",
@@ -254,7 +253,7 @@
             },
             {
               "time": "17:00:00",
-              "value": -100
+              "value": 0.0
             }
           ]
         },

@@ -13,7 +13,7 @@ class Arbitrage(Bot):
     def __init__(self, name, daemon, algo: dict, config_prov: InternalConfigProviders):
         super().__init__(name, daemon, algo, Bot.ARM_TWO, config_prov)
 
-        self._threshold_opening = self._algo.get("threshold_opening", 0)
+        self._threshold_opening = self._algo.get("start_param").get("threshold")["opening_value"]
         self._threshold_opening = 0 if self._threshold_opening < 0 else self._threshold_opening
 
         self._arms = self._algo.get("threads")
@@ -36,7 +36,7 @@ class Arbitrage(Bot):
             self._arms[0].get("stock_market"),
             self._arms[0].get("start_param").get("order_op_qty") * self._arms[0].get("lote"),
             self._arms[0].get("agr_adj"),
-            self._arms[0].get("min_price_increment")
+            self._arms[0].get("tick_value")
         )
 
         self._tpl_arm_1 = (
@@ -45,9 +45,9 @@ class Arbitrage(Bot):
             self._arms[1].get("broker").get("password"),
             self._arms[1].get("symbol"),
             self._arms[1].get("stock_market"),
-            self._arms[1].get("start_param").get("order_op_qty") * self._arms[0].get("lote"),
+            self._arms[1].get("start_param").get("order_op_qty") * self._arms[1].get("lote"),
             self._arms[1].get("agr_adj"),
-            self._arms[1].get("min_price_increment")
+            self._arms[1].get("tick_value")
         )
 
         self._tpl_sides = (

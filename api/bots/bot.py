@@ -122,9 +122,8 @@ class Bot(Thread):
                 dct_quote = self._dct_inst.get("quote", {}).get(thr.get("symbol"))
 
                 thr["lote"] = thr.get("lote")
-                thr["min_price_increment"] = thr.get("tick_size")
                 if dct_quote.get("security_type") == 0:
-                    thr["agr_adj"] = thr.get("tick_size") * self.AGR_BMF
+                    thr["agr_adj"] = thr.get("tick_value") * self.AGR_BMF
 
                 elif dct_quote.get("security_type") == 5:
                     thr["agr_adj"] = self.AGR_BOV
