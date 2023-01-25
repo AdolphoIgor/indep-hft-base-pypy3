@@ -42,7 +42,8 @@ class Bot(Thread):
         self._threshold_closing_mode = self._algo.get("threshold_closing_mode", "manual")
         self._thrshld_time_limit = datetime.strptime(self._lst_thrshld_clsg[0].get("time"), "%H:%M:%S")
         self._thrshld_value_limit = self._lst_thrshld_clsg[0].get("value")
-        self._thrshld_auto_max_min = self._algo["threshold_auto_max_min"]
+        self._thrshld_auto_max_min = self._algo["threshold_auto_minutes"]
+        self._thrshld_opening_delay = self._algo.get("threshold_opening_delay", 0)
 
         self._b_in_session = False
         self._pos_opened = False
@@ -131,6 +132,28 @@ class Bot(Thread):
                 elif dct_quote.get("security_type") == 5:
                     thr["agr_adj"] = self.AGR_BOV
 
+    def __recover_shutdownd_state(self):
+        # when the system were interrupted after opened orders, they must be cleaned.
+        for sbl, lst_ordr in self._dct_inst.get("orders", {}).items():
+
+            lst_ordrs = [ordr for ordr in lst_ordr if ordr.get("status") == "Filled"]
+
+            dct_ordr = {"qtd": 0, "last": None}
+            for ordr in lst_ordrs:
+                if ordr.get("side") == 1:
+                    dct_ordr["qtd"] += ordr.get("traded_qtd")
+                else:
+                    dct_ordr["qtd"] -= ordr.get("traded_qtd")
+
+                dct_ordr["last"] = ordr
+
+            lst_ordr.clear()
+            if dct_ordr.get("qtd"):
+                lst_ordr.append(dct_ordr.get("last"))
+
+        lst_res = [True for sbl, lst in self._dct_inst.get("orders", {}).items() if lst]
+        self._pos_opened = len(lst_res) == self._qtd_exp and all(lst_res)
+
     def __calc_session_time(self):
         # TODO: (Avaliar a ideia)
         #  incluir (por meio de parametro) uma forma de limitar o tempo da posição em aberto para poder
@@ -150,6 +173,7 @@ class Bot(Thread):
         self.__subscribe()
         self.__init_instruments()
         self.__initialize_super()
+        self.__recover_shutdownd_state()
         self._initilize()
 
         while self._config_prov.get_keep_running() and self._algo.get("enabled"):

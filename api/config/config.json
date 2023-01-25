@@ -53,7 +53,7 @@
       "algo_class": "Arbitrage",
       "threshold_opening": 1,
       "threshold_closing_mode": "auto",
-      "threshold_auto_max_min": 30,
+      "threshold_auto_minutes": 30,
       "threshold_closing": [
         {
           "time": "17:45:00",
@@ -94,7 +94,7 @@
       "algo_class": "Arbitrage",
       "threshold_opening": 10,
       "threshold_closing_mode": "auto",
-      "threshold_auto_max_min": 30,
+      "threshold_auto_minutes": 30,
       "threshold_closing": [
         {
           "time": "17:45:00",
@@ -156,6 +156,34 @@
           "broker_id": "15002",
           "start_param": {
             "order_op_qty": 1
+          }
+        }
+      ],
+      "stop_parameters": {
+        "stop_op": -125.00,
+        "stop_limit": -500.00
+      }
+    },
+    {
+      "name": "Directional",
+      "enabled": false,
+      "algo_class": "Directional",
+      "threshold_opening_delay": 15,
+      "threshold_closing_mode": "manual",
+      "threshold_closing": [
+        {"time": "16:45:00", "value": 0.0},
+        {"time": "17:00:00", "value": -100}
+      ],
+      "req_instruments": [
+        "ranking", "quote_adtl"
+      ],
+      "threads": [
+        {
+          "symbol": "PETR4",
+          "stock_market": "B",
+          "broker_id": "15002",
+          "start_param": {
+            "order_op_qty": 10000
           }
         }
       ],

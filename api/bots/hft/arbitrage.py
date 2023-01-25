@@ -58,27 +58,6 @@ class Arbitrage(Bot):
         # get instruments made-up in our side (not provided)
         self._lst_sprd_rt = list(self._dct_inst.get("spread_rt").values())
 
-        # when the system were interrupted after opened orders, they must be cleaned.
-        for sbl, lst_ordr in self._dct_inst.get("orders", {}).items():
-
-            lst_ordrs = [ordr for ordr in lst_ordr if ordr.get("status") == "Filled"]
-
-            dct_ordr = {"qtd": 0, "last": None}
-            for ordr in lst_ordrs:
-                if ordr.get("side") == 1:
-                    dct_ordr["qtd"] += ordr.get("traded_qtd")
-                else:
-                    dct_ordr["qtd"] -= ordr.get("traded_qtd")
-
-                dct_ordr["last"] = ordr
-
-            lst_ordr.clear()
-            if dct_ordr.get("qtd"):
-                lst_ordr.append(dct_ordr.get("last"))
-
-        lst_res = [True for sbl, lst in self._dct_inst.get("orders", {}).items() if lst]
-        self._pos_opened = len(lst_res) == self._qtd_exp and all(lst_res)
-
     def _execute(self):
 
         # if it has been a previous negotiation still opened, must be keep it running in order to finish it.

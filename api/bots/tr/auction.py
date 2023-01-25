@@ -115,7 +115,7 @@ class Auction(Bot):
                 time.sleep(0.00001)
                 continue
 
-            # Se a ordem nova ficou fora da formação do preço teórico, cancela e espera novo sinal.
+            # Wheather the order was pulled out of the auction.
             dct_ord_0 = self._get_order_w_status(lst_orders, "New")
             if not dct_ord_0:
                 time.sleep(0.00001)
@@ -144,7 +144,7 @@ class Auction(Bot):
 
         time.sleep(1)
 
-        # The auction reach the end but the order weren't fullfiled (cancel it and return).
+        # The auction reach the end but the order weren't fullfiled at all (cancel it and return).
         dct_ord_0 = self._get_order_w_status(lst_orders, "New")
         if dct_ord_0:
             self._profit_dll.send_cancel_order(
@@ -164,7 +164,7 @@ class Auction(Bot):
             time.sleep(0.00001)
             return
 
-        # The auction reach the end but the order weren't fullfiled.
+        # The auction reach the end but the order weren't totally fullfiled.
         dct_ord_0 = self._get_order_w_status(lst_orders, "PartiallyFilled")
         if dct_ord_0:
             self._profit_dll.send_cancel_order(
