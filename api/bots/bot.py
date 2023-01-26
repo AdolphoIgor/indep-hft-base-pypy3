@@ -82,38 +82,45 @@ class Bot(Thread):
         pass
 
     def __run_entire_market(self):
-        b_run = False
-        lst_threads = self._algo.get("threads")
+        lst_threads = [thr for thr in self._algo.get("threads") if not thr.get("symbol")]
+        if not lst_threads:
+            return
+
         for thr in lst_threads:
-            if not thr.get("symbol"):
-                self._profit_dll.get_all_ticker(thr.get("stock_market"))
-                b_run = True
+            self._profit_dll.get_all_ticker(thr.get("stock_market"))
 
-        if b_run:
-            time.sleep(10)
+        # Filters
+        lst_quotes = [
+            (k, v.get("security_type"), v.get("lote"))
+            for k, v in self._config_prov.get_internal_provider_data(
+                "quote", sublist=self._config_prov.get_internal_provider_data("instruments")).items()
+            if ((v.get("security_type") == 14 and v.get("security_sub_type") == 25 and v.get("lote") == 100) or
+                (v.get("security_type") == 15 and v.get("security_sub_type") == 26 and v.get("lote") == 100) or
+                (v.get("security_type") == 0 and v.get("security_sub_type") in [2, 4, 13]))
+        ]
 
+        # Configures
+        lst_return = []
+        for quote in lst_quotes:
+
+            thr_sel = None
+            stock_market = "F" if quote[1] == 0 else "B"
             for thr in lst_threads:
-                if not thr.get("symbol"):
-                    # In this cenario, the Market Auctions algo is always nunning alone, so, every instrument in
-                    # InternalConfigProviders belongs to it.
-                    lst_quotes = self._config_prov.get_internal_provider_data(
-                        "quote", sublist=self._config_prov.get_internal_provider_data("instruments"))
+                if thr.get("stock_market") == stock_market:
+                    thr_sel = thr
+                    break
 
-                    for quote in lst_quotes:
-                        dct_thr_cpy = thr.copy()
-                        dct_thr_cpy["symbol"] = quote.get("name")
+            if not thr_sel:
+                continue
 
-                        if quote.get("security_type") == 0:
-                            dct_thr_cpy["stock_market"] = "F"
+            dct_thr_cpy = eval(str(thr_sel))
+            dct_thr_cpy["symbol"] = quote[0]
+            dct_thr_cpy["stock_market"] = stock_market
+            dct_thr_cpy.get("start_param")["order_op_qty"] *= quote[2]
+            lst_return.append(dct_thr_cpy)
 
-                        elif quote.get("security_type") == 5:
-                            dct_thr_cpy["stock_market"] = "B"
-
-                        dct_thr_cpy.get("start_param")["order_op_qty"] *= quote.get("lote")
-
-                        lst_threads.append(dct_thr_cpy)
-
-                lst_threads.remove(thr)
+        lst_threads.clear()
+        lst_threads.extend(lst_return)
 
     def __initialize_super(self):
         # Get the multiplier in order to simulate an order at market. BM&F increase 30 ticks, Bovespa increase 15%.
