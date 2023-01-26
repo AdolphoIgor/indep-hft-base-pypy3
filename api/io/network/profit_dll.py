@@ -588,7 +588,7 @@ class ProfitDLL:
         dct_quote["valid_date"] = valid_date
         dct_quote["isin"] = isin
         dct_quote["security_type_desc"] = self._dct_asset_sec_type.get(security_type)
-        dct_quote["security_sub_type_desc"] = self._dct_asset_sec_type.get(security_sub_type)
+        dct_quote["security_sub_type_desc"] = self._dct_asset_sec_sub_type.get(security_sub_type)
 
         logger.debug(f"asset_list_info_callback -> {dct_quote}")
 
@@ -614,7 +614,7 @@ class ProfitDLL:
         dct_quote["sub_setor"] = sub_setor
         dct_quote["segmento"] = segmento
         dct_quote["security_type_desc"] = self._dct_asset_sec_type.get(security_type)
-        dct_quote["security_sub_type_desc"] = self._dct_asset_sec_type.get(security_sub_type)
+        dct_quote["security_sub_type_desc"] = self._dct_asset_sec_sub_type.get(security_sub_type)
 
         logger.debug(f"asset_list_info_callback_v2 -> {dct_quote}")
 
