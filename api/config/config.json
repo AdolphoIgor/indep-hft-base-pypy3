@@ -233,13 +233,43 @@
           }
         },
         {
-          "symbol": "",
+          "symbol": "DOLG23",
           "stock_market": "F",
           "broker_id": "15002",
-          "tick_value": "auto",
-          "lote": "auto",
+          "tick_value": 0.5,
+          "lote": 5,
           "start_param": {
             "order_op_qty": 1
+          }
+        },
+        {
+          "symbol": "WDOG23",
+          "stock_market": "F",
+          "broker_id": "15002",
+          "tick_value": 0.5,
+          "lote": 1,
+          "start_param": {
+            "order_op_qty": 25
+          }
+        },
+        {
+          "symbol": "INDFUT",
+          "stock_market": "F",
+          "broker_id": "15002",
+          "tick_value": 5,
+          "lote": 5,
+          "start_param": {
+            "order_op_qty": 1
+          }
+        },
+        {
+          "symbol": "WINFUT",
+          "stock_market": "F",
+          "broker_id": "15002",
+          "tick_value": 5,
+          "lote": 1,
+          "start_param": {
+            "order_op_qty": 25
           }
         }
       ],
@@ -257,7 +287,6 @@
             }
           ]
         },
-        "stop_op": -125.00,
         "stop_limit": -500.00
       }
     },
