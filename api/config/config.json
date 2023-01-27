@@ -133,7 +133,7 @@
       ],
       "start_param": {
         "threshold": {
-          "opening_value": 1
+          "opening_value": 0
         }
       },
       "stop_param": {
@@ -143,15 +143,15 @@
           "closing_config": [
             {
               "time": "17:45:00",
-              "value": 1
-            },
-            {
-              "time": "18:00:00",
               "value": 0
             },
             {
-              "time": "18:15:00",
+              "time": "18:00:00",
               "value": -0.5
+            },
+            {
+              "time": "18:15:00",
+              "value": -1
             }
           ]
         }
@@ -189,7 +189,7 @@
       ],
       "start_param": {
         "threshold": {
-          "opening_value": 20
+          "opening_value": 0
         }
       },
       "stop_param": {
@@ -199,11 +199,11 @@
           "closing_config": [
             {
               "time": "17:45:00",
-              "value": 20
+              "value": 10
             },
             {
               "time": "18:00:00",
-              "value": 0
+              "value": -5
             },
             {
               "time": "18:15:00",
