@@ -1,10 +1,10 @@
 import time
 
-import api.io.network.profit_dll
-from api.io.network.profit_dll import ProfitDLL
+import api.utils.network.profit_dll
 from api.jobs.internal_config_provider import InternalConfigProviders
 from api.jobs.job import Job
 from api.logger import logger
+from api.utils.network.profit_dll import ProfitDLL
 
 
 class ConfiguratorJob(Job):

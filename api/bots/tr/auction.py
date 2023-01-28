@@ -1,17 +1,49 @@
 import multiprocessing
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from api.bots.bot import Bot
 from api.jobs.internal_config_provider import InternalConfigProviders
+from api.logger import logger
+from api.utils.parallelism.ThreadPool import ThreadPool
 
 
 class Auction(Bot):
     MAX_PROCESS = int(multiprocessing.cpu_count() / 2)
     MAX_PROCESS_WORKERS = MAX_PROCESS * 16
 
+    _thread_pool = None
+
     def __init__(self, name, daemon, algo: dict, config_prov: InternalConfigProviders):
         super().__init__(name, daemon, algo, Bot.ARM_ONE, config_prov)
+
+        self.__stop_limit = self._algo.get("stop_param").get("stop_limit")
+
+    def enqueue_auction(self, sbl):
+        if not self._thread_pool:
+            self._thread_pool = ThreadPool(self.dequeue_auction, max_workers=self.MAX_PROCESS_WORKERS,
+                                           prefixo="AUCTION", queue_max_size=self.MAX_PROCESS_WORKERS * 2)
+
+        return self._thread_pool.enfilera_job(**{'job': sbl})
+
+    def enqueue_auction_return(self) -> list:
+        return self._thread_pool.get_retorno()
+
+    def dequeue_auction(self, fila, retorno, thread_name):
+
+        while not fila.empty():
+            value = None
+            try:
+                value = fila.get()
+                logger.info(f"{thread_name}: Now processing {value[0]}...")
+                retorno.append(self._run_algo(value))
+
+            except Exception as e:
+                logger.info(f"{thread_name}: There was a problem at processing.")
+                retorno.append({'exception': str(e)})
+
+            finally:
+                fila.task_done()
+                logger.info(f"{thread_name}: The processing to {value[0]} has been done!")
 
     def __get_entry_signal(self):
         lst_book = self._dct_inst.get("lp")
@@ -48,23 +80,46 @@ class Auction(Bot):
         return [side, qtd, nivel_p_dentro, lst_niv_menor_liq]
 
     def _execute(self):
-        lst_act_sbls = [[sbl, quote] for sbl, quote in self._dct_inst.get("quote").item()
-                        if quote.get("state") == "auctioned"]
+        time_sleep = 5
+        dct_enqueued = {}
+        while self.__stop_limit > 0:
+            lst_act_sbls = [[sbl, quote] for sbl, quote in self._dct_inst.get("quote").item()
+                            if quote.get("state") == "auctioned" and sbl not in dct_enqueued]
 
-        lst_act_sbls = lst_act_sbls.sort(key=(lambda x: x.get("vol")))[:self.MAX_PROCESS_WORKERS]
+            lst_act_sbls = lst_act_sbls.sort(key=(lambda x: x.get("vol")))[:self.MAX_PROCESS_WORKERS]
 
-        for sbl in lst_act_sbls:
-            for thr in self._algo.get("threads"):
-                if sbl[0] == thr.get("symbol"):
-                    sbl.append(thr)
-                    sbl.append({})
+            for sbl in lst_act_sbls:
+                for thr in self._algo.get("threads"):
+                    if sbl[0] == thr.get("symbol"):
+                        if len(sbl) == 2:
+                            sbl.append(thr)
+                            sbl.append({})
 
-        lst_retornos = []
-        with ThreadPoolExecutor(max_workers=self.MAX_PROCESS_WORKERS) as executor:
-            lst_thr = [executor.submit(self._run_algo, item) for item in lst_act_sbls]
+                        if not self.enqueue_auction(sbl):
+                            time.sleep(time_sleep)
+                            if time_sleep <= 300:  # 5 min
+                                time_sleep *= 2
+                        else:
+                            dct_enqueued[sbl[0]] = sbl[1:]
 
-            for thread in as_completed(lst_thr):
-                lst_retornos.append((thread.result(), thread.exception()))
+            lst_ret = self.enqueue_auction_return()[:]
+            for ret in lst_ret:
+                dct_thr = dct_enqueued.get(ret[1])[2]
+                dct_pos = self._profit_dll.get_position(
+                    conta=dct_thr.get("broker").get("account"), broker=dct_thr.get("broker").get("id"),
+                    ativo=dct_thr.get("symbol"), bolsa=dct_thr.get("stock_market")
+                )
+
+                intraday_pos = dct_pos.get("intraday_pos")
+                if intraday_pos <= 0:
+                    logger.info(f"AUCTION: The {ret[1]} stop was reached.")
+
+                self.__stop_limit += dct_pos.get("intraday_pos")
+                if self.__stop_limit <= 0:
+                    logger.info(f"AUCTION: The daily stop was reached.")
+
+                dct_enqueued.pop(ret[1])
+                time_sleep = 5
 
     def _run_algo(self, item: tuple):
         """
@@ -84,11 +139,11 @@ class Auction(Bot):
         dct_vars["order_placed"] = False
         lst_orders = self._dct_inst.get("orders", {}).get(str_symbol, None)
 
-        while dct_quote.get("state") == "auctioned":
+        while self.__stop_limit > 0 and dct_quote.get("state") == "auctioned":
             lst_entry_signal = self.__get_entry_signal()
 
-            if lst_entry_signal[2] > 2 and not dct_vars.get("order_placed"):
-                if lst_entry_signal[0] == "B":
+            if self.__stop_limit > 0 and lst_entry_signal[2] > 2 and not dct_vars.get("order_placed"):
+                if self.__stop_limit > 0 and lst_entry_signal[0] == "B":
                     self._profit_dll.send_buy_order(
                         conta=dct_thr.get("broker").get("account"),
                         broker=dct_thr.get("broker").get("id"),
@@ -98,7 +153,10 @@ class Auction(Bot):
                         preco=dct_quote.get("quote").get("theoretical_price"),
                         qtd=dct_thr.get("start_param").get("order_op_qty") * dct_thr.get("lote")
                     )
-                else:
+
+                    dct_vars["order_placed"] = True
+
+                elif self.__stop_limit > 0 and lst_entry_signal[0] == "S":
                     self._profit_dll.send_sell_order(
                         conta=dct_thr.get("broker").get("account"),
                         broker=dct_thr.get("broker").get("id"),
@@ -109,7 +167,7 @@ class Auction(Bot):
                         qtd=dct_thr.get("start_param").get("order_op_qty") * dct_thr.get("lote")
                     )
 
-                dct_vars["order_placed"] = True
+                    dct_vars["order_placed"] = True
 
             if not dct_vars.get("order_placed"):
                 time.sleep(0.00001)
@@ -140,11 +198,11 @@ class Auction(Bot):
 
         # The auction reach the end without placing any orders (nothing to do).
         if not dct_quote.get("state") == "auctioned" and not dct_vars.get("order_placed"):
-            return
+            return str_symbol, False
 
-        time.sleep(1)
+        time.sleep(5)
 
-        # The auction reach the end but the order weren't fullfiled at all (cancel it and return).
+        # The auction reach the end but the order wasn't fullfiled (cancel it and return).
         dct_ord_0 = self._get_order_w_status(lst_orders, "New")
         if dct_ord_0:
             self._profit_dll.send_cancel_order(
@@ -162,7 +220,7 @@ class Auction(Bot):
                     break
 
             time.sleep(0.00001)
-            return
+            return str_symbol, False
 
         # The auction reach the end but the order weren't totally fullfiled.
         dct_ord_0 = self._get_order_w_status(lst_orders, "PartiallyFilled")
@@ -203,3 +261,5 @@ class Auction(Bot):
                     )
 
                 break
+
+        return str_symbol, False

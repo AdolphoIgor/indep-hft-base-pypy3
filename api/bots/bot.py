@@ -119,8 +119,8 @@ class Bot(Thread):
             dct_thr_cpy.get("start_param")["order_op_qty"] *= quote[2]
             lst_return.append(dct_thr_cpy)
 
-        lst_threads.clear()
-        lst_threads.extend(lst_return)
+        self._algo.get("threads").clear()
+        self._algo.get("threads").extend(lst_return)
 
     def __initialize_super(self):
         # Get the multiplier in order to simulate an order at market. BM&F increase 30 ticks, Bovespa increase 15%.
