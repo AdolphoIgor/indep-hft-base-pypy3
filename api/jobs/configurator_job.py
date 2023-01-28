@@ -30,7 +30,7 @@ class ConfiguratorJob(Job):
                 try:
                     if not dct_sys_cfg["prov_conn"]:
                         dct_sys_cfg["prov_conn"] = ProfitDLL(self._config_prov)
-                        api.io.network.profit_dll.prov_conn = dct_sys_cfg["prov_conn"]
+                        api.utils.network.profit_dll.prov_conn = dct_sys_cfg["prov_conn"]
 
                     dct_sys_cfg["prov_conn"].connect(
                         soft_key=self._config.get("soft_key", ""),

@@ -256,6 +256,12 @@ class ProfitDLL:
 
     def send_sell_order(self, conta: str, broker: str, senha: str, ativo: str, bolsa: str, preco: float, qtd: int):
         """
+        :param broker:
+        :param senha:
+        :param ativo:
+        :param preco:
+        :param qtd:
+        :param conta:
         :param bolsa: [B=Bovespa | F=BM&F]
         :return: Returns de cl_ord_id to be compared to the return of self._history_trade_callback().
         """
@@ -265,6 +271,13 @@ class ProfitDLL:
     def send_stop_buy_order(self, conta: str, broker: str, senha: str, ativo: str, bolsa: str, preco: float,
                             s_stop_price: float, qtd: int):
         """
+        :param conta:
+        :param broker:
+        :param senha:
+        :param ativo:
+        :param preco:
+        :param s_stop_price:
+        :param qtd:
         :param bolsa: [B=Bovespa | F=BM&F]
         :return: Returns de cl_ord_id to be compared to the return of self._history_trade_callback().
         """
@@ -275,6 +288,13 @@ class ProfitDLL:
     def send_stop_sell_order(self, conta: str, broker: str, senha: str, ativo: str, bolsa: str, preco: float,
                              s_stop_price: float, qtd: int):
         """
+        :param conta:
+        :param broker:
+        :param senha:
+        :param ativo:
+        :param preco:
+        :param s_stop_price:
+        :param qtd:
         :param bolsa: [B=Bovespa | F=BM&F]
         :return: Returns de cl_ord_id to be compared to the return of self._history_trade_callback().
         """

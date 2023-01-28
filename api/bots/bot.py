@@ -33,6 +33,7 @@ class Bot(Thread):
         self._dct_ord_status = self._profit_dll.get_dct_order_status()
 
         # When running bots which requires an entire stockmarket that method should take care of it
+        self._profit_dll.get_server_clock()
         self.__run_entire_market()
 
         self._lst_sbl_mkt = [(alg.get("symbol"), alg.get("stock_market")) for alg in algo.get("threads")]
