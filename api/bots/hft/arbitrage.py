@@ -144,7 +144,7 @@ class Arbitrage(Bot):
                                   (dct_ord_0.get("avg_price") - self._lst_sprd_rt[0][1][1])
                             lst_ord = [self._lst_sprd_rt[1][0][1], self._lst_sprd_rt[0][1][1]]
 
-                        if closing_mode == "auto":
+                        if self._b_in_session and closing_mode == "auto":
                             if not self._ord_time_limit:
                                 start_date = min((dct_ord_0.get("date"), dct_ord_1.get("date")))
                                 self._ord_time_limit = datetime.strptime(start_date, '%d/%m/%Y %H:%M:%S.%f') + \

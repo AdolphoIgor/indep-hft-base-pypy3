@@ -32,8 +32,7 @@ class Bot(Thread):
         self._dct_asset_state = self._profit_dll.get_asset_state()
         self._dct_ord_status = self._profit_dll.get_dct_order_status()
 
-        # When running bots which requires an entire stockmarket that method should take care of it
-        self._profit_dll.get_server_clock()
+        # When running bots which requires a scan of an entire stockmarket that method should take care of it.
         self.__run_entire_market()
 
         self._lst_sbl_mkt = [(alg.get("symbol"), alg.get("stock_market")) for alg in algo.get("threads")]
@@ -167,6 +166,10 @@ class Bot(Thread):
         if self._b_in_session:
             return
 
+        if self._lst_thrshld_clsg[-1].get("value") == self._thrshld_value_limit:
+            return
+
+        self._thrshld_value_limit = self._lst_thrshld_clsg[-1].get("value")
         for trhs in self._lst_thrshld_clsg[1:]:
             if datetime.now().time() <= datetime.strptime(trhs.get("time"), "%H:%M:%S").time():
                 self._thrshld_value_limit = trhs.get("value")
