@@ -82,11 +82,14 @@ class Auction(Bot):
     def _execute(self):
         time_sleep = 5
         dct_enqueued = {}
-        while self.__stop_limit > 0:
-            lst_act_sbls = [[sbl, quote] for sbl, quote in self._dct_inst.get("quote").item()
-                            if quote.get("state") == "auctioned" and sbl not in dct_enqueued]
+        while self.__stop_limit < 0:
+            lst_act_sbls = [[sbl, quote] for sbl, quote in self._dct_inst.get("quote").items()
+                            if quote.get("state") == 4 and sbl not in dct_enqueued and quote.get("vol")]
 
-            lst_act_sbls = lst_act_sbls.sort(key=(lambda x: x.get("vol")))[:self.MAX_PROCESS_WORKERS]
+            # shows the progress of the server's response
+            # self._config_prov._lst_config_pool[1].get("value")[8].get('value').get("CMSA3")
+
+            lst_act_sbls = lst_act_sbls.sort(key=(lambda x: x[1].get("vol")))[:self.MAX_PROCESS_WORKERS]
 
             for sbl in lst_act_sbls:
                 for thr in self._algo.get("threads"):

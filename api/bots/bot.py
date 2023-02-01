@@ -35,7 +35,7 @@ class Bot(Thread):
         # When running bots which requires a scan of an entire stockmarket that method should take care of it.
         self.__run_entire_market()
 
-        self._lst_sbl_mkt = [(alg.get("symbol"), alg.get("stock_market")) for alg in algo.get("threads")]
+        self._lst_sbl_mkt = [(alg.get("symbol"), alg.get("stock_market")) for alg in self._algo.get("threads")]
         self._lst_sbl = [sbl[0] for sbl in self._lst_sbl_mkt]
 
         self._lst_thrshld_clsg = self._algo.get("stop_param").get("threshold")["closing_config"]
@@ -119,7 +119,9 @@ class Bot(Thread):
             dct_thr_cpy.get("start_param")["order_op_qty"] *= quote[2]
             lst_return.append(dct_thr_cpy)
 
+        lst_threads = [thr for thr in self._algo.get("threads") if thr.get("symbol")]
         self._algo.get("threads").clear()
+        self._algo.get("threads").extend(lst_threads)
         self._algo.get("threads").extend(lst_return)
 
     def __initialize_super(self):
@@ -132,7 +134,7 @@ class Bot(Thread):
                 if dct_quote.get("security_type") == 0:
                     thr["agr_adj"] = thr.get("tick_value") * self.AGR_BMF
 
-                elif dct_quote.get("security_type") == 5:
+                elif dct_quote.get("security_type") in [14, 15]:
                     thr["agr_adj"] = self.AGR_BOV
 
     def __recover_shutdownd_state(self):
