@@ -17,6 +17,9 @@ class Auction(Bot):
     def __init__(self, name, daemon, algo: dict, config_prov: InternalConfigProviders):
         super().__init__(name, daemon, algo, Bot.ARM_ONE, config_prov)
 
+        self.__dct_progress = self._config_prov.get_internal_provider_data(
+                "progress", sublist=self._config_prov.get_internal_provider_data("instruments"))
+
         self.__stop_limit = self._algo.get("stop_param")["stop_limit"]
         self.__opening_volume = self._algo.get("start_param").get("threshold")["opening_volume"]
 
@@ -47,8 +50,7 @@ class Auction(Bot):
                 fila.task_done()
                 logger.info(f"{thread_name}: The processing to {value[0]} has been done!")
 
-    def __get_entry_signal(self, symbol: str):
-        dct_quote = self._dct_inst.get("quote").get(symbol)
+    def __get_entry_signal(self, symbol: str, dct_quote: dict):
         print(f"LOG dct_quote: {dct_quote}")
         lst_book = self._dct_inst.get("lp").get(symbol)
         print(f"LOG lst_book: {lst_book}")
@@ -108,6 +110,7 @@ class Auction(Bot):
                         if len(sbl) == 2:
                             sbl.append(thr)
                             sbl.append({})
+                            sbl.append(self.__dct_progress.get("value").get(sbl[0]))
 
                         if not self.enqueue_auction(sbl):
                             time.sleep(time_sleep)
@@ -145,8 +148,14 @@ class Auction(Bot):
                 "neg_seller": neg_seller
             }
         """
-        str_symbol = item[0]
+        if item[4].get("progress") < 100:
+            return
+
         dct_quote = item[1]
+        if dct_quote.get("theoretical_price") <= 0:
+            return
+
+        str_symbol = item[0]
         dct_thr = item[2]
         dct_vars = item[3]
 
@@ -154,10 +163,7 @@ class Auction(Bot):
         lst_orders = self._dct_inst.get("orders", {}).get(str_symbol, None)
 
         while self.__stop_limit <= 0 and dct_quote.get("state") == 4:
-            lst_entry_signal = self.__get_entry_signal(str_symbol)
-
-            # TODO: remover apos debug
-            continue
+            lst_entry_signal = self.__get_entry_signal(str_symbol, dct_quote)
 
             if self.__stop_limit <= 0 and lst_entry_signal[2] > 2 and not dct_vars.get("order_placed"):
                 if self.__stop_limit <= 0 and lst_entry_signal[0] == "B":
