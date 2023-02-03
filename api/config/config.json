@@ -111,7 +111,7 @@
       ],
       "threads": [
         {
-          "symbol": "DOLG23",
+          "symbol": "DOLFUT",
           "stock_market": "F",
           "broker_id": "15002",
           "tick_value": 0.5,
@@ -121,7 +121,7 @@
           }
         },
         {
-          "symbol": "WDOG23",
+          "symbol": "WDOFUT",
           "stock_market": "F",
           "broker_id": "15002",
           "tick_value": 0.5,
