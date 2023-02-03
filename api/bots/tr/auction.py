@@ -9,7 +9,8 @@ from api.utils.parallelism.ThreadPool import ThreadPool
 
 class Auction(Bot):
     MAX_PROCESS = int(multiprocessing.cpu_count() / 2)
-    MAX_PROCESS_WORKERS = MAX_PROCESS * 16
+    # MAX_PROCESS_WORKERS = MAX_PROCESS * 16
+    MAX_PROCESS_WORKERS = 1
 
     _thread_pool = None
 
@@ -93,12 +94,13 @@ class Auction(Bot):
                             quote.get("vol", 0) >= self.__opening_volume]
 
             if not lst_act_sbls:
-                continue
+                break
 
             # shows the progress of the server's response
             # self._config_prov._lst_config_pool[1].get("value")[8].get('value').get("CMSA3")
 
-            lst_act_sbls = lst_act_sbls.sort(key=(lambda x: x[1].get("vol")))[:self.MAX_PROCESS_WORKERS]
+            lst_act_sbls = lst_act_sbls.sort(key=(lambda x: x[1].get("vol")), reverse=True)
+            lst_act_sbls = lst_act_sbls[:self.MAX_PROCESS_WORKERS]
 
             for sbl in lst_act_sbls:
                 for thr in self._algo.get("threads"):
