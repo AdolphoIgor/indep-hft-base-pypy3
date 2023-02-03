@@ -16,7 +16,8 @@ class Auction(Bot):
     def __init__(self, name, daemon, algo: dict, config_prov: InternalConfigProviders):
         super().__init__(name, daemon, algo, Bot.ARM_ONE, config_prov)
 
-        self.__stop_limit = self._algo.get("stop_param").get("stop_limit")
+        self.__stop_limit = self._algo.get("stop_param")["stop_limit"]
+        self.__opening_volume = self._algo.get("start_param").get("threshold")["opening_volume"]
 
     def enqueue_auction(self, sbl):
         if not self._thread_pool:
@@ -88,7 +89,8 @@ class Auction(Bot):
         dct_enqueued = {}
         while self.__stop_limit < 0:
             lst_act_sbls = [[sbl, quote] for sbl, quote in self._dct_inst.get("quote").items()
-                            if quote.get("state") == 4 and sbl not in dct_enqueued and quote.get("vol")]
+                            if quote.get("state") == 4 and sbl not in dct_enqueued and
+                            quote.get("vol", 0) >= self.__opening_volume]
 
             if not lst_act_sbls:
                 continue
