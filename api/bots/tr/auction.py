@@ -47,11 +47,11 @@ class Auction(Bot):
                 fila.task_done()
                 logger.info(f"{thread_name}: The processing to {value[0]} has been done!")
 
-    def __get_entry_signal(self):
-        lst_book = self._dct_inst.get("lp")
+    def __get_entry_signal(self, symbol: str):
+        dct_quote = self._dct_inst.get("quote").get(symbol)
+        print(f"LOG dct_quote: {dct_quote}")
+        lst_book = self._dct_inst.get("lp").get(symbol)
         print(f"LOG lst_book: {lst_book}")
-        lst_lp = [lst_book[0], lst_book[1]]
-        print(f"LOG lst_lp: {lst_lp}")
         return
 
         qtd = lst_lp[0][0][0] - lst_lp[1][0][0] + lst_lp[0][1][0] - lst_lp[1][1][0]
@@ -99,7 +99,7 @@ class Auction(Bot):
             # shows the progress of the server's response
             # self._config_prov._lst_config_pool[1].get("value")[8].get('value').get("CMSA3")
 
-            lst_act_sbls = lst_act_sbls.sort(key=(lambda x: x[1].get("vol")), reverse=True)
+            lst_act_sbls.sort(key=(lambda x: x[1].get("vol")), reverse=True)
             lst_act_sbls = lst_act_sbls[:self.MAX_PROCESS_WORKERS]
 
             for sbl in lst_act_sbls:
@@ -153,11 +153,14 @@ class Auction(Bot):
         dct_vars["order_placed"] = False
         lst_orders = self._dct_inst.get("orders", {}).get(str_symbol, None)
 
-        while self.__stop_limit > 0 and dct_quote.get("state") == "auctioned":
-            lst_entry_signal = self.__get_entry_signal()
+        while self.__stop_limit <= 0 and dct_quote.get("state") == 4:
+            lst_entry_signal = self.__get_entry_signal(str_symbol)
 
-            if self.__stop_limit > 0 and lst_entry_signal[2] > 2 and not dct_vars.get("order_placed"):
-                if self.__stop_limit > 0 and lst_entry_signal[0] == "B":
+            # TODO: remover apos debug
+            continue
+
+            if self.__stop_limit <= 0 and lst_entry_signal[2] > 2 and not dct_vars.get("order_placed"):
+                if self.__stop_limit <= 0 and lst_entry_signal[0] == "B":
                     self._profit_dll.send_buy_order(
                         conta=dct_thr.get("broker").get("account"),
                         broker=dct_thr.get("broker").get("id"),
@@ -170,7 +173,7 @@ class Auction(Bot):
 
                     dct_vars["order_placed"] = True
 
-                elif self.__stop_limit > 0 and lst_entry_signal[0] == "S":
+                elif self.__stop_limit <= 0 and lst_entry_signal[0] == "S":
                     self._profit_dll.send_sell_order(
                         conta=dct_thr.get("broker").get("account"),
                         broker=dct_thr.get("broker").get("id"),
@@ -211,7 +214,7 @@ class Auction(Bot):
                     time.sleep(0.00001)
 
         # The auction reach the end without placing any orders (nothing to do).
-        if not dct_quote.get("state") == "auctioned" and not dct_vars.get("order_placed"):
+        if not dct_quote.get("state") == 4 and not dct_vars.get("order_placed"):
             return str_symbol, False
 
         time.sleep(5)
