@@ -12,8 +12,8 @@ class Bot(Thread):
     ARM_ONE = 1
     ARM_TWO = 2
 
-    AGR_BMF = 30
-    AGR_BOV = 1.15
+    AGR_BMF = 60
+    AGR_BOV = 1.30
 
     _dct_inst = {}
 
