@@ -84,7 +84,7 @@ class Arbitrage(Bot):
                 self._pos_opened = True
 
                 logger.debug(f"ENTRADA->SIDES: {[self._tpl_sides[0][0], self._tpl_sides[0][1]]}")
-                logger.debug(f"ENTRADA->SPREAD: :{[self._lst_sprd_rt[0][0][1], self._lst_sprd_rt[1][1][1]]}")
+                logger.debug(f"ENTRADA->SPREAD: {[self._lst_sprd_rt[0][0][1], self._lst_sprd_rt[1][1][1]]}")
 
             # S2B1
             elif (self._lst_sprd_rt[1][0][1] - self._lst_sprd_rt[0][1][1]) > self._threshold_opening:

@@ -47,7 +47,11 @@ class Auction(Bot):
 
     def __get_entry_signal(self):
         lst_book = self._dct_inst.get("lp")
+        print(f"LOG lst_book: {lst_book}")
         lst_lp = [lst_book[0], lst_book[1]]
+        print(f"LOG lst_lp: {lst_lp}")
+        return
+
         qtd = lst_lp[0][0][0] - lst_lp[1][0][0] + lst_lp[0][1][0] - lst_lp[1][1][0]
 
         qtd = abs(qtd)
@@ -85,6 +89,9 @@ class Auction(Bot):
         while self.__stop_limit < 0:
             lst_act_sbls = [[sbl, quote] for sbl, quote in self._dct_inst.get("quote").items()
                             if quote.get("state") == 4 and sbl not in dct_enqueued and quote.get("vol")]
+
+            if not lst_act_sbls:
+                continue
 
             # shows the progress of the server's response
             # self._config_prov._lst_config_pool[1].get("value")[8].get('value').get("CMSA3")
