@@ -133,7 +133,7 @@
       ],
       "start_param": {
         "threshold": {
-          "opening_value": 1.5
+          "opening_value": 0.5
         }
       },
       "stop_param": {
@@ -143,7 +143,7 @@
           "closing_config": [
             {
               "time": "11:45:00",
-              "value": 1.5
+              "value": 0.5
             },
             {
               "time": "12:00:00",
@@ -288,6 +288,11 @@
           ]
         },
         "stop_limit": -500.00
+      },
+      "start_param": {
+        "threshold": {
+          "opening_volume": 4000000
+        }
       }
     },
     {
