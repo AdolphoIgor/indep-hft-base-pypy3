@@ -10,7 +10,7 @@ class GoodQueuePlace(Bot):
         self._lst_lp = list(self._dct_inst.get("lp").values())
         self._lst_tt = list(self._dct_inst.get("tt").values())
 
-    def get_smaller_level(self):
+    def _get_smaller_level(self):
         def find_level(lst_price_book: list):
             last_level_val = -1
             last_level_price = -1
@@ -78,3 +78,18 @@ class GoodQueuePlace(Bot):
         print(f"side: {side} saldo final: {qtd} niveis p/ dentro: {nivel_p_dentro}")
 
         """
+
+    def _thr_spread(self):
+        pass
+
+    def _thr_book(self):
+        pass
+
+    def _thr_order_flow(self):
+        pass
+
+    def _thr_scheduled_news(self):
+        pass
+
+    def _thr_breaking_news(self):
+        pass
