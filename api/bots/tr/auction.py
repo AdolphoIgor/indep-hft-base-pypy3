@@ -51,41 +51,47 @@ class Auction(Bot):
                 logger.info(f"{thread_name}: The processing to {value[0]} has been done!")
 
     def __get_entry_signal(self, symbol: str, dct_quote: dict):
-        print(f"LOG dct_quote: {dct_quote}")
         lst_book = self._dct_inst.get("lp").get(symbol)
-        print(f"LOG lst_book: {lst_book}")
-        return
+        lst_book = [lst_book[0][::-1], lst_book[1][::-1]]
 
-        qtd = lst_lp[0][0][0] - lst_lp[1][0][0] + lst_lp[0][1][0] - lst_lp[1][1][0]
+        dct_price = dct_quote.get("quote").get(symbol)
+        theoretical_price = dct_price.get("theoretical_price")
+        # theoretical_qtd = dct_price.get("theoretical_qtd")
 
-        qtd = abs(qtd)
-        nivel_p_dentro = 2
-        lst_niv_menor_liq = None
-        side = "B" if qtd > 0 else "S"
-        while True:
-            if qtd <= 0:
+        lst_res = []
+        for lside in lst_book:
+            qtd, i = 0, 0
+            for l in lside:
+                i += 1
+                qtd += l[1]
+
+                if l[0] == theoretical_price:
+                    break
+
+            lst_res.append([qtd, i])
+
+        qtt_remain = lst_res[0][0] - lst_res[1][0]
+        if qtt_remain > 0:
+            lst_book = lst_book[0][lst_res[0][1]:]
+        else:
+            lst_book = lst_book[1][lst_res[1][1]:]
+
+        qtt = abs(qtt_remain)
+        max_prc, max_prc_lvl, bst_prc, bst_prc_lvl, qtt_lvl_lower = 0, 0, 0, 0, 0
+        for lprc in lst_book:
+            if qtt <= 0:
                 break
 
-            try:
-                idx = 1 if side == "B" else 0
-                qtd_nivel = lst_lp[idx][nivel_p_dentro][0]
-                prc_nivel = lst_lp[idx][nivel_p_dentro][1]
-                qtd -= qtd_nivel
+            max_prc = lprc[0]
+            max_prc_lvl += 1
+            qtt -= lprc[1]
 
-            except Exception:
-                break
+            if not qtt_lvl_lower or qtt_lvl_lower > lprc[1]:
+                bst_prc = lprc[0]
+                bst_prc_lvl = max_prc_lvl
+                qtt_lvl_lower = lprc[1]
 
-            if nivel_p_dentro == 2:
-                lst_niv_menor_liq = [nivel_p_dentro, qtd_nivel, prc_nivel]
-
-            elif lst_niv_menor_liq[1] > qtd_nivel:
-                lst_niv_menor_liq[0] = nivel_p_dentro
-                lst_niv_menor_liq[1] = qtd_nivel
-                lst_niv_menor_liq[2] = prc_nivel
-
-            nivel_p_dentro += 1
-
-        return [side, qtd, nivel_p_dentro, lst_niv_menor_liq]
+        return ["S" if qtt_remain < 0 else "B", max_prc, max_prc_lvl, bst_prc, bst_prc_lvl]
 
     def _execute(self):
         time_sleep = 5
@@ -165,7 +171,7 @@ class Auction(Bot):
         while self.__stop_limit <= 0 and dct_quote.get("state") == 4:
             lst_entry_signal = self.__get_entry_signal(str_symbol, dct_quote)
 
-            if self.__stop_limit <= 0 and lst_entry_signal[2] > 2 and not dct_vars.get("order_placed"):
+            if self.__stop_limit <= 0 and lst_entry_signal[4] > 2 and not dct_vars.get("order_placed"):
                 if self.__stop_limit <= 0 and lst_entry_signal[0] == "B":
                     self._profit_dll.send_buy_order(
                         conta=dct_thr.get("broker").get("account"),
