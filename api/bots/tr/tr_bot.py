@@ -1,7 +1,6 @@
 import threading
 
 from api.bots.bot import Bot
-from api.bots.tr.position import PositionMgr
 from api.jobs.internal_config_provider import InternalConfigProviders
 
 

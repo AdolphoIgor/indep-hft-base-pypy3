@@ -10,12 +10,14 @@ class GoodQueuePlace(TRBot):
         self._lst_lp = list(self._dct_inst.get("lp").values())
         self._lst_tt = list(self._dct_inst.get("tt").values())
 
-    def _get_smaller_level(self):
-        def find_level(lst_price_book: list):
+    def __get_smaller_level(self):
+        def find_level(lst_price_book: list, level_limit=10):
             last_level_val = -1
             last_level_price = -1
             last_level_index = -1
-            for i in range(len(lst_price_book) - 1):
+
+            start = len(lst_lp) - 1
+            for i in range(start, start - level_limit, -1):
                 if last_level_val == -1 or lst_price_book[i][0] < last_level_val:
                     last_level_val = lst_price_book[i][0]
                     last_level_price = lst_price_book[i][1]
@@ -26,10 +28,23 @@ class GoodQueuePlace(TRBot):
         return [find_level(self._lst_lp[0]), find_level(self._lst_lp[1])]
 
     def _thr_spread(self, name):
+        # TODO: No topo do book, é preciso, de alguma forma, "medir" a distancia entre a ordem de um lado e do outro...
+        #  É preciso que ambas as ordens sejam gerenciadas para ficarem o mais proximo possível do inicio da fila...
         pass
 
     def _thr_book(self, name):
-        self._get_smaller_level()
+        self.__get_smaller_level()
+
+        # TODO: verficar as posicoes existentes e havendo alguma que esteja pior em termos de distacia de preco e
+        #  posicao na fila, realocar pra mais perto. (tem que ter uma estrutura para manter este historico).
+
+        # TODO: requer testar a inserção da ordem enviada no livro de ofertas, marcar e acompanhar a posição das ordens,
+        #  reconstruindo par incluir este dado no fim da lista de cada nível de preços do livro de preços (para
+        #  facilitar tais mapeamentos).
+
+        # TODO: requer parametrizar a DLL para somente produzir instrumentos derivados realmente necessários para
+        #  cada tipo de natureza de algoritmo.
+        pass
 
     def _thr_order_flow(self, name):
         pass
