@@ -901,23 +901,31 @@ class ProfitDLL:
             logger.info("Servicos Conectados.")
 
     def find_lim_ord_pos_book_offer(self, tipo_ordem, status, asset_id, side, price, date, cl_ord_id):
-        if (tipo_ordem == "limitada" and status == "open") or (tipo_ordem == "market" and status == "part_exec"):
-            lst_book = self._dct_lo.get(asset_id.ticker, [])
+        if (tipo_ordem == "Limit" and status == "New") or (tipo_ordem == "Market" and status == "PartiallyFilled"):
 
-            lst_prc = list(filter(lambda x: x[0] == price, lst_book[side]))
+            lst_book = self._dct_lo.get(asset_id.ticker, [])
+            if not lst_book:
+                return
+
+            lst_prc = [prc for prc in lst_book[side] if prc[0] == price]
             if lst_prc:
-                lst_offers = list(filter(lambda x: datetime.strptime(x, "%Y-%m-%d %H:%M:%S.%f") == date, lst_prc))
+                lst_offers = list(filter(lambda x: x[4].decode("utf-8") == date, lst_prc))
                 if not lst_offers:
-                    dt_start = datetime.strptime(date, "%Y-%m-%d %H:%M:%S.%f")
+                    dt_start = datetime.strptime(date, "%d/%m/%Y %H:%M:%S.%f")
                     dt_end = dt_start + timedelta(milliseconds=500)
                     dt_start = dt_start - timedelta(milliseconds=500)
-                    lst_offers = list(filter(lambda x: dt_start < datetime.strptime(x, "%Y-%m-%d %H:%M:%S.%f") < dt_end,
-                                             lst_prc))
+                    lst_offers = list(filter(
+                        lambda x: dt_start <= datetime.strptime(x[4].decode("utf-8"), "%d/%m/%Y %H:%M:%S.%f") <= dt_end,
+                        lst_prc))
+
                 if lst_offers:
-                    lst_offers[-1][1].append(cl_ord_id)
+                    lst_offers[-1].append(cl_ord_id)
+                    print(lst_offers)
 
     def history_callback(self, asset_id, corretora, qtd, traded_qtd, leaves_qtd, side, price, stop_price, avg_price,
                          profit_id, tipo_ordem, conta, titular, cl_ord_id, status, date):
+
+        # is called after any methods which send an order
         self.find_lim_ord_pos_book_offer(tipo_ordem, status, asset_id, side, price, date, cl_ord_id)
 
         dct = {
@@ -975,6 +983,8 @@ class ProfitDLL:
 
     def order_change_callback(self, asset_id, corretora, qtd, traded_qtd, leaves_qtd, side, price, stop_price,
                               avg_price, profit_id, tipo_ordem, conta, titular, cl_ord_id, status, date, text_message):
+
+        # for GetOrder() and GetOrder()
         self.find_lim_ord_pos_book_offer(tipo_ordem, status, asset_id, side, price, date, cl_ord_id)
 
         dct = {
