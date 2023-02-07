@@ -61,11 +61,11 @@ class Auction(Bot):
         lst_res = []
         for lside in lst_book:
             qtd, i = 0, 0
-            for l in lside:
+            for ls in lside:
                 i += 1
-                qtd += l[1]
+                qtd += ls[1]
 
-                if l[0] == theoretical_price:
+                if ls[0] == theoretical_price:
                     break
 
             lst_res.append([qtd, i])
