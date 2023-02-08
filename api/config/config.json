@@ -103,7 +103,7 @@
     },
     {
       "name": "Arbitrage DOL-WDO",
-      "enabled": false,
+      "enabled": true,
       "algo_class": "Arbitrage",
       "req_instruments": [
         "spread_rt",
@@ -159,7 +159,7 @@
     },
     {
       "name": "Arbitrage IND-WIN",
-      "enabled": false,
+      "enabled": true,
       "algo_class": "Arbitrage",
       "req_instruments": [
         "spread_rt",
@@ -215,7 +215,7 @@
     },
     {
       "name": "Market Auctions",
-      "enabled": true,
+      "enabled": false,
       "algo_class": "Auction",
       "req_instruments": [
         "lp",

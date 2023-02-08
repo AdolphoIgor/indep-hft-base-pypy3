@@ -17,11 +17,11 @@ class Auction(Bot):
     def __init__(self, name, daemon, algo: dict, config_prov: InternalConfigProviders):
         super().__init__(name, daemon, algo, Bot.ARM_ONE, config_prov)
 
-        self.__dct_progress = self._config_prov.get_internal_provider_data(
+        self._dct_progress = self._config_prov.get_internal_provider_data(
                 "progress", sublist=self._config_prov.get_internal_provider_data("instruments"))
 
-        self.__stop_limit = self._algo.get("stop_param")["stop_limit"]
-        self.__opening_volume = self._algo.get("start_param").get("threshold")["opening_volume"]
+        self._stop_limit = self._algo.get("stop_param")["stop_limit"]
+        self._opening_volume = self._algo.get("start_param").get("threshold")["opening_volume"]
 
     def enqueue_auction(self, sbl):
         if not self._thread_pool:
@@ -50,13 +50,12 @@ class Auction(Bot):
                 fila.task_done()
                 logger.info(f"{thread_name}: The processing to {value[0]} has been done!")
 
-    def __get_entry_signal(self, symbol: str, dct_quote: dict):
-        lst_book = self._dct_inst.get("lp").get(symbol)
+    @staticmethod
+    def __get_entry_signal(dct_quote: dict, lst_book: list):
         lst_book = [lst_book[0][::-1], lst_book[1][::-1]]
 
-        dct_price = dct_quote.get("quote").get(symbol)
-        theoretical_price = dct_price.get("theoretical_price")
-        # theoretical_qtd = dct_price.get("theoretical_qtd")
+        theoretical_price = dct_quote.get("theoretical_price")
+        # theoretical_qtd = dct_quote.get("theoretical_qtd")
 
         lst_res = []
         for lside in lst_book:
@@ -96,10 +95,10 @@ class Auction(Bot):
     def _execute(self):
         time_sleep = 5
         dct_enqueued = {}
-        while self.__stop_limit < 0:
+        while self._stop_limit < 0:
             lst_act_sbls = [[sbl, quote] for sbl, quote in self._dct_inst.get("quote").items()
                             if quote.get("state") == 4 and sbl not in dct_enqueued and
-                            quote.get("vol", 0) >= self.__opening_volume]
+                            quote.get("vol", 0) >= self._opening_volume]
 
             if not lst_act_sbls:
                 break
@@ -113,10 +112,18 @@ class Auction(Bot):
             for sbl in lst_act_sbls:
                 for thr in self._algo.get("threads"):
                     if sbl[0] == thr.get("symbol"):
+
+                        if sbl[1].get("theoretical_price") <= 0:
+                            continue
+
+                        lst_book = self._dct_inst.get("lp").get(sbl[0])
+                        if not lst_book:
+                            continue
+
                         if len(sbl) == 2:
                             sbl.append(thr)
                             sbl.append({})
-                            sbl.append(self.__dct_progress.get("value").get(sbl[0]))
+                            sbl.append(lst_book)
 
                         if not self.enqueue_auction(sbl):
                             time.sleep(time_sleep)
@@ -137,8 +144,8 @@ class Auction(Bot):
                 if intraday_pos <= 0:
                     logger.info(f"AUCTION: The {ret[1]} stop was reached.")
 
-                self.__stop_limit += dct_pos.get("intraday_pos")
-                if self.__stop_limit <= 0:
+                self._stop_limit += dct_pos.get("intraday_pos")
+                if self._stop_limit <= 0:
                     logger.info(f"AUCTION: The daily stop was reached.")
 
                 dct_enqueued.pop(ret[1])
@@ -154,25 +161,20 @@ class Auction(Bot):
                 "neg_seller": neg_seller
             }
         """
-        if item[4].get("progress") < 100:
-            return
-
-        dct_quote = item[1]
-        if dct_quote.get("theoretical_price") <= 0:
-            return
-
         str_symbol = item[0]
+        dct_quote = item[1]
         dct_thr = item[2]
         dct_vars = item[3]
+        lst_book = item[4]
 
         dct_vars["order_placed"] = False
         lst_orders = self._dct_inst.get("orders", {}).get(str_symbol, None)
 
-        while self.__stop_limit <= 0 and dct_quote.get("state") == 4:
-            lst_entry_signal = self.__get_entry_signal(str_symbol, dct_quote)
+        while self._stop_limit <= 0 and dct_quote.get("state") == 4:
+            lst_entry_signal = self.__get_entry_signal(dct_quote, lst_book)
 
-            if self.__stop_limit <= 0 and lst_entry_signal[4] > 2 and not dct_vars.get("order_placed"):
-                if self.__stop_limit <= 0 and lst_entry_signal[0] == "B":
+            if self._stop_limit <= 0 and lst_entry_signal[4] > 2 and not dct_vars.get("order_placed"):
+                if self._stop_limit <= 0 and lst_entry_signal[0] == "B":
                     self._profit_dll.send_buy_order(
                         conta=dct_thr.get("broker").get("account"),
                         broker=dct_thr.get("broker").get("id"),
@@ -185,7 +187,7 @@ class Auction(Bot):
 
                     dct_vars["order_placed"] = True
 
-                elif self.__stop_limit <= 0 and lst_entry_signal[0] == "S":
+                elif self._stop_limit <= 0 and lst_entry_signal[0] == "S":
                     self._profit_dll.send_sell_order(
                         conta=dct_thr.get("broker").get("account"),
                         broker=dct_thr.get("broker").get("id"),
@@ -261,7 +263,7 @@ class Auction(Bot):
                 cl_ord_id=dct_ord_0.get("cl_ord_id")
             )
 
-        lst_sprd = self._dct_inst.get("spread")
+        lst_sprd = self._dct_inst.get("spread_rt")
         lst_book = lst_sprd[0] if dct_ord_0.get("side") == "B" else lst_sprd[1]
         while True:
             time.sleep(0.00001)

@@ -50,6 +50,9 @@ class Bot(Thread):
         if "spread_rt" in lst_req:
             lst_req.append("lp")
 
+        if "lp_tr" in lst_req:
+            lst_req.append("lo")
+
         if "ranking" in lst_req:
             lst_req.append("tt")
 
