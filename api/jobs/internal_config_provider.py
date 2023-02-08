@@ -26,6 +26,7 @@ class InternalConfigProviders:
                 {"type": "spread", "value": {}},
                 {"type": "tt", "value": {}},
                 {"type": "lp", "value": {}},
+                {"type": "lp_tr", "value": {}},
                 {"type": "lo", "value": {}},
                 {"type": "account", "value": {}},
                 {"type": "progress", "value": {}},
@@ -42,6 +43,7 @@ class InternalConfigProviders:
                 {"type": "spread", "value": []},
                 {"type": "tt", "value": []},
                 {"type": "lp", "value": []},
+                {"type": "lp_tr", "value": []},
                 {"type": "lo", "value": []},
                 {"type": "ranking", "value": []}
             ]

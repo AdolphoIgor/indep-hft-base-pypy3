@@ -143,6 +143,7 @@ class ProfitDLL:
         self._dct_quote = self._config_prov.get_internal_provider_data("quote", sublist=lst_instruments)
         self._dct_tt = self._config_prov.get_internal_provider_data("tt", sublist=lst_instruments)
         self._dct_lp = self._config_prov.get_internal_provider_data("lp", sublist=lst_instruments)
+        self._dct_lp_tr = self._config_prov.get_internal_provider_data("lp_tr", sublist=lst_instruments)
         self._dct_lo = self._config_prov.get_internal_provider_data("lo", sublist=lst_instruments)
         self._dct_account = self._config_prov.get_internal_provider_data("account", sublist=lst_instruments)
         self._dct_orders = self._config_prov.get_internal_provider_data("orders", sublist=lst_instruments)
@@ -766,14 +767,42 @@ class ProfitDLL:
             lst_spread_rt = [None, None]
             self._dct_spread_rt[asset_id.ticker] = lst_spread_rt
 
-        # print(f"symbol: {asset_id.ticker}, side: {side}, value: {lst_book[side][::-1][0][:2]}, action: {action}, "
-        #       f"price: {price}, qtd: {qtd}, count: {count}")
-
         if lst_book[side]:
             lst_spread_rt[side] = lst_book[side][::-1][0][:2][::-1]
 
     def offer_book_callback(self, asset_id, action, position, side, qtd, agent, offer_id, price, has_price, has_qtd,
                             has_date, has_offer_id, has_agent, date, array_sell, array_buy):
+        def make_price_book(offer_book: list):
+            def proc_side(offer_side_book: list, levels=10):
+                lst_res = []
+                last_prc, qtt, idx = 0, 0, 0
+                lst_prv_off = []
+                for lvl_prc in offer_side_book:
+                    if len(lst_res) > levels:
+                        break
+
+                    act_price = lvl_prc[0]
+                    if not last_prc:
+                        last_prc = act_price
+
+                    if not last_prc == act_price:
+                        lst_res.append([last_prc, qtt, idx, lst_prv_off])
+                        qtt, idx = 0, 0
+                        last_prc = act_price
+                        lst_prv_off = []
+
+                    qtt += lvl_prc[1]
+                    idx += 1
+                    if len(lvl_prc) == 6:
+                        lst_prv_off.append([idx, lvl_prc[3], lvl_prc[5]])
+
+                return lst_res[::-1]
+
+            if not offer_book:
+                return []
+
+            return [proc_side(offer_book[0][::-1]), proc_side(offer_book[1][::-1])]
+
         def decript(price_array):
             price_array_decripted = []
 
@@ -846,6 +875,8 @@ class ProfitDLL:
 
         elif action == 3:
             del lst_book_side[-position - 1:]
+
+        self._dct_lp_tr[asset_id.ticker] = make_price_book(lst_book)
 
     def set_theoretical_price_callback(self, asset_id, theoretical_price, theoretical_qtd):
         dct_quote = self._dct_quote.get(asset_id.ticker, {})
@@ -920,7 +951,6 @@ class ProfitDLL:
 
                 if lst_offers:
                     lst_offers[-1].append(cl_ord_id)
-                    print(lst_offers)
 
     def history_callback(self, asset_id, corretora, qtd, traded_qtd, leaves_qtd, side, price, stop_price, avg_price,
                          profit_id, tipo_ordem, conta, titular, cl_ord_id, status, date):
