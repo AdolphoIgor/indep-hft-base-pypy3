@@ -1,3 +1,4 @@
+from api.bots.bot import Bot
 from api.bots.tr.tr_bot import TRBot
 from api.jobs.internal_config_provider import InternalConfigProviders
 
@@ -16,7 +17,7 @@ class GoodQueuePlace(TRBot):
             last_level_price = -1
             last_level_index = -1
 
-            start = len(lst_lp) - 1
+            start = len(lst_price_book) - 1
             for i in range(start, start - level_limit, -1):
                 if last_level_val == -1 or lst_price_book[i][0] < last_level_val:
                     last_level_val = lst_price_book[i][0]
@@ -28,8 +29,8 @@ class GoodQueuePlace(TRBot):
         return [find_level(self._lst_lp[0]), find_level(self._lst_lp[1])]
 
     def _thr_spread(self, name):
-        # TODO: No topo do book, é preciso, de alguma forma, "medir" a distancia entre a ordem de um lado e do outro...
-        #  É preciso que ambas as ordens sejam gerenciadas para ficarem o mais proximo possível do inicio da fila...
+        # TODO: No topo do book, ï¿½ preciso, de alguma forma, "medir" a distancia entre a ordem de um lado e do outro...
+        #  ï¿½ preciso que ambas as ordens sejam gerenciadas para ficarem o mais proximo possï¿½vel do inicio da fila...
         pass
 
     def _thr_book(self, name):
@@ -38,11 +39,11 @@ class GoodQueuePlace(TRBot):
         # TODO: verficar as posicoes existentes e havendo alguma que esteja pior em termos de distacia de preco e
         #  posicao na fila, realocar pra mais perto. (tem que ter uma estrutura para manter este historico).
 
-        # TODO: requer testar a inserção da ordem enviada no livro de ofertas, marcar e acompanhar a posição das ordens,
-        #  reconstruindo par incluir este dado no fim da lista de cada nível de preços do livro de preços (para
+        # TODO: requer testar a inserï¿½ï¿½o da ordem enviada no livro de ofertas, marcar e acompanhar a posiï¿½ï¿½o das ordens,
+        #  reconstruindo par incluir este dado no fim da lista de cada nï¿½vel de preï¿½os do livro de preï¿½os (para
         #  facilitar tais mapeamentos).
 
-        # TODO: requer parametrizar a DLL para somente produzir instrumentos derivados realmente necessários para
+        # TODO: requer parametrizar a DLL para somente produzir instrumentos derivados realmente necessï¿½rios para
         #  cada tipo de natureza de algoritmo.
         pass
 
