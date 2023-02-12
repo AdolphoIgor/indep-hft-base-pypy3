@@ -433,7 +433,7 @@ class ProfitDLL:
 
             # logger.debug(ret)
 
-        return result, ret
+        return ret
 
     def get_history_trades(self, ativo: str, bolsa: str, dt_start: str, dt_end: str):
         """

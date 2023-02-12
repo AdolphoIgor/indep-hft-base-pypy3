@@ -205,17 +205,6 @@ class Bot(Thread):
         self.__unsubscribe()
         logger.info(f"The algo name: {self.name} was finalized.")
 
-    def _print_positions(self):
-        dct_ret = {}
-        for sbl in self._algo.get("threads"):
-            dct_brkr = sbl.get("broker")
-            _, ret = self._profit_dll.get_position(conta=dct_brkr.get("account"), broker=dct_brkr.get("id"),
-                                                   ativo=sbl.get("symbol"), bolsa=sbl.get("stock_market"))
-            dct_ret.update(ret)
-
-        if dct_ret:
-            logger.info(f"Algo {self.name} Actual position: {dct_ret}")
-
     def _test_qtd_assets(self):
         qtd_ast = len(set(self._lst_sbl))
 
@@ -347,3 +336,26 @@ class Bot(Thread):
                 break
 
         return dct_ordr
+
+    def _get_position(self):
+        cons_pos, act_pos, comb_pos = 0, 0, 0
+        for thr in self._algo.get("threads"):
+            dct_pos = self._profit_dll.get_position(thr.get("broker").get("account"), thr.get("broker").get("id"),
+                                                    thr.get("symbol"), thr.get("stock_market"))
+
+            qtt = [dct_pos.get("sell_qtd"), dct_pos.get("buy_qtd")]
+
+            cons_pos += (dct_pos.get("avg_sell_price") - dct_pos.get("avg_buy_price")) * \
+                        (min(qtt) / thr.get("lote")) * (thr.get("tick_value_fin") * 2)
+
+            if qtt[0] > qtt[1]:
+                act_pos += dct_pos.get("avg_sell_price") - dct_pos.get("price") * \
+                           (dct_pos.get("intraday_pos") / thr.get("lote")) * (thr.get("tick_value_fin") * 2)
+            else:
+                act_pos += dct_pos.get("price") - dct_pos.get("avg_buy_price") * \
+                           (dct_pos.get("intraday_pos") / thr.get("lote")) * (thr.get("tick_value_fin") * 2)
+
+        comb_pos = cons_pos + act_pos
+
+        stp_lmt = self._algo.get("stop_param").get("stop_limit")
+        return cons_pos, act_pos, comb_pos, cons_pos < stp_lmt, act_pos < stp_lmt, comb_pos < stp_lmt
