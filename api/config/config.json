@@ -11,7 +11,7 @@
       "order": 0,
       "enabled": true,
       "job": "Configurator",
-      "date_time": "08:40:30",
+      "date_time": "08:50:30",
       "thread_name": "thr_configurator",
       "target": "ConfiguratorJob",
       "daemon": true,
@@ -28,7 +28,7 @@
       "order": 1,
       "enabled": true,
       "job": "Executor",
-      "date_time": "08:42:30",
+      "date_time": "08:55:30",
       "thread_name": "thr_executor",
       "target": "ExecutorJob",
       "daemon": true,
@@ -43,7 +43,7 @@
       "broker_name": "Nelogica",
       "account": "102376375",
       "username": "87723603134",
-      "password": "Air1945jc!3"
+      "password": "Air1945jc!1"
     }
   ],
   "algos": [
@@ -60,6 +60,7 @@
           "stock_market": "F",
           "broker_id": "15002",
           "tick_value": 0.5,
+          "tick_value_fin": 125.0,
           "lote": 5,
           "start_param": {
             "order_op_qty": 1
@@ -115,6 +116,7 @@
           "stock_market": "F",
           "broker_id": "15002",
           "tick_value": 0.5,
+          "tick_value_fin": 125.0,
           "lote": 5,
           "start_param": {
             "order_op_qty": 1
@@ -125,6 +127,7 @@
           "stock_market": "F",
           "broker_id": "15002",
           "tick_value": 0.5,
+          "tick_value_fin": 5.0,
           "lote": 1,
           "start_param": {
             "order_op_qty": 25
@@ -142,19 +145,20 @@
           "closing_limit": 15,
           "closing_config": [
             {
-              "time": "11:45:00",
+              "time": "17:45:00",
               "value": 0.5
             },
             {
-              "time": "12:00:00",
+              "time": "18:00:00",
               "value": 0
             },
             {
-              "time": "12:15:00",
+              "time": "18:15:00",
               "value": -10
             }
           ]
-        }
+        },
+        "stop_limit": -2
       }
     },
     {
@@ -171,6 +175,7 @@
           "stock_market": "F",
           "broker_id": "15002",
           "tick_value": 5,
+          "tick_value_fin": 25.0,
           "lote": 5,
           "start_param": {
             "order_op_qty": 1
@@ -181,6 +186,7 @@
           "stock_market": "F",
           "broker_id": "15002",
           "tick_value": 5,
+          "tick_value_fin": 1.0,
           "lote": 1,
           "start_param": {
             "order_op_qty": 25
@@ -198,19 +204,20 @@
           "closing_limit": 15,
           "closing_config": [
             {
-              "time": "11:45:00",
+              "time": "17:45:00",
               "value": 15
             },
             {
-              "time": "12:00:00",
+              "time": "18:00:00",
               "value": 0
             },
             {
-              "time": "12:15:00",
+              "time": "18:15:00",
               "value": -100
             }
           ]
-        }
+        },
+        "stop_limit": -500.00
       }
     },
     {
