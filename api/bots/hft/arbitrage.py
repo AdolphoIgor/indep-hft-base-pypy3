@@ -64,6 +64,9 @@ class Arbitrage(Bot):
         if not self._is_asset_state(["opened"]) and not self._pos_opened:
             return
 
+        if self._get_position()[3]:
+            return
+
         # entry point --------------------------------------------------------------------------------------------------
         if self._b_in_session and not self._pos_opened:
 
@@ -150,11 +153,9 @@ class Arbitrage(Bot):
                                 self._ord_time_limit = datetime.strptime(start_date, '%d/%m/%Y %H:%M:%S.%f') + \
                                     timedelta(minutes=closing_limit)
 
-                            if datetime.now().time() > self._ord_time_limit.time():
-                                self._thrshld_value_limit = abs(dct_ord_0.get("avg_price") - dct_ord_1.get("avg_price"))
-                            else:
-                                self._thrshld_value_limit = abs(dct_ord_0.get("avg_price") -
-                                                                dct_ord_1.get("avg_price")) + tpl_sides[0][7]
+                            self._thrshld_value_limit = abs(dct_ord_0.get("avg_price") - dct_ord_1.get("avg_price"))
+                            if datetime.now().time() < self._ord_time_limit.time():
+                                self._thrshld_value_limit += tpl_sides[0][7]
 
                         if res > self._thrshld_value_limit:
                             break

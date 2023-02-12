@@ -134,17 +134,11 @@ class Auction(Bot):
 
             lst_ret = self.enqueue_auction_return()[:]
             for ret in lst_ret:
-                dct_thr = dct_enqueued.get(ret[1])[2]
-                dct_pos = self._profit_dll.get_position(
-                    conta=dct_thr.get("broker").get("account"), broker=dct_thr.get("broker").get("id"),
-                    ativo=dct_thr.get("symbol"), bolsa=dct_thr.get("stock_market")
-                )
-
-                intraday_pos = dct_pos.get("intraday_pos")
-                if intraday_pos <= 0:
+                lst_pos = self._get_position()
+                if lst_pos[0] <= 0:
                     logger.info(f"AUCTION: The {ret[1]} stop was reached.")
 
-                self._stop_limit += dct_pos.get("intraday_pos")
+                self._stop_limit += lst_pos[0]
                 if self._stop_limit <= 0:
                     logger.info(f"AUCTION: The daily stop was reached.")
 
