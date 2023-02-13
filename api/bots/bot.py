@@ -44,6 +44,7 @@ class Bot(Thread):
 
         self._b_in_session = False
         self._pos_opened = False
+        self._pos_stopped = False
 
         # "lp", "tt" are some instruments already avaliable after a derivative ticker subscribing.
         lst_req = self._algo.get("req_instruments", [])

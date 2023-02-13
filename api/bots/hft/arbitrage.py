@@ -60,11 +60,11 @@ class Arbitrage(Bot):
 
     def _execute(self):
 
-        # if it has been a previous negotiation still opened, must be keep it running in order to finish it.
-        if not self._is_asset_state(["opened"]) and not self._pos_opened:
+        if self._pos_stopped:
             return
 
-        if self._get_position()[3]:
+        # if it has been a previous negotiation still opened, must be keep it running in order to finish it.
+        if not self._is_asset_state(["opened"]) and not self._pos_opened:
             return
 
         # entry point --------------------------------------------------------------------------------------------------
@@ -199,6 +199,12 @@ class Arbitrage(Bot):
                 if not dct_ord_0 or not dct_ord_1:
                     time.sleep(5)
                     b_tried = True
+
+            # TODO: Reduzir apos testar.
+            lst_pos = self._get_position()
+            print(lst_pos)
+            if lst_pos[3]:
+                self._pos_stopped = True
 
     def _proc_orders_list(self, lst_spread: list, lst_orders: list):
         lst_copy = lst_orders[::-1]
