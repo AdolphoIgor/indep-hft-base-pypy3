@@ -195,7 +195,7 @@
       ],
       "start_param": {
         "threshold": {
-          "opening_value": 15
+          "opening_value": 20
         }
       },
       "stop_param": {
@@ -205,7 +205,7 @@
           "closing_config": [
             {
               "time": "17:45:00",
-              "value": 15
+              "value": 20
             },
             {
               "time": "18:00:00",

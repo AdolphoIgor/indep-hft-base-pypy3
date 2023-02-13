@@ -58,6 +58,9 @@ class Arbitrage(Bot):
         # get instruments made-up in our side (not provided)
         self._lst_sprd_rt = list(self._dct_inst.get("spread_rt").values())
 
+        # recovering the position stop flag.
+        self._pos_stopped = self._get_position()[3]
+
     def _execute(self):
 
         if self._pos_stopped:
@@ -200,11 +203,7 @@ class Arbitrage(Bot):
                     time.sleep(5)
                     b_tried = True
 
-            # TODO: Reduzir apos testar.
-            lst_pos = self._get_position()
-            print(lst_pos)
-            if lst_pos[3]:
-                self._pos_stopped = True
+            self._pos_stopped = self._get_position()
 
     def _proc_orders_list(self, lst_spread: list, lst_orders: list):
         lst_copy = lst_orders[::-1]

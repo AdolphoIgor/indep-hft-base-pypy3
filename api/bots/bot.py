@@ -345,16 +345,16 @@ class Bot(Thread):
                                                     thr.get("symbol"), thr.get("stock_market"))
 
             qtt = [dct_pos.get("sell_qtd"), dct_pos.get("buy_qtd")]
-
-            cons_pos += (dct_pos.get("avg_sell_price") - dct_pos.get("avg_buy_price")) * \
-                        (min(qtt) / thr.get("lote")) * (thr.get("tick_value_fin") * 2)
+            cons_pos += round((dct_pos.get("avg_sell_price") - dct_pos.get("avg_buy_price")) *
+                              (min(qtt) / thr.get("lote")) * (thr.get("tick_value_fin") * 2), 2)
 
             if qtt[0] > qtt[1]:
-                act_pos += dct_pos.get("avg_sell_price") - dct_pos.get("price") * \
-                           (dct_pos.get("intraday_pos") / thr.get("lote")) * (thr.get("tick_value_fin") * 2)
-            else:
-                act_pos += dct_pos.get("price") - dct_pos.get("avg_buy_price") * \
-                           (dct_pos.get("intraday_pos") / thr.get("lote")) * (thr.get("tick_value_fin") * 2)
+                act_pos += round(dct_pos.get("avg_sell_price") - dct_pos.get("price") *
+                                 (dct_pos.get("intraday_pos") / thr.get("lote")) * (thr.get("tick_value_fin") * 2), 2)
+
+            elif qtt[0] < qtt[1]:
+                act_pos += round(dct_pos.get("price") - dct_pos.get("avg_buy_price") *
+                                 (dct_pos.get("intraday_pos") / thr.get("lote")) * (thr.get("tick_value_fin") * 2), 2)
 
         comb_pos = cons_pos + act_pos
 
