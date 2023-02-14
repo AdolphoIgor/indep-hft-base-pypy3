@@ -8,23 +8,21 @@ class GoodQueuePlace(TRBot):
     def __init__(self, name, daemon, algo: dict, config_prov: InternalConfigProviders):
         super().__init__(name, daemon, algo, Bot.ARM_ONE, config_prov)
 
-        self._lst_lp = list(self._dct_inst.get("lp").values())
+        self._lst_lp = list(self._dct_inst.get("lp_tr").values())
         self._lst_tt = list(self._dct_inst.get("tt").values())
 
     def __get_smaller_level(self):
         def find_level(lst_price_book: list, level_limit=10):
-            last_level_val = -1
-            last_level_price = -1
-            last_level_index = -1
+            last_level_val, last_level_qtt, last_level_index = -1, -1, -1
 
             start = len(lst_price_book) - 1
             for i in range(start, start - level_limit, -1):
-                if last_level_val == -1 or lst_price_book[i][0] < last_level_val:
+                if last_level_qtt == -1 or lst_price_book[i][1] < last_level_qtt:
                     last_level_val = lst_price_book[i][0]
-                    last_level_price = lst_price_book[i][1]
+                    last_level_qtt = lst_price_book[i][1]
                     last_level_index = i
 
-            return [last_level_val, last_level_price, last_level_index]
+            return [last_level_val, last_level_qtt, last_level_index]
 
         return [find_level(self._lst_lp[0]), find_level(self._lst_lp[1])]
 
