@@ -134,16 +134,17 @@ class Auction(Bot):
 
             lst_ret = self.enqueue_auction_return()[:]
             for ret in lst_ret:
-                lst_pos = self._get_position()
-                if lst_pos[0] <= 0:
-                    logger.info(f"AUCTION: The {ret[1]} stop was reached.")
+                if ret[1]:
+                    lst_pos = self._get_position()
+                    if lst_pos[0] <= 0:
+                        logger.info(f"AUCTION: The {ret[1]} stop was reached.")
 
-                self._stop_limit += lst_pos[0]
-                if self._stop_limit <= 0:
-                    logger.info(f"AUCTION: The daily stop was reached.")
+                    self._stop_limit += lst_pos[0]
+                    if self._stop_limit <= 0:
+                        logger.info(f"AUCTION: The daily stop was reached.")
 
-                dct_enqueued.pop(ret[1])
-                time_sleep = 5
+                    dct_enqueued.pop(ret[1])
+                    time_sleep = 5
 
     def _run_algo(self, item: tuple):
         """
@@ -287,4 +288,4 @@ class Auction(Bot):
 
                 break
 
-        return str_symbol, False
+        return str_symbol, True

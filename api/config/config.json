@@ -298,8 +298,7 @@
       },
       "start_param": {
         "threshold": {
-          "opening_volume": 4000000
-        }
+          "opening_volume": 4        }
       }
     },
     {
