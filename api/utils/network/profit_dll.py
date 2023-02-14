@@ -355,7 +355,7 @@ class ProfitDLL:
         n_qtd = result[0]
         if n_qtd == 0:
             logger.info("Nao ha posicao para esse ativo")
-            return result, ret
+            return ret
 
         n_tam = result[1]
         # logger.debug(f"qtd: {n_qtd}, n_tam: {n_tam}")

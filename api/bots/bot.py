@@ -344,6 +344,9 @@ class Bot(Thread):
             dct_pos = self._profit_dll.get_position(thr.get("broker").get("account"), thr.get("broker").get("id"),
                                                     thr.get("symbol"), thr.get("stock_market"))
 
+            if not dct_pos:
+                return [0, 0, 0, False, False, False]
+
             qtt = [dct_pos.get("sell_qtd"), dct_pos.get("buy_qtd")]
             cons_pos += round((dct_pos.get("avg_sell_price") - dct_pos.get("avg_buy_price")) *
                               (min(qtt) / thr.get("lote")) * (thr.get("tick_value_fin") * 2), 2)
