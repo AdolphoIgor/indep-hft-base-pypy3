@@ -203,7 +203,7 @@ class Arbitrage(Bot):
                     time.sleep(5)
                     b_tried = True
 
-            self._pos_stopped = self._get_position()
+            self._pos_stopped = self._get_position()[3]
 
     def _proc_orders_list(self, lst_spread: list, lst_orders: list):
         lst_copy = lst_orders[::-1]
