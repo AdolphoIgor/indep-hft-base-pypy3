@@ -163,7 +163,7 @@ class Bot(Thread):
         lst_res = [True for sbl, lst in self._dct_inst.get("orders", {}).items() if lst]
         self._pos_opened = len(lst_res) == self._qtd_exp and all(lst_res)
 
-    def __calc_session_time(self):
+    def _calc_session_time(self):
         # TODO: (Avaliar a ideia)
         #  incluir (por meio de parametro) uma forma de limitar o tempo da posição em aberto para poder
         #  reduzir o self._thrshld_value_limit e fazê-lo zerar a posição
@@ -191,7 +191,7 @@ class Bot(Thread):
 
         while self._config_prov.get_keep_running() and self._algo.get("enabled"):
             try:
-                self.__calc_session_time()
+                self._calc_session_time()
                 self._execute()
 
             except Exception:

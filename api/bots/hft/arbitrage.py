@@ -160,6 +160,8 @@ class Arbitrage(Bot):
                             if datetime.now().time() < self._ord_time_limit.time():
                                 self._thrshld_value_limit += tpl_sides[0][7]
 
+                        self._calc_session_time()
+
                         if res > self._thrshld_value_limit:
                             break
 
