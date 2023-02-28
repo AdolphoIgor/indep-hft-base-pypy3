@@ -30,6 +30,10 @@ class ProfitDLLSim:
     _REC_PATH = "api/utils/network/profit_logs"
     _REC_TIME_FMT = '%Y-%m-%d %H:%M:%S.%f'
 
+    # Simulator capabilities
+    _profit_id = 0
+    _cl_ord_id = 0
+
     # initialization
     _profit_dll.DLLInitializeLogin.restype = c_short
     _profit_dll.DLLInitializeMarketLogin.restype = c_short
@@ -140,8 +144,9 @@ class ProfitDLLSim:
         201: 'HadesCreated', 202: 'BrokerSent', 203: 'ClientCreated', 204: 'OrderNotCreated'
     }
 
-    def __init__(self, config_prov: InternalConfigProviders, recording=False):
+    def __init__(self, config_prov: InternalConfigProviders, recording=False, simulator=False):
         self._recording = recording
+        self._simulator = simulator
 
         # here the instruments will be kept.
         self._config_prov = config_prov
@@ -372,6 +377,58 @@ class ProfitDLLSim:
         """
         :return: Returns de cl_ord_id to be compared to the return of self._history_trade_callback().
         """
+        if self._simulator:
+
+            lst_book = self._dct_lp.get(ativo, None)
+            if not lst_book:
+                return
+
+            ord_status = ""
+            self._profit_id += 1
+            self._cl_ord_id += 1
+
+            # [price, qtd, count]
+            lst_lp_b = lst_book[0]
+            lst_lp_s = lst_book[1]
+            orig_qtt = qtd
+
+            tipo_ordem = "Market"
+            avg_prc = lst_lp_b[0]
+            if preco <= lst_lp_b[0]:
+                tipo_ordem = "Limit"
+                ord_status = "New"
+
+            elif preço == lst_lp_s[0] and qtd > lst_lp_s[0]:
+                ord_status = "PartiallyFilled"
+
+            elif preco >= lst_lp_s[0]:
+                ord_status = "Filled"
+
+                for lvl in lst_lp_s:
+                    if qtd >= lvl[1]:
+                        avg_prc += lvl[0] * lvl[1]
+                        qtd -= lvl[1]
+
+                    else:
+                        avg_prc += lvl[0] * qtd
+
+                avg_prc /= orig_qtt
+
+            lst_orders = self._dct_orders.get(asset_id.ticker, [])
+            if not lst_orders:
+                self._dct_orders[asset_id.ticker] = lst_orders
+
+            dtc_ordr = {
+                "corretora": "simulador", "qtd": qtd, "traded_qtd": qtd, "leaves_qtd": 0, "side": 0, "price": preco,
+                "stop_price": 0, "avg_price": avg_prc, "profit_id": self._profit_id, "tipo_ordem": tipo_ordem,
+                "conta": "simulador", "titular": "simulador", "cl_ord_id": self._cl_ord_id, "status": ord_status,
+                "date": datetime.now(), "symbol": ativo
+            }
+
+            lst_orders.append(dtc_ordr)
+
+            return self._NL_OK
+
         return self._profit_dll.SendBuyOrder(c_wchar_p(conta), c_wchar_p(broker), c_wchar_p(senha), c_wchar_p(ativo),
                                              c_wchar_p(bolsa), c_double(preco), c_int(qtd))
 
@@ -386,6 +443,58 @@ class ProfitDLLSim:
         :param bolsa: [B=Bovespa | F=BM&F]
         :return: Returns de cl_ord_id to be compared to the return of self._history_trade_callback().
         """
+        if self._simulator:
+
+            lst_book = self._dct_lp.get(ativo, None)
+            if not lst_book:
+                return
+
+            ord_status = ""
+            self._profit_id += 1
+            self._cl_ord_id += 1
+
+            # [price, qtd, count]
+            lst_lp_b = lst_book[0]
+            lst_lp_s = lst_book[1]
+            orig_qtt = qtd
+
+            tipo_ordem = "Market"
+            avg_prc = lst_lp_b[0]
+            if preco >= lst_lp_b[0]:
+                tipo_ordem = "Limit"
+                ord_status = "New"
+
+            elif preço == lst_lp_s[0] and qtd > lst_lp_s[0]:
+                ord_status = "PartiallyFilled"
+
+            elif preco <= lst_lp_s[0]:
+                ord_status = "Filled"
+
+                for lvl in lst_lp_s:
+                    if qtd >= lvl[1]:
+                        avg_prc += lvl[0] * lvl[1]
+                        qtd -= lvl[1]
+
+                    else:
+                        avg_prc += lvl[0] * qtd
+
+                avg_prc /= orig_qtt
+
+            lst_orders = self._dct_orders.get(asset_id.ticker, [])
+            if not lst_orders:
+                self._dct_orders[asset_id.ticker] = lst_orders
+
+            dtc_ordr = {
+                "corretora": "simulador", "qtd": qtd, "traded_qtd": qtd, "leaves_qtd": 0, "side": 0, "price": preco,
+                "stop_price": 0, "avg_price": avg_prc, "profit_id": self._profit_id, "tipo_ordem": tipo_ordem,
+                "conta": "simulador", "titular": "simulador", "cl_ord_id": self._cl_ord_id, "status": ord_status,
+                "date": datetime.now(), "symbol": ativo
+            }
+
+            lst_orders.append(dtc_ordr)
+
+            return self._NL_OK
+
         return self._profit_dll.SendSellOrder(c_wchar_p(conta), c_wchar_p(broker), c_wchar_p(senha), c_wchar_p(ativo),
                                               c_wchar_p(bolsa), c_double(preco), c_int(qtd))
 
@@ -402,6 +511,9 @@ class ProfitDLLSim:
         :param bolsa: [B=Bovespa | F=BM&F]
         :return: Returns de cl_ord_id to be compared to the return of self._history_trade_callback().
         """
+        if self._simulator:
+            return
+
         return self._profit_dll.SendStopBuyOrder(c_wchar_p(conta), c_wchar_p(broker), c_wchar_p(senha),
                                                  c_wchar_p(ativo), c_wchar_p(bolsa), c_double(preco),
                                                  c_double(s_stop_price), c_int(qtd))
@@ -419,6 +531,9 @@ class ProfitDLLSim:
         :param bolsa: [B=Bovespa | F=BM&F]
         :return: Returns de cl_ord_id to be compared to the return of self._history_trade_callback().
         """
+        if self._simulator:
+            return
+
         return self._profit_dll.SendStopSellOrder(c_wchar_p(conta), c_wchar_p(broker), c_wchar_p(senha),
                                                   c_wchar_p(ativo), c_wchar_p(bolsa), c_double(preco),
                                                   c_double(s_stop_price), c_int(qtd))
