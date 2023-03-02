@@ -164,10 +164,6 @@ class Bot(Thread):
         self._pos_opened = len(lst_res) == self._qtd_exp and all(lst_res)
 
     def _calc_session_time(self):
-        # TODO: (Avaliar a ideia)
-        #  incluir (por meio de parametro) uma forma de limitar o tempo da posição em aberto para poder
-        #  reduzir o self._thrshld_value_limit e fazê-lo zerar a posição
-
         self._b_in_session = datetime.now().time() <= self._thrshld_time_limit.time()
         if self._b_in_session:
             return

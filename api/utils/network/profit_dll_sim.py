@@ -1,8 +1,12 @@
 import os
 import struct
+import sys
 import time
+
 from ctypes import *
 from datetime import datetime, timedelta
+from queue import Queue
+from threading import Thread
 
 from api.jobs.internal_config_provider import InternalConfigProviders
 from api.logger import logger
@@ -28,7 +32,10 @@ class ProfitDLLSim:
 
     # recording capabilities
     _REC_PATH = "api/utils/network/profit_logs"
+    _REC_FILE_PATH = f"{_REC_PATH}/{datetime.now().strftime('%Y%m%d')}.log"
     _REC_TIME_FMT = '%Y-%m-%d %H:%M:%S.%f'
+    _rec_queue_buffer = Queue()
+    _rec_thr = None
 
     # Simulator capabilities
     _profit_id = 0
@@ -144,11 +151,18 @@ class ProfitDLLSim:
         201: 'HadesCreated', 202: 'BrokerSent', 203: 'ClientCreated', 204: 'OrderNotCreated'
     }
 
-    def __init__(self, config_prov: InternalConfigProviders, recording=False, simulator=False):
-        self._recording = recording
-        self._simulator = simulator
+    def __init__(self, config_prov: InternalConfigProviders, record=False, replay=False, simulator=False):
+        if record:
+            self._record = record
+            self._replay = False
+            self._simulator = False
 
-        # here the instruments will be kept.
+        if replay:
+            self._replay = replay
+            self._record = False
+            self._simulator = simulator
+
+            # here the instruments will be kept.
         self._config_prov = config_prov
 
         # memory pointers to every list of instruments.
@@ -236,141 +250,135 @@ class ProfitDLLSim:
 
         return dct_dest
 
-    def record_log(self, asset_id, instr_nm: str, instr: any):
-        # TODO: Incluir um buffer aqui para ativar a gravação somente após ultrapassar sua capacidade.
+    def record_log(self, instr_nm: str, instr: any):
+        def record_data():
+            os.makedirs(os.path.dirname(self._REC_FILE_PATH), exist_ok=True)
+            with open(self._REC_FILE_PATH, mode='a', encoding="UTF-8", newline='\n') as file:
+                while True:
+                    if not self._rec_queue_buffer.empty():
+                        file.write(self._rec_queue_buffer.get())
+                        file.flush()
 
-        if self._recording:
-            file_path = f"{self._REC_PATH}/{datetime.now().strftime('%Y%m%d%')}.log"
-            os.makedirs(os.path.dirname(file_path), exist_ok=True)
-            with open(file_path, mode='a', encoding="UTF-8", newline='\n') as file:
-                file.write(f"{datetime.now().strftime(self._REC_TIME_FMT)}|{asset_id.ticker}|{instr_nm}|{instr}\n")
+                    time.sleep(0.0001)
 
-    def play_log(self, date: str, lst_symbols: list, loop_init=None, loop_end=None):
+        if self._record:
+            str_rec = f"{datetime.now().strftime(self._REC_TIME_FMT)}|{instr_nm}|{instr}\n"
+            self._rec_queue_buffer.put(str_rec)
 
-        try:
-            if loop_init:
-                loop_init = datetime.strptime(loop_init, self._REC_TIME_FMT)
+            if not self._rec_thr:
+                self._rec_thr = Thread(target=record_data, name="recorder")
+                self._rec_thr.start()
 
-            if loop_end:
-                loop_init = datetime.strptime(loop_end, self._REC_TIME_FMT)
+    def play_log(self, f_date: str, loop_start=None, loop_ending=None):
+        def play(file_date: str, loop_init=None, loop_end=None):
+            try:
+                if loop_init:
+                    loop_init = datetime.strptime(f"{file_date} {loop_init}.0", self._REC_TIME_FMT)
 
-        except Exception:
-            raise Exception("Error converting datetime format from replay.")
+                if loop_end:
+                    loop_end = datetime.strptime(f"{file_date} {loop_end}.0", self._REC_TIME_FMT)
 
-        file_path = f"{self._REC_PATH}/{datetime.strptime(date, '%Y%m%d%')}.log"
-        with open(file_path, mode='a', encoding="UTF-8", newline='\n') as file:
+            except Exception:
+                raise Exception("Error converting datetime format from replay.")
 
-            file_start_idx = 0
-            time_track_a = None
-            while True:
-                symbol = lst_val[1]
-                lst_val = file.readline().split("|")
-                time_track_b = datetime.strptime(symbol, self._REC_TIME_FMT)
+            try:
+                self._b_market_connected = True
 
-                if loop_init and loop_init > time_track_b:
-                    file_start_idx += 1
-                    continue
+                file_path = f"{self._REC_PATH}/{datetime.strptime(file_date, '%Y-%m-%d').strftime('%Y%m%d')}.log"
+                with open(file_path, mode='r', encoding="UTF-8", newline='\n') as file:
 
-                if not time_track_a:
-                    time_track_a = time_track_b
+                    file_start_idx = 0
+                    time_track_a = None
+                    while True:
 
-                time_diff = time_track_b - time_track_a
-                time_diff -= timedelta(microseconds=500)
-                time.sleep(eval(f"{time_diff.seconds}.{time_diff.microseconds}"))
+                        fl_val = file.readline()
+                        if not fl_val:
+                            break
 
-                if lst_val[1] not in lst_symbols:
-                    continue
+                        lst_val = fl_val.replace('\n', '').split("|")
+                        time_track_b = datetime.strptime(lst_val[0], self._REC_TIME_FMT)
+                        print(f"time: {lst_val[0]}, value: {lst_val[1]}|{lst_val[2][:10]}")
 
-                instr = lst_val[2]
-                if instr == "QUOTE":
-                    dct_quote = self._dct_quote.get(symbol, {})
-                    if not dct_quote:
-                        self._dct_quote[symbol] = dct_quote
+                        if loop_init and loop_init > time_track_b:
+                            file_start_idx += 1
+                            continue
 
-                    dct_quote.update(eval(lst_val[3]))
-                    continue
+                        if not time_track_a:
+                            time_track_a = time_track_b
 
-                elif instr == "SPREAD":
-                    lst_spread = self._dct_spread.get(symbol, None)
-                    if not lst_spread:
-                        lst_spread = [None, None]
-                        self._dct_spread[symbol] = lst_spread
+                        time_diff = time_track_b - time_track_a
+                        if time_diff > timedelta(microseconds=0):
+                            # time_diff -= timedelta(microseconds=500)
+                            lg_sleep = eval(f"{time_diff.seconds}.{time_diff.microseconds}")
+                            time.sleep(lg_sleep)
 
-                    lst_spread = eval(lst_val[3])
-                    continue
+                        asset_id = TAssetID()
+                        lst_param = eval(lst_val[2])
+                        asset_id.ticker = lst_param[0]
+                        lst_param[0] = asset_id
+                        exec(f"self.{lst_val[1]}(*lst_param)")
 
-                elif instr == "SPREAD_RT":
-                    lst_spread_rt = self._dct_spread_rt.get(symbol, None)
-                    if not lst_spread_rt:
-                        lst_spread_rt = [None, None]
-                        self._dct_spread_rt[symbol] = lst_spread_rt
+                        if loop_end and loop_end <= time_track_b:
+                            file.seek(file_start_idx)
 
-                    lst_spread_rt = eval(lst_val[3])
-                    continue
+                        time_track_a = time_track_b
 
-                elif instr == "LO":
-                    lst_book = self._dct_lo.get(symbol, None)
-                    if not lst_book:
-                        lst_book = [None, None]
-                        self._dct_lo[symbol] = lst_book
+            except Exception as e:
+                print(f"Exception raised in play_log(). Error: {e}")
 
-                    lst_book = eval(lst_val[3])
-                    continue
+            finally:
+                self._b_market_connected = False
 
-                elif instr == "LP":
-                    lst_book = self._dct_lp.get(symbol, None)
-                    if not lst_book:
-                        lst_book = [None, None]
-                        self._dct_lp[symbol] = lst_book
-
-                    lst_book = eval(lst_val[3])
-                    continue
-
-                elif instr == "LP_TR":
-                    lst_book = self._dct_lp_tr.get(symbol, None)
-                    if not lst_book:
-                        lst_book = [None, None]
-                        self._dct_lp[symbol] = lst_book
-
-                    lst_book = eval(lst_val[3])
-                    continue
-
-                elif instr == "TT":
-                    lst_tt = self._dct_tt.get(symbol, [])
-                    if not lst_tt:
-                        self._dct_tt[symbol] = lst_tt
-
-                    lst_tt = eval(lst_val[3])
-                    continue
-
-                if loop_end and loop_end == time_track_b:
-                    file.seek(file_start_idx)
-
-                time_track_a = time_track_b
+        play_thr = Thread(target=play, name="play", args=(f_date, loop_start, loop_ending, ))
+        play_thr.start()
 
     # METHODS ----------------------------------------------------------------------------------------------------------
     def subscribe_ticker(self, ticker: str, bolsa: str):
+        if self._replay:
+            return
+
         return self._profit_dll.SubscribeTicker(c_wchar_p(ticker), c_wchar_p(bolsa))
 
     def unsubscribe_ticker(self, ticker: str, bolsa: str):
+        if self._replay:
+            return
+
         return self._profit_dll.UnsubscribeTicker(c_wchar_p(ticker), c_wchar_p(bolsa))
 
     def subscribe_price_book(self, ticker: str, bolsa: str):
+        if self._replay:
+            return
+
         return self._profit_dll.SubscribePriceBook(c_wchar_p(ticker), c_wchar_p(bolsa))
 
     def unsubscribe_price_book(self, ticker: str, bolsa: str):
+        if self._replay:
+            return
+
         return self._profit_dll.UnsubscribePriceBook(c_wchar_p(ticker), c_wchar_p(bolsa))
 
     def subscribe_offer_book(self, ticker: str, bolsa: str):
+        if self._replay:
+            return
+
         return self._profit_dll.SubscribeOfferBook(c_wchar_p(ticker), c_wchar_p(bolsa))
 
     def unsubscribe_offer_book(self, ticker: str, bolsa: str):
+        if self._replay:
+            return
+
         return self._profit_dll.UnsubscribeOfferBook(c_wchar_p(ticker), c_wchar_p(bolsa))
 
     def get_agent_name_by_id(self, n_id: int):
+        if self._replay:
+            return
+
         return self._profit_dll.GetAgentNameByID(c_int(n_id))
 
     def get_agent_short_name_by_id(self, n_id: int):
+        if self._replay:
+            return
+
         return self._profit_dll.GetAgentShortNameByID(c_int(n_id))
 
     def send_buy_order(self, conta: str, broker: str, senha: str, ativo: str, bolsa: str, preco: float, qtd: int):
@@ -539,31 +547,52 @@ class ProfitDLLSim:
                                                   c_double(s_stop_price), c_int(qtd))
 
     def send_change_order(self, conta: str, broker: str, senha: str, cl_ord_id: str, preco: float, qtd: int):
+        if self._replay:
+            return
+
         return self._profit_dll.SendChangeOrder(c_wchar_p(conta), c_wchar_p(broker), c_wchar_p(senha),
                                                 c_wchar_p(cl_ord_id), c_double(preco), c_int(qtd))
 
     def send_cancel_order(self, conta: str, broker: str, cl_ord_id: str, senha: str):
+        if self._replay:
+            return
+
         return self._profit_dll.SendCancelOrder(c_wchar_p(conta), c_wchar_p(broker), c_wchar_p(cl_ord_id),
                                                 c_wchar_p(senha))
 
     def send_cancel_orders(self, conta: str, broker: str, senha: str, ativo: str, bolsa: str):
+        if self._replay:
+            return
+
         return self._profit_dll.SendCancelOrders(c_wchar_p(conta), c_wchar_p(broker), c_wchar_p(senha),
                                                  c_wchar_p(ativo), c_wchar_p(bolsa))
 
     def send_cancel_all_orders(self, conta: str, broker: str, senha: str):
+        if self._replay:
+            return
+
         return self._profit_dll.SendCancelAllOrders(c_wchar_p(conta), c_wchar_p(broker), c_wchar_p(senha))
 
     def send_zero_position(self, conta: str, broker: str, ativo: str, bolsa: str, senha: str, price: float):
+        if self._replay:
+            return
+
         return self._profit_dll.SendZeroPosition(c_wchar_p(conta), c_wchar_p(broker), c_wchar_p(ativo),
                                                  c_wchar_p(senha), c_wchar_p(bolsa), c_double(price))
 
     def get_account(self):
+        if self._replay:
+            return
+
         return self._profit_dll.GetAccount()
 
     def get_orders(self, conta: str, broker: str, dt_start: str, dt_end: str):
         """
          :return: Returns on self._history_trade_callback().
         """
+        if self._replay:
+            return
+
         return self._profit_dll.GetOrders(c_wchar_p(conta), c_wchar_p(broker), c_wchar_p(dt_start), c_wchar_p(dt_end))
 
     def get_order(self, cl_ord_id: str):
@@ -571,6 +600,9 @@ class ProfitDLLSim:
         :param cl_ord_id:
         :return: Returns on self._order_change_callback().
         """
+        if self._replay:
+            return
+
         return self._profit_dll.GetOrder(c_wchar_p(cl_ord_id))
 
     def get_order_profit_id(self, n_profit_id: int):
@@ -578,12 +610,18 @@ class ProfitDLLSim:
         :param n_profit_id:
         :return: Returns on self._order_change_callback().
         """
+        if self._replay:
+            return
+
         return self._profit_dll.GetOrderProfitID(c_longlong(n_profit_id))
 
     def get_position(self, conta: str, broker: str, ativo: str, bolsa: str):
         """
         :return: a dictionary fulfilled wit the server's response.
         """
+        if self._replay:
+            return
+
         result = self._profit_dll.GetPosition(c_wchar_p(conta), c_wchar_p(broker), c_wchar_p(ativo), c_wchar_p(bolsa))
 
         ret = {}
@@ -674,6 +712,9 @@ class ProfitDLLSim:
         """
         :return: Triggers self._history_trade_callback() and self._progress_callback()
         """
+        if self._replay:
+            return
+
         return self._profit_dll.GetHistoryTrades(c_wchar_p(ativo), c_wchar_p(bolsa), c_wchar_p(dt_start),
                                                  c_wchar_p(dt_end))
 
@@ -682,6 +723,9 @@ class ProfitDLLSim:
         """
         :return: Triggers self._history_trade_callback and self._progress_callback
         """
+        if self._replay:
+            return
+
         return self._profit_dll.GetSerieHistory(c_wchar_p(ativo), c_wchar_p(bolsa), c_wchar_p(dt_start),
                                                 c_wchar_p(dt_end), c_uint(n_quote_number_start),
                                                 c_uint(n_quote_number_end))
@@ -692,6 +736,9 @@ class ProfitDLLSim:
         :return: a tuple with one of this class constants (_NL_ERR_INIT, _NL_OK, _NL_ERR_INVALID_ARGS,
                     _NL_ERR_INTERNAL_ERROR) and the variable b_use_day_trade
         """
+        if self._replay:
+            return
+
         b_use_day_trade = c_int(1 if b_use_day_trade else 0)
         return self._profit_dll.SetDayTrade(b_use_day_trade), b_use_day_trade
 
@@ -701,6 +748,9 @@ class ProfitDLLSim:
         :return: a tuple with one of this class constants (_NL_ERR_INIT, _NL_OK, _NL_ERR_INVALID_ARGS,
                     _NL_ERR_INTERNAL_ERROR) and the variable b_enabled
         """
+        if self._replay:
+            return
+
         b_enabled = c_int(1 if b_enabled else 0)
         return self._profit_dll.SetEnabledLogToDebug(b_enabled), b_enabled
 
@@ -713,6 +763,9 @@ class ProfitDLLSim:
             :return: Triggers self._asset_list_info_callback(), and
             self._asset_list_callback()
         """
+        if self._replay:
+            return
+
         return self._profit_dll.RequestTickerInfo(c_wchar_p(ticker), c_wchar_p(bolsa))
 
     def get_all_ticker(self, bolsa: str):
@@ -725,6 +778,9 @@ class ProfitDLLSim:
         :return: Triggers self._asset_list_info_callback(), and
         self._asset_list_callback()
         """
+        if self._replay:
+            return
+
         return self._profit_dll.GetAllTicker(c_wchar_p(bolsa))
 
     def set_enabled_hist_order(self, b_enabled: bool):
@@ -733,6 +789,9 @@ class ProfitDLLSim:
         :return: a tuple with one of this class constants (_NL_ERR_INIT, _NL_OK, _NL_ERR_INVALID_ARGS,
                     _NL_ERR_INTERNAL_ERROR) and the variable b_enabled
         """
+        if self._replay:
+            return
+
         b_enabled = c_int(1 if b_enabled else 0)
         return self._profit_dll.SetEnabledHistOrder(b_enabled), b_enabled
 
@@ -740,9 +799,15 @@ class ProfitDLLSim:
         """
         :return: triggers self._adjust_history_callback()
         """
+        if self._replay:
+            return
+
         return self._profit_dll.SubscribeAdjustHistory(c_wchar_p(ativo), c_wchar_p(bolsa))
 
     def unsubscribe_adjust_history(self, ativo: str, bolsa: str):
+        if self._replay:
+            return
+
         return self._profit_dll.UnsubscribeAdjustHistory(c_wchar_p(ativo), c_wchar_p(bolsa))
 
     def set_server_and_port(self, server, port: str):
@@ -754,6 +819,9 @@ class ProfitDLLSim:
 
             :return: Can return any constants of this class whose name starts with 'self._NL_...'.
         """
+        if self._replay:
+            return
+
         return self._profit_dll.SetServerAndPort(c_wchar_p(server), c_wchar_p(port))
 
     def get_server_clock(self):
@@ -765,6 +833,9 @@ class ProfitDLLSim:
             :return: Returns a tuple with any constants of this class whose name starts with 'self._NL_...' and a
             dictionary containing the date data (or not, empty) depending on the result of the call.
         """
+        if self._replay:
+            return
+
         dt_prm = byref(c_double(-1.0))
         year_prm, mth_prm, day_prm = byref(c_int(0)), byref(c_int(0)), byref(c_int(0))
         hr_prm, min_prm, sec_prm, mil_prm = byref(c_int(0)), byref(c_int(0)), byref(c_int(0)), byref(c_int(0))
@@ -800,6 +871,9 @@ class ProfitDLLSim:
 
             :return Returns a tuple with  NL_OK or NL_WAITING_SERVER or NL_ERR_INVALID_ARGS and the close value.
         """
+        if self._replay:
+            return
+
         val_close = c_double(-1.0)
         ret = self._profit_dll.GetLastDailyClose(c_wchar_p(ticker), c_wchar_p(bolsa), byref(val_close),
                                                  c_int(bol_val_adj))
@@ -816,7 +890,7 @@ class ProfitDLLSim:
         dct_quote["trade_number"] = trade_number
 
         # logger.debug(f"change_cotation_callback -> {dct_quote}")
-        self.record_log(asset_id, "QUOTE", dct_quote)
+        self.record_log("change_cotation_callback", [asset_id.ticker, date, trade_number, price])
 
     def asset_list_callback(self, asset_id, name):
         dct_quote = self._dct_quote.get(asset_id.ticker, {})
@@ -826,7 +900,7 @@ class ProfitDLLSim:
         dct_quote["description"] = name
 
         # logger.debug(f"asset_list_callback -> {dct_quote}")
-        self.record_log(asset_id, "QUOTE", dct_quote)
+        self.record_log("asset_list_callback", [asset_id.ticker, name])
 
     def asset_list_info_callback(self, asset_id, name, description, min_order_qtd, max_order_qtd, lote, security_type,
                                  security_sub_type, min_price_increment, contract_multiplier, valid_date, isin):
@@ -848,8 +922,10 @@ class ProfitDLLSim:
         dct_quote["security_type_desc"] = self._dct_asset_sec_type.get(security_type)
         dct_quote["security_sub_type_desc"] = self._dct_asset_sec_sub_type.get(security_sub_type)
 
-        logger.debug(f"asset_list_info_callback -> {dct_quote}")
-        self.record_log(asset_id, "QUOTE", dct_quote)
+        # logger.debug(f"asset_list_info_callback -> {dct_quote}")
+        self.record_log("asset_list_info_callback", [asset_id.ticker, name, description, min_order_qtd, max_order_qtd,
+                                                     lote, security_type, security_sub_type, min_price_increment,
+                                                     contract_multiplier, valid_date, isin])
 
     def asset_list_info_callback_v2(self, asset_id, name, description, min_order_qtd, max_order_qtd, lote,
                                     security_type, security_sub_type, min_price_increment, contract_multiplier,
@@ -875,8 +951,11 @@ class ProfitDLLSim:
         dct_quote["security_type_desc"] = self._dct_asset_sec_type.get(security_type)
         dct_quote["security_sub_type_desc"] = self._dct_asset_sec_sub_type.get(security_sub_type)
 
-        logger.debug(f"asset_list_info_callback_v2 -> {dct_quote}")
-        self.record_log(asset_id, "QUOTE", dct_quote)
+        # logger.debug(f"asset_list_info_callback_v2 -> {dct_quote}")
+        self.record_log("asset_list_info_callback_v2", [asset_id.ticker, name, description, min_order_qtd,
+                                                        max_order_qtd, lote, security_type, security_sub_type,
+                                                        min_price_increment, contract_multiplier, valid_date, isin,
+                                                        setor, sub_setor, segmento])
 
     def adjust_history_callback(self, asset_id, value, adj_type, observ, dt_ajuste, dt_delib, dt_pagamento, aff_price):
         dct_quote = self._dct_quote.get(asset_id.ticker, {})
@@ -888,7 +967,8 @@ class ProfitDLLSim:
             dct_quote["last"] = dct_quote.get("last", 0) + value
 
         # logger.debug(f"adjust_history_callback -> {dct_quote}")
-        self.record_log(asset_id, "QUOTE", dct_quote)
+        self.record_log("adjust_history_callback", [asset_id.ticker, value, adj_type, observ, dt_ajuste, dt_delib,
+                                                    dt_pagamento, aff_price])
 
     def adjust_history_callback_v2(self, asset_id, value, adj_type, observ, dt_ajuste, dt_delib, dt_pagamento, flags,
                                    mult):
@@ -929,7 +1009,8 @@ class ProfitDLLSim:
             dct_quote["last"] = round(last_prc, 2)
 
         # logger.debug(f"adjust_history_callback_v2 -> {dct_quote}")
-        self.record_log(asset_id, "QUOTE", dct_quote)
+        self.record_log("adjust_history_callback_v2", [asset_id.ticker, value, adj_type, observ, dt_ajuste, dt_delib,
+                                                       dt_pagamento, flags, mult])
 
     def change_state_ticker_callback(self, asset_id, date, state):
         dct_quote = self._dct_quote.get(asset_id.ticker, {})
@@ -941,7 +1022,7 @@ class ProfitDLLSim:
         dct_quote["desc_state"] = self._dct_asset_state.get(state)
 
         # logger.debug(f"change_state_ticker_callback -> {dct_quote}")
-        self.record_log(asset_id, "QUOTE", dct_quote)
+        self.record_log("change_state_ticker_callback", [asset_id.ticker, date, state])
 
     def price_book_callback(self, asset_id, action, position, side, qtd, count, price, array_sell, array_buy):
         def decript(price_array):
@@ -974,12 +1055,19 @@ class ProfitDLLSim:
             self._dct_lp[asset_id.ticker] = lst_book
 
         if action == 4:
-            if bool(array_buy):
-                lst_book[0] = decript(array_buy)
+            if not self._replay:
+                if bool(array_buy):
+                    lst_book[0] = decript(array_buy)
 
-            if bool(array_sell):
-                lst_book[1] = decript(array_sell)
+                if bool(array_sell):
+                    lst_book[1] = decript(array_sell)
 
+            else:
+                lst_book[0] = array_buy
+                lst_book[1] = array_sell
+
+            self.record_log("price_book_callback", [asset_id.ticker, action, position, side, qtd, count, price,
+                                                    lst_book[1], lst_book[0]])
             return
 
         lst_book_side = lst_book[side]
@@ -1012,8 +1100,7 @@ class ProfitDLLSim:
         if lst_book[side]:
             lst_spread_rt[side] = lst_book[side][::-1][0][:2][::-1]
 
-        self.record_log(asset_id, "LP", lst_book)
-        self.record_log(asset_id, "SPREAD_RT", lst_spread_rt)
+        self.record_log("price_book_callback", [asset_id.ticker, action, position, side, qtd, count, price, None, None])
 
     def offer_book_callback(self, asset_id, action, position, side, qtd, agent, offer_id, price, has_price, has_qtd,
                             has_date, has_offer_id, has_agent, date, array_sell, array_buy):
@@ -1088,11 +1175,20 @@ class ProfitDLLSim:
             self._dct_lo[asset_id.ticker] = lst_book
 
         if action == 4:
-            if bool(array_buy):
-                lst_book[0] = decript(array_buy)
+            if not self._replay:
+                if bool(array_buy):
+                    lst_book[0] = decript(array_buy)
 
-            if bool(array_sell):
-                lst_book[1] = decript(array_sell)
+                if bool(array_sell):
+                    lst_book[1] = decript(array_sell)
+
+            else:
+                lst_book[0] = array_buy
+                lst_book[1] = array_sell
+
+            self.record_log("offer_book_callback", [asset_id.ticker, action, position, side, qtd, agent, offer_id,
+                                                    price, has_price, has_qtd, has_date, has_offer_id, has_agent,
+                                                    date, lst_book[1], lst_book[0]])
 
             return
 
@@ -1123,8 +1219,9 @@ class ProfitDLLSim:
         lp_tr = make_price_book(lst_book)
         self._dct_lp_tr[asset_id.ticker] = lp_tr
 
-        self.record_log(asset_id, "LO", lst_book)
-        self.record_log(asset_id, "LP_TR", lp_tr)
+        self.record_log("offer_book_callback", [asset_id.ticker, action, position, side, qtd, agent, offer_id, price,
+                                                has_price, has_qtd, has_date, has_offer_id, has_agent,
+                                                date, None, None])
 
     def set_theoretical_price_callback(self, asset_id, theoretical_price, theoretical_qtd):
         dct_quote = self._dct_quote.get(asset_id.ticker, {})
@@ -1135,7 +1232,7 @@ class ProfitDLLSim:
         dct_quote["theoretical_qtd"] = theoretical_qtd
 
         # logger.debug(f"set_theoretical_price_callback -> {dct_quote}")
-        self.record_log(asset_id, "QUOTE", dct_quote)
+        self.record_log("set_theoretical_price_callback", [asset_id.ticker, theoretical_price, theoretical_qtd])
 
     def state_callback(self, type_val, result):
         # 0 : connStLogin (Notify Login Change)
@@ -1260,7 +1357,8 @@ class ProfitDLLSim:
             # TODO: calcular o saldo ranking (novo instrumento) com as seguintes informações:
             #  [time (a cada minuto), agente, qtd_acum, prc_medio, sd_agressao, sd_passivo]
 
-            self.record_log(asset_id, "TT", lst_tt)
+            self.record_log("history_trade_callback", [asset_id.ticker, date, trade_number, price, vol, qtd, buy_agent,
+                                                       sell_agent, trade_type])
 
     def order_change_callback(self, asset_id, corretora, qtd, traded_qtd, leaves_qtd, side, price, stop_price,
                               avg_price, profit_id, tipo_ordem, conta, titular, cl_ord_id, status, date, text_message):
@@ -1331,7 +1429,9 @@ class ProfitDLLSim:
             ele faz isso se for dentro do mesmo segundo
             se passar mais tempo ele nao agrega mais
             '''
-            self.record_log(asset_id, "TT", lst_tt)
+
+            self.record_log("new_trade_callback", [asset_id.ticker, date, trade_number, price, vol, qtd, buy_agent,
+                                                   sell_agent, trade_type, is_edit])
 
     def tiny_book_callback(self, asset_id, price, qtd, side):
         lst_spread = self._dct_spread.get(asset_id.ticker, None)
@@ -1346,7 +1446,7 @@ class ProfitDLLSim:
         lst_spread[side][0] = qtd
         lst_spread[side][1] = price
 
-        self.record_log(asset_id, "SPREAD", lst_spread)
+        self.record_log("tiny_book_callback", [asset_id.ticker, price, qtd, side])
 
     def new_daily_callback(self, asset_id, date, open_val, high, low, close, vol, ajuste, max_limit, min_limit,
                            vol_buyer, vol_seller, qtd, negocios, contratos_open, qtd_buyer, qtd_seller, neg_buyer,
@@ -1363,7 +1463,9 @@ class ProfitDLLSim:
                           })
 
         # logger.debug(f"new_daily_callback -> {dct_quote}")
-        self.record_log(asset_id, "QUOTE", dct_quote)
+        self.record_log("new_daily_callback", [asset_id.ticker, date, open_val, high, low, close, vol, ajuste,
+                                               max_limit, min_limit, vol_buyer, vol_seller, qtd, negocios,
+                                               contratos_open, qtd_buyer, qtd_seller, neg_buyer, neg_seller])
 
 
 # WHEN THE PROFITDLL WILL BE INITIATED, PLEASE SET THAT REFERENCE HERE.

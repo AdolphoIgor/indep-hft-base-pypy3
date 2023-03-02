@@ -5,6 +5,7 @@ from api.jobs.internal_config_provider import InternalConfigProviders
 from api.jobs.job import Job
 from api.logger import logger
 from api.utils.network.profit_dll import ProfitDLL
+from api.utils.network.profit_dll_sim import ProfitDLLSim
 
 
 class ConfiguratorJob(Job):
@@ -12,6 +13,7 @@ class ConfiguratorJob(Job):
     def __init__(self, config_prov: InternalConfigProviders, order):
         super().__init__(config_prov, order)
         self._sleep_when_done = self._config.get("sleep_when_done")
+        self._dct_debug_mode = self._config.get("debug_mode")
 
     def run(self) -> None:
 
@@ -29,14 +31,31 @@ class ConfiguratorJob(Job):
             if not dct_sys_cfg.get("connected"):
                 try:
                     if not dct_sys_cfg["prov_conn"]:
-                        dct_sys_cfg["prov_conn"] = ProfitDLL(self._config_prov)
-                        api.utils.network.profit_dll.prov_conn = dct_sys_cfg["prov_conn"]
+                        if not self._dct_debug_mode.get("enabled"):
+                            dct_sys_cfg["prov_conn"] = ProfitDLL(self._config_prov)
+                            api.utils.network.profit_dll.prov_conn = dct_sys_cfg["prov_conn"]
 
-                    dct_sys_cfg["prov_conn"].connect(
-                        soft_key=self._config.get("soft_key", ""),
-                        username=self._config.get("username", ""),
-                        password=self._config.get("password", ""),
-                    )
+                        else:
+                            dct_sys_cfg["prov_conn"] = ProfitDLLSim(self._config_prov,
+                                                                    self._dct_debug_mode.get("record"),
+                                                                    self._dct_debug_mode.get("replay"),
+                                                                    self._dct_debug_mode.get("simulator"))
+
+                            api.utils.network.profit_dll_sim.prov_conn = dct_sys_cfg["prov_conn"]
+
+                        if not self._dct_debug_mode.get("replay"):
+                            dct_sys_cfg["prov_conn"].connect(
+                                soft_key=self._config.get("soft_key", ""),
+                                username=self._config.get("username", ""),
+                                password=self._config.get("password", ""),
+                            )
+
+                        else:
+                            dct_sys_cfg["prov_conn"].play_log(
+                                self._dct_debug_mode.get("replay_conf").get("date"),
+                                self._dct_debug_mode.get("replay_conf").get("loop_init"),
+                                self._dct_debug_mode.get("replay_conf").get("loop_end"),
+                            )
 
                     if dct_sys_cfg["prov_conn"].is_connected():
                         dct_sys_cfg["connected"] = True
