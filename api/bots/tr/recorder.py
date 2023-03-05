@@ -1,6 +1,5 @@
 from api.bots.bot import Bot
 
-from api.bots.tr.tr_bot import TRBot
 from api.jobs.internal_config_provider import InternalConfigProviders
 
 
