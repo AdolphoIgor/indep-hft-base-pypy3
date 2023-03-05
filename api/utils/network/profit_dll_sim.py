@@ -1,8 +1,6 @@
 import os
 import struct
-import sys
 import time
-
 from ctypes import *
 from datetime import datetime, timedelta
 from queue import Queue
@@ -406,7 +404,7 @@ class ProfitDLLSim:
                 tipo_ordem = "Limit"
                 ord_status = "New"
 
-            elif preço == lst_lp_s[0] and qtd > lst_lp_s[0]:
+            elif preco == lst_lp_s[0] and qtd > lst_lp_s[0]:
                 ord_status = "PartiallyFilled"
 
             elif preco >= lst_lp_s[0]:
@@ -422,9 +420,9 @@ class ProfitDLLSim:
 
                 avg_prc /= orig_qtt
 
-            lst_orders = self._dct_orders.get(asset_id.ticker, [])
+            lst_orders = self._dct_orders.get(ativo, [])
             if not lst_orders:
-                self._dct_orders[asset_id.ticker] = lst_orders
+                self._dct_orders[ativo] = lst_orders
 
             dtc_ordr = {
                 "corretora": "simulador", "qtd": qtd, "traded_qtd": qtd, "leaves_qtd": 0, "side": 0, "price": preco,
@@ -472,7 +470,7 @@ class ProfitDLLSim:
                 tipo_ordem = "Limit"
                 ord_status = "New"
 
-            elif preço == lst_lp_s[0] and qtd > lst_lp_s[0]:
+            elif preco == lst_lp_s[0] and qtd > lst_lp_s[0]:
                 ord_status = "PartiallyFilled"
 
             elif preco <= lst_lp_s[0]:
@@ -488,9 +486,9 @@ class ProfitDLLSim:
 
                 avg_prc /= orig_qtt
 
-            lst_orders = self._dct_orders.get(asset_id.ticker, [])
+            lst_orders = self._dct_orders.get(ativo, [])
             if not lst_orders:
-                self._dct_orders[asset_id.ticker] = lst_orders
+                self._dct_orders[ativo] = lst_orders
 
             dtc_ordr = {
                 "corretora": "simulador", "qtd": qtd, "traded_qtd": qtd, "leaves_qtd": 0, "side": 0, "price": preco,
