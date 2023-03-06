@@ -203,8 +203,7 @@ class Bot(Thread):
         logger.info(f"The algo name: {self.name} was finalized.")
 
     def _test_qtd_assets(self):
-        # qtd_ast = len(set(self._lst_sbl))
-        qtd_ast = len(self._lst_sbl)
+        qtd_ast = len(set(self._lst_sbl))
 
         if qtd_ast == 0:
             raise BotInitializationException(f"The algo: {self.name} requires at least 1 asset but 0 was given.")

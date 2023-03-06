@@ -57,8 +57,6 @@ class Arbitrage(Bot):
 
         # get instruments made-up in our side (not provided)
         self._lst_sprd_rt = list(self._dct_inst.get("spread_rt").values())
-        if len(self._lst_sprd_rt) < self._qtd_exp:
-            self._lst_sprd_rt.append(self._lst_sprd_rt[0])
 
         # recovering the position stop flag.
         self._pos_stopped = self._get_position()[3]
