@@ -23,13 +23,13 @@
         "password": "Air1945jc!",
         "soft_key": "1054617003966110409",
         "debug_mode": {
-          "enabled": false,
+          "enabled": true,
           "record": false,
-          "replay": false,
+          "replay": true,
           "replay_conf": {
             "date": "2023-03-03",
             "loop_init": "08:56:04",
-            "loop_end": "12:12:58"
+            "loop_end": "09:00:50"
           },
           "simulator": false
         }
@@ -129,7 +129,7 @@
     },
     {
       "name": "Arbitrage DOL-WDO",
-      "enabled": true,
+      "enabled": false,
       "algo_class": "Arbitrage",
       "req_instruments": [
         "spread_rt",
@@ -137,9 +137,9 @@
       ],
       "threads": [
         {
-          "symbol": "WDOJ23",
+          "symbol": "DOLFUT",
           "stock_market": "F",
-          "broker_id": "3002",
+          "broker_id": "15002",
           "tick_value": 0.5,
           "tick_value_fin": 5.0,
           "lote": 1,
@@ -148,9 +148,9 @@
           }
         },
         {
-          "symbol": "WDOJ23",
+          "symbol": "WDOFUT",
           "stock_market": "F",
-          "broker_id": "24001",
+          "broker_id": "15002",
           "tick_value": 0.5,
           "tick_value_fin": 5.0,
           "lote": 1,
@@ -188,7 +188,7 @@
     },
     {
       "name": "Arbitrage IND-WIN",
-      "enabled": true,
+      "enabled": false,
       "algo_class": "Arbitrage",
       "req_instruments": [
         "spread_rt",
@@ -196,9 +196,9 @@
       ],
       "threads": [
         {
-          "symbol": "WINJ23",
+          "symbol": "INDFUT",
           "stock_market": "F",
-          "broker_id": "3002",
+          "broker_id": "15002",
           "tick_value": 0.5,
           "tick_value_fin": 5.0,
           "lote": 1,
@@ -207,9 +207,9 @@
           }
         },
         {
-          "symbol": "WINJ23",
+          "symbol": "WINFUT",
           "stock_market": "F",
-          "broker_id": "24001",
+          "broker_id": "15002",
           "tick_value": 0.5,
           "tick_value_fin": 5.0,
           "lote": 1,
@@ -247,7 +247,7 @@
     },
     {
       "name": "Market Auctions",
-      "enabled": false,
+      "enabled": true,
       "algo_class": "Auction",
       "req_instruments": [
         "lp",
@@ -255,53 +255,13 @@
       ],
       "threads": [
         {
-          "symbol": "",
-          "stock_market": "B",
-          "broker_id": "15002",
-          "tick_value": 0.01,
-          "lote": 100,
-          "start_param": {
-            "order_op_qty": 100
-          }
-        },
-        {
-          "symbol": "DOLG23",
+          "symbol": "WDOFUT",
           "stock_market": "F",
           "broker_id": "15002",
           "tick_value": 0.5,
           "lote": 5,
           "start_param": {
             "order_op_qty": 1
-          }
-        },
-        {
-          "symbol": "WDOG23",
-          "stock_market": "F",
-          "broker_id": "15002",
-          "tick_value": 0.5,
-          "lote": 1,
-          "start_param": {
-            "order_op_qty": 25
-          }
-        },
-        {
-          "symbol": "INDFUT",
-          "stock_market": "F",
-          "broker_id": "15002",
-          "tick_value": 5,
-          "lote": 5,
-          "start_param": {
-            "order_op_qty": 1
-          }
-        },
-        {
-          "symbol": "WINFUT",
-          "stock_market": "F",
-          "broker_id": "15002",
-          "tick_value": 5,
-          "lote": 1,
-          "start_param": {
-            "order_op_qty": 25
           }
         }
       ],
@@ -323,7 +283,8 @@
       },
       "start_param": {
         "threshold": {
-          "opening_volume": 4        }
+          "opening_volume": 4
+        }
       }
     },
     {
@@ -367,6 +328,120 @@
         },
         "stop_op": -125.00,
         "stop_limit": -500.00
+      }
+    },
+    {
+      "name": "Recorder",
+      "enabled": false,
+      "algo_class": "Recorder",
+      "req_instruments": [
+        "lp",
+        "lo",
+        "tt",
+        "quote_adtl"
+      ],
+      "threads": [
+        {
+          "symbol": "DOLFUT",
+          "stock_market": "F",
+          "broker_id": "15002",
+          "tick_value": 0.5,
+          "lote": 5,
+          "start_param": {
+            "order_op_qty": 1
+          }
+        },
+        {
+          "symbol": "WDOFUT",
+          "stock_market": "F",
+          "broker_id": "15002",
+          "tick_value": 0.5,
+          "lote": 1,
+          "start_param": {
+            "order_op_qty": 25
+          }
+        },
+        {
+          "symbol": "INDFUT",
+          "stock_market": "F",
+          "broker_id": "15002",
+          "tick_value": 5,
+          "lote": 5,
+          "start_param": {
+            "order_op_qty": 1
+          }
+        },
+        {
+          "symbol": "WINFUT",
+          "stock_market": "F",
+          "broker_id": "15002",
+          "tick_value": 5,
+          "lote": 1,
+          "start_param": {
+            "order_op_qty": 25
+          }
+        },
+        {
+          "symbol": "DI1F25",
+          "stock_market": "F",
+          "broker_id": "15002",
+          "tick_value": 5,
+          "lote": 1,
+          "start_param": {
+            "order_op_qty": 25
+          }
+        },
+        {
+          "symbol": "PETR4",
+          "stock_market": "B",
+          "broker_id": "15002",
+          "tick_value": 5,
+          "lote": 1,
+          "start_param": {
+            "order_op_qty": 25
+          }
+        },
+        {
+          "symbol": "PETR3",
+          "stock_market": "B",
+          "broker_id": "15002",
+          "tick_value": 5,
+          "lote": 1,
+          "start_param": {
+            "order_op_qty": 25
+          }
+        },
+        {
+          "symbol": "VALE3",
+          "stock_market": "B",
+          "broker_id": "15002",
+          "tick_value": 5,
+          "lote": 1,
+          "start_param": {
+            "order_op_qty": 25
+          }
+        }
+      ],
+      "stop_param": {
+        "threshold": {
+          "closing_mode": "manual",
+          "closing_config": [
+            {
+              "time": "16:45:00",
+              "value": 0.0
+            },
+            {
+              "time": "17:00:00",
+              "value": 0.0
+            }
+          ]
+        },
+        "stop_limit": -500.00
+      },
+      "start_param": {
+        "threshold": {
+          "opening_volume": 4
+        }
       }
     }
   ]

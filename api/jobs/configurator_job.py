@@ -1,11 +1,15 @@
+import os
 import time
 
 import api.utils.network.profit_dll
 from api.jobs.internal_config_provider import InternalConfigProviders
 from api.jobs.job import Job
 from api.logger import logger
-from api.utils.network.profit_dll import ProfitDLL
 from api.utils.network.profit_dll_sim import ProfitDLLSim
+
+if os.name == "nt":
+    from api.utils.network.profit_dll_win import ProfitDLLWin
+    from api.utils.network.profit_dll_recorder import ProfitDLLRecorder
 
 
 class ConfiguratorJob(Job):
@@ -32,25 +36,29 @@ class ConfiguratorJob(Job):
                 try:
                     if not dct_sys_cfg["prov_conn"]:
                         if not self._dct_debug_mode.get("enabled"):
-                            dct_sys_cfg["prov_conn"] = ProfitDLL(self._config_prov)
+                            dct_sys_cfg["prov_conn"] = ProfitDLLWin(
+                                self._config_prov,
+                                soft_key=self._config.get("soft_key"),
+                                username=self._config.get("username"),
+                                password=self._config.get("password")
+                            )
                             api.utils.network.profit_dll.prov_conn = dct_sys_cfg["prov_conn"]
+                            dct_sys_cfg["prov_conn"].connect()
 
-                        else:
+                        elif self._dct_debug_mode.get("record"):
+                            dct_sys_cfg["prov_conn"] = ProfitDLLRecorder(
+                                self._config_prov,
+                                soft_key=self._config.get("soft_key"),
+                                username=self._config.get("username"),
+                                password=self._config.get("password")
+                            )
+                            api.utils.network.profit_dll.prov_conn = dct_sys_cfg["prov_conn"]
+                            dct_sys_cfg["prov_conn"].connect()
+
+                        elif self._dct_debug_mode.get("replay"):
                             dct_sys_cfg["prov_conn"] = ProfitDLLSim(self._config_prov,
-                                                                    self._dct_debug_mode.get("record"),
-                                                                    self._dct_debug_mode.get("replay"),
                                                                     self._dct_debug_mode.get("simulator"))
 
-                            api.utils.network.profit_dll_sim.prov_conn = dct_sys_cfg["prov_conn"]
-
-                        if not self._dct_debug_mode.get("replay"):
-                            dct_sys_cfg["prov_conn"].connect(
-                                soft_key=self._config.get("soft_key", ""),
-                                username=self._config.get("username", ""),
-                                password=self._config.get("password", ""),
-                            )
-
-                        else:
                             dct_sys_cfg["prov_conn"].play_log(
                                 self._dct_debug_mode.get("replay_conf").get("date"),
                                 self._dct_debug_mode.get("replay_conf").get("loop_init"),
@@ -63,7 +71,8 @@ class ConfiguratorJob(Job):
                         self._set_started()
                         logger.info(f"The connection to {dct_sys_cfg.get('provider_name')} was established.")
 
-                except Exception:
+                except Exception as e:
+                    logger.error(e)
                     dct_sys_cfg["connected"] = False
 
             time.sleep(self._sleep_when_done)

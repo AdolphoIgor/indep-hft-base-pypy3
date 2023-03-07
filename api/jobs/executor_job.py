@@ -44,7 +44,7 @@ class ExecutorJob(Job):
             # clearing finalized threads
             lst_thr = list(filter(
                 lambda x: x.get("group") == self._config.get("group") and x.get("order") == self._config.get("order")
-                and not x.get("pointer").isAlive(), lst_thread_pool))
+                          and not x.get("pointer").is_alive(), lst_thread_pool))
 
             for thr in lst_thr:
                 lst_thread_pool.remove(thr)
