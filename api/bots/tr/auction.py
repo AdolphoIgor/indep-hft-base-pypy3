@@ -1,6 +1,7 @@
 import multiprocessing
 import time
 
+import api.utils.network.profit_dll_sim
 from api.bots.bot import Bot
 from api.jobs.internal_config_provider import InternalConfigProviders
 from api.logger import logger
@@ -18,7 +19,7 @@ class Auction(Bot):
         super().__init__(name, daemon, algo, Bot.ARM_ONE, config_prov)
 
         self._dct_progress = self._config_prov.get_internal_provider_data(
-                "progress", sublist=self._config_prov.get_internal_provider_data("instruments"))
+            "progress", sublist=self._config_prov.get_internal_provider_data("instruments"))
 
         self._stop_limit = self._algo.get("stop_param")["stop_limit"]
         self._opening_volume = self._algo.get("start_param").get("threshold")["opening_volume"]
@@ -103,9 +104,6 @@ class Auction(Bot):
             if not lst_act_sbls:
                 break
 
-            # shows the progress of the server's response
-            # self._config_prov._lst_config_pool[1].get("value")[8].get('value').get("CMSA3")
-
             lst_act_sbls.sort(key=(lambda x: x[1].get("vol")), reverse=True)
             lst_act_sbls = lst_act_sbls[:self.MAX_PROCESS_WORKERS]
 
@@ -134,10 +132,11 @@ class Auction(Bot):
 
             lst_ret = self.enqueue_auction_return()[:]
             for ret in lst_ret:
-                if ret[1]:
+                symbol = list(ret)[0]
+                if symbol != 'exception':
                     lst_pos = self._get_position()
                     if lst_pos[0] <= 0:
-                        logger.info(f"AUCTION: The {ret[1]} stop was reached.")
+                        logger.info(f"AUCTION: The {symbol} stop was reached.")
 
                     self._stop_limit += lst_pos[0]
                     if self._stop_limit <= 0:
@@ -156,6 +155,14 @@ class Auction(Bot):
                 "neg_seller": neg_seller
             }
         """
+
+        def get_lst_ordrs():
+            dct_ordrs = self._dct_inst.get("orders", {})
+            if not dct_ordrs:
+                self._init_orders_instruments()
+
+            return self._dct_inst.get("orders", {}).get(str_symbol, None)
+
         str_symbol = item[0]
         dct_quote = item[1]
         dct_thr = item[2]
@@ -163,12 +170,15 @@ class Auction(Bot):
         lst_book = item[4]
 
         dct_vars["order_placed"] = False
-        lst_orders = self._dct_inst.get("orders", {}).get(str_symbol, None)
+        lst_orders = None
 
         while self._stop_limit <= 0 and dct_quote.get("state") == 4:
             lst_entry_signal = self.__get_entry_signal(dct_quote, lst_book)
 
             if self._stop_limit <= 0 and lst_entry_signal[4] > 2 and not dct_vars.get("order_placed"):
+                api.utils.network.profit_dll_sim.breakpoint_stopped = True
+                breakpoint()
+
                 if self._stop_limit <= 0 and lst_entry_signal[0] == "B":
                     self._profit_dll.send_buy_order(
                         conta=dct_thr.get("broker").get("account"),
@@ -176,7 +186,7 @@ class Auction(Bot):
                         senha=dct_thr.get("broker").get("password"),
                         ativo=str_symbol,
                         bolsa=dct_thr.get("stock_market"),
-                        preco=dct_quote.get("quote").get("theoretical_price"),
+                        preco=dct_quote.get("theoretical_price"),
                         qtd=dct_thr.get("start_param").get("order_op_qty") * dct_thr.get("lote")
                     )
 
@@ -189,7 +199,7 @@ class Auction(Bot):
                         senha=dct_thr.get("broker").get("password"),
                         ativo=str_symbol,
                         bolsa=dct_thr.get("stock_market"),
-                        preco=dct_quote.get("quote").get("theoretical_price"),
+                        preco=dct_quote.get("theoretical_price"),
                         qtd=dct_thr.get("start_param").get("order_op_qty") * dct_thr.get("lote")
                     )
 
@@ -198,6 +208,12 @@ class Auction(Bot):
             if not dct_vars.get("order_placed"):
                 time.sleep(0.00001)
                 continue
+
+            if not lst_orders:
+                lst_orders = get_lst_ordrs()
+
+            api.utils.network.profit_dll_sim.breakpoint_stopped = True
+            breakpoint()
 
             # Wheather the order was pulled out of the auction.
             dct_ord_0 = self._get_order_w_status(lst_orders, "New")
@@ -214,7 +230,7 @@ class Auction(Bot):
                 )
 
                 while True:
-                    dct_ord_0 = self._get_order_w_status(lst_orders, "Cancel")
+                    dct_ord_0 = self._get_order_w_status(lst_orders, "Canceled")
                     if dct_ord_0:
                         lst_orders.clear()
                         dct_vars["order_placed"] = False
@@ -222,11 +238,17 @@ class Auction(Bot):
 
                     time.sleep(0.00001)
 
+            api.utils.network.profit_dll_sim.breakpoint_stopped = True
+            breakpoint()
+
         # The auction reach the end without placing any orders (nothing to do).
         if not dct_quote.get("state") == 4 and not dct_vars.get("order_placed"):
             return str_symbol, False
 
         time.sleep(5)
+
+        api.utils.network.profit_dll_sim.breakpoint_stopped = True
+        breakpoint()
 
         # The auction reach the end but the order wasn't fullfiled (cancel it and return).
         dct_ord_0 = self._get_order_w_status(lst_orders, "New")
@@ -239,7 +261,7 @@ class Auction(Bot):
             )
 
             while True:
-                dct_ord_0 = self._get_order_w_status(lst_orders, "Cancel")
+                dct_ord_0 = self._get_order_w_status(lst_orders, "Canceled")
                 if dct_ord_0:
                     lst_orders.clear()
                     dct_vars["order_placed"] = False
@@ -288,4 +310,4 @@ class Auction(Bot):
 
                 break
 
-        return str_symbol, True
+        return {str_symbol, True}

@@ -191,7 +191,7 @@ class Bot(Thread):
                 self._execute()
 
             except Exception:
-                self.__init_orders_instruments()
+                self._init_orders_instruments()
 
                 if self._profit_dll and not self._profit_dll.is_connected():
                     if not self._config.get("conn_broken_rep"):
@@ -241,7 +241,7 @@ class Bot(Thread):
     def _get_missing_lst_ordrs(self):
         return self.__missing_lst_ordrs
 
-    def __init_orders_instruments(self):
+    def _init_orders_instruments(self):
         """
             It were made protected, so it can be called whenever you want besides being called at the end
             of self._execute() method.
