@@ -545,7 +545,6 @@ if os.name == "nt":
     # THAT WOULD ALLOW TO THE CALLBACKS TO FORWARD THOSE CALLS TO THE PYTHON DLL.
     prov_conn: ProfitDLL
 
-
     # CALLBACKS --------------------------------------------------------------------------------------------------------
     @WINFUNCTYPE(None, TAssetID, c_wchar_p, c_uint, c_double)
     def change_cotation_callback(asset_id, date, trade_number, price):

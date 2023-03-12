@@ -63,6 +63,8 @@ class ConfiguratorJob(Job):
                                 self._dct_debug_mode.get("replay_conf").get("date"),
                                 self._dct_debug_mode.get("replay_conf").get("loop_init"),
                                 self._dct_debug_mode.get("replay_conf").get("loop_end"),
+                                self._dct_debug_mode.get("replay_conf").get("speed"),
+                                self._dct_debug_mode.get("replay_conf").get("no_wait"),
                             )
 
                     if dct_sys_cfg["prov_conn"].is_connected():

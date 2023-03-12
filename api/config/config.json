@@ -28,10 +28,12 @@
           "replay": true,
           "replay_conf": {
             "date": "2023-03-03",
-            "loop_init": "08:56:04",
-            "loop_end": "09:00:50"
+            "loop_init": "08:55:00",
+            "loop_end": "19:00:00",
+            "speed": 20,
+            "no_wait": true
           },
-          "simulator": false
+          "simulator": true
         }
       }
     },
@@ -54,7 +56,7 @@
       "broker_name": "Nelogica",
       "account": "102376375",
       "username": "87723603134",
-      "password": "Air1945jc!1"
+      "password": "Air1945jc!2"
     },
     {
       "id": "3002",
@@ -250,12 +252,12 @@
       "enabled": true,
       "algo_class": "Auction",
       "req_instruments": [
-        "lp",
+        "spread_rt",
         "quote_adtl"
       ],
       "threads": [
         {
-          "symbol": "WDOFUT",
+          "symbol": "WINFUT",
           "stock_market": "F",
           "broker_id": "15002",
           "tick_value": 0.5,

@@ -7,6 +7,8 @@ from api.utils.network.profit_dll import ProfitDLL
 from api.utils.network.profit_dll_recorder import REC_TIME_FMT, REC_PATH
 from api.utils.network.profit_dll_win import TAssetID
 
+breakpoint_stopped = False
+
 
 class ProfitDLLSim(ProfitDLL):
     # Simulator capabilities
@@ -15,11 +17,10 @@ class ProfitDLLSim(ProfitDLL):
 
     def __init__(self, config_prov: InternalConfigProviders, simulator=False):
         super().__init__(config_prov)
-        # self._replay = True
         self._simulator = simulator
 
-    def play_log(self, f_date: str, loop_start=None, loop_ending=None):
-        def play(file_date: str, loop_init=None, loop_end=None):
+    def play_log(self, f_date: str, loop_start=None, loop_ending=None, speed=0, no_wait=False):
+        def play(file_date: str, loop_init, loop_end, loop_speed, loop_no_wait):
             try:
                 if loop_init:
                     loop_init = datetime.strptime(f"{file_date} {loop_init}.0", REC_TIME_FMT)
@@ -40,6 +41,9 @@ class ProfitDLLSim(ProfitDLL):
                     time_track_a = None
                     while True:
 
+                        if breakpoint_stopped:
+                            breakpoint()
+
                         fl_val = file.readline()
                         if not fl_val:
                             break
@@ -59,10 +63,14 @@ class ProfitDLLSim(ProfitDLL):
                         if time_diff > timedelta(microseconds=0):
                             # time_diff -= timedelta(microseconds=500)
                             lg_sleep = eval(f"{time_diff.seconds}.{time_diff.microseconds}")
-                            time.sleep(lg_sleep)
+                            if not loop_no_wait:
+                                if speed:
+                                    lg_sleep = lg_sleep / loop_speed if loop_speed > 0 else lg_sleep * loop_speed
+
+                                time.sleep(lg_sleep)
 
                         asset_id = TAssetID()
-                        lst_param = eval(lst_val[2])
+                        lst_param = eval(lst_val[2].replace("nan", "-1"))
                         asset_id.ticker = lst_param[0]
                         lst_param[0] = asset_id
                         exec(f"self.{lst_val[1]}(*lst_param)")
@@ -78,7 +86,7 @@ class ProfitDLLSim(ProfitDLL):
             finally:
                 self._b_market_connected = False
 
-        play_thr = Thread(target=play, name="play", args=(f_date, loop_start, loop_ending,))
+        play_thr = Thread(target=play, name="play", args=(f_date, loop_start, loop_ending, speed, no_wait))
         play_thr.start()
 
     # METHODS ----------------------------------------------------------------------------------------------------------
@@ -107,106 +115,124 @@ class ProfitDLLSim(ProfitDLL):
         return
 
     def send_buy_order(self, conta: str, broker: str, senha: str, ativo: str, bolsa: str, preco: float, qtd: int):
-        if self._simulator:
+        if not self._simulator:
+            super().send_buy_order(conta, broker, senha, ativo, bolsa, preco, qtd)
+            return
 
-            lst_book = self._dct_lp.get(ativo, None)
-            if not lst_book:
-                return
+        lst_book = self._dct_lp.get(ativo, None)
+        if not lst_book:
+            return
 
-            ord_status = ""
-            self._profit_id += 1
-            self._cl_ord_id += 1
+        ord_status = ""
+        self._profit_id += 1
+        self._cl_ord_id += 1
 
-            # [price, qtd, count]
-            lst_lp_b = lst_book[0]
-            lst_lp_s = lst_book[1]
-            orig_qtt = qtd
+        # [price, qtd, count]
+        lst_lp_b = lst_book[0][-1][0]
+        lst_lp_s = lst_book[1][0][0]
+        orig_qtt = qtd
 
-            tipo_ordem = "Market"
-            avg_prc = lst_lp_b[0]
-            if preco <= lst_lp_b[0]:
-                tipo_ordem = "Limit"
-                ord_status = "New"
+        dct_qte = self._dct_quote.get(ativo)
+        # auction in progress...
+        if dct_qte.get("state") == 4:
+            lst_lp_b = dct_qte.get("theoretical_price")
+            lst_lp_s = lst_lp_b
 
-            elif preco == lst_lp_s[0] and qtd > lst_lp_s[0]:
-                ord_status = "PartiallyFilled"
+        tipo_ordem = "Market"
+        avg_prc = lst_lp_b
+        if preco <= lst_lp_b:
+            tipo_ordem = "Limit"
+            ord_status = "New"
 
-            elif preco >= lst_lp_s[0]:
-                ord_status = "Filled"
+        elif preco == lst_lp_s and qtd > lst_lp_s:
+            ord_status = "PartiallyFilled"
 
-                for lvl in lst_lp_s:
-                    if qtd >= lvl[1]:
-                        avg_prc += lvl[0] * lvl[1]
-                        qtd -= lvl[1]
+        elif preco >= lst_lp_s:
+            ord_status = "Filled"
 
-                    else:
-                        avg_prc += lvl[0] * qtd
+            for lvl in lst_book[1]:
+                if qtd >= lvl[1]:
+                    avg_prc += lvl[0] * lvl[1]
+                    qtd -= lvl[1]
 
-                avg_prc /= orig_qtt
+                else:
+                    avg_prc += lvl[0] * qtd
 
-            lst_orders = self._dct_orders.get(ativo, [])
-            if not lst_orders:
-                self._dct_orders[ativo] = lst_orders
+            avg_prc /= orig_qtt
 
-            dtc_ordr = {
-                "corretora": "simulador", "qtd": qtd, "traded_qtd": qtd, "leaves_qtd": 0, "side": 0, "price": preco,
-                "stop_price": 0, "avg_price": avg_prc, "profit_id": self._profit_id, "tipo_ordem": tipo_ordem,
-                "conta": "simulador", "titular": "simulador", "cl_ord_id": self._cl_ord_id, "status": ord_status,
-                "date": datetime.now(), "symbol": ativo
-            }
+        lst_orders = self._dct_orders.get(ativo, [])
+        if not lst_orders:
+            self._dct_orders[ativo] = lst_orders
 
-            lst_orders.append(dtc_ordr)
+        dtc_ordr = {
+            "corretora": "simulador", "qtd": qtd, "traded_qtd": qtd, "leaves_qtd": 0, "side": 1, "price": preco,
+            "stop_price": 0, "avg_price": avg_prc, "profit_id": self._profit_id, "tipo_ordem": tipo_ordem,
+            "conta": "simulador", "titular": "simulador", "cl_ord_id": self._cl_ord_id, "status": ord_status,
+            "date": datetime.now(), "symbol": ativo
+        }
+
+        lst_orders.append(dtc_ordr)
+        print(f"send_buy_order -> {dtc_ordr}")
 
     def send_sell_order(self, conta: str, broker: str, senha: str, ativo: str, bolsa: str, preco: float, qtd: int):
-        if self._simulator:
+        if not self._simulator:
+            super().send_sell_order(conta, broker, senha, ativo, bolsa, preco, qtd)
+            return
 
-            lst_book = self._dct_lp.get(ativo, None)
-            if not lst_book:
-                return
+        lst_book = self._dct_lp.get(ativo, None)
+        if not lst_book:
+            return
 
-            ord_status = ""
-            self._profit_id += 1
-            self._cl_ord_id += 1
+        ord_status = ""
+        self._profit_id += 1
+        self._cl_ord_id += 1
 
-            # [price, qtd, count]
-            lst_lp_b = lst_book[0]
-            lst_lp_s = lst_book[1]
-            orig_qtt = qtd
+        # [price, qtd, count]
+        lst_lp_b = lst_book[0][-1][0]
+        lst_lp_s = lst_book[1][0][0]
+        orig_qtt = qtd
 
-            tipo_ordem = "Market"
-            avg_prc = lst_lp_b[0]
-            if preco >= lst_lp_b[0]:
-                tipo_ordem = "Limit"
-                ord_status = "New"
+        dct_qte = self._dct_quote.get(ativo)
+        # auction in progress...
+        if dct_qte.get("state") == 4:
+            lst_lp_b = dct_qte.get("theoretical_price")
+            lst_lp_s = lst_lp_b
 
-            elif preco == lst_lp_s[0] and qtd > lst_lp_s[0]:
-                ord_status = "PartiallyFilled"
+        tipo_ordem = "Market"
+        avg_prc = lst_lp_s
+        if preco <= lst_lp_s:
+            tipo_ordem = "Limit"
+            ord_status = "New"
 
-            elif preco <= lst_lp_s[0]:
-                ord_status = "Filled"
+        elif preco == lst_lp_b and qtd > lst_lp_b:
+            ord_status = "PartiallyFilled"
 
-                for lvl in lst_lp_s:
-                    if qtd >= lvl[1]:
-                        avg_prc += lvl[0] * lvl[1]
-                        qtd -= lvl[1]
+        elif preco >= lst_lp_b:
+            ord_status = "Filled"
 
-                    else:
-                        avg_prc += lvl[0] * qtd
+            for lvl in lst_book[1]:
+                if qtd >= lvl[1]:
+                    avg_prc += lvl[0] * lvl[1]
+                    qtd -= lvl[1]
 
-                avg_prc /= orig_qtt
+                else:
+                    avg_prc += lvl[0] * qtd
 
-            lst_orders = self._dct_orders.get(ativo, [])
-            if not lst_orders:
-                self._dct_orders[ativo] = lst_orders
+            avg_prc /= orig_qtt
 
-            dtc_ordr = {
-                "corretora": "simulador", "qtd": qtd, "traded_qtd": qtd, "leaves_qtd": 0, "side": 0, "price": preco,
-                "stop_price": 0, "avg_price": avg_prc, "profit_id": self._profit_id, "tipo_ordem": tipo_ordem,
-                "conta": "simulador", "titular": "simulador", "cl_ord_id": self._cl_ord_id, "status": ord_status,
-                "date": datetime.now(), "symbol": ativo
-            }
+        lst_orders = self._dct_orders.get(ativo, [])
+        if not lst_orders:
+            self._dct_orders[ativo] = lst_orders
 
-            lst_orders.append(dtc_ordr)
+        dtc_ordr = {
+            "corretora": "simulador", "qtd": qtd, "traded_qtd": qtd, "leaves_qtd": 0, "side": 2, "price": preco,
+            "stop_price": 0, "avg_price": avg_prc, "profit_id": self._profit_id, "tipo_ordem": tipo_ordem,
+            "conta": "simulador", "titular": "simulador", "cl_ord_id": self._cl_ord_id, "status": ord_status,
+            "date": datetime.now(), "symbol": ativo
+        }
+
+        lst_orders.append(dtc_ordr)
+        print(f"send_sell_order -> {dtc_ordr}")
 
     def send_stop_buy_order(self, conta: str, broker: str, senha: str, ativo: str, bolsa: str, preco: float,
                             s_stop_price: float, qtd: int):
@@ -220,13 +246,94 @@ class ProfitDLLSim(ProfitDLL):
         return
 
     def send_cancel_order(self, conta: str, broker: str, cl_ord_id: str, senha: str):
-        return
+        if not self._simulator:
+            super().send_cancel_order(conta, broker, cl_ord_id, senha)
+            return
+
+        symbol = None
+        dct_org_ordr = None
+        for sbl, lst_ordrs in self._dct_orders.items():
+            for ordr in lst_ordrs:
+                if ordr.get("cl_ord_id") == cl_ord_id:
+                    symbol = sbl
+                    dct_org_ordr = ordr
+                    self._dct_orders[symbol] = lst_ordrs
+
+        if not symbol:
+            return
+
+        # auction in progress... prevent order to be canceled if its price is into theoretical price.
+        dct_qte = self._dct_quote.get(symbol)
+        if dct_qte.get("state") == 4:
+            # Lado da ordem (Compra=1, Venda=2)
+            th_prc = dct_qte.get("theoretical_price")
+            eval1 = dct_org_ordr.get("side") == 1 and dct_org_ordr.get("price") >= th_prc
+            eval2 = dct_org_ordr.get("side") == 2 and dct_org_ordr.get("price") <= th_prc
+            if eval1 or eval2:
+                return
+
+        self._profit_id += 1
+        dtc_ordr = dct_org_ordr.copy()
+        dtc_ordr["status"] = "Canceled"
+        dtc_ordr["date"] = datetime.now()
+        dtc_ordr["profit_id"] = self._profit_id
+
+        self._dct_orders[symbol].append(dtc_ordr)
+        print(f"send_cancel_order -> {dtc_ordr}")
 
     def send_cancel_orders(self, conta: str, broker: str, senha: str, ativo: str, bolsa: str):
-        return
+        if not self._simulator:
+            super().send_cancel_orders(conta, broker, senha, ativo, bolsa)
+            return
+
+        for ordr in self._dct_orders.get(ativo):
+            symbol = ordr.get("symbol")
+
+            # auction in progress... prevent order to be canceled if its price is into theoretical price.
+            dct_qte = self._dct_quote.get(symbol)
+            if dct_qte.get("state") == 4:
+                # Lado da ordem (Compra=1, Venda=2)
+                th_prc = dct_qte.get("theoretical_price")
+                eval1 = dct_qte.get("side") == 1 and dct_qte.get("price") > th_prc
+                eval2 = dct_qte.get("side") == 2 and dct_qte.get("price") < th_prc
+                if eval1 or eval2:
+                    break
+
+            self._profit_id += 1
+            dtc_ordr = ordr.copy()
+            dtc_ordr["status"] = "Canceled"
+            dtc_ordr["date"] = datetime.now()
+            dtc_ordr["profit_id"] = self._profit_id
+
+            self._dct_orders[symbol].append(dtc_ordr)
+            print(f"send_cancel_orders -> {dtc_ordr}")
 
     def send_cancel_all_orders(self, conta: str, broker: str, senha: str):
-        return
+        if not self._simulator:
+            super().send_cancel_all_orders(conta, broker, senha)
+            return
+
+        for sbl, lst_ordrs in self._dct_orders.items():
+            for ordr in lst_ordrs:
+
+                # auction in progress... prevent order to be canceled if its price is into theoretical price.
+                dct_qte = self._dct_quote.get(sbl)
+                if dct_qte.get("state") == 4:
+                    # Lado da ordem (Compra=1, Venda=2)
+                    th_prc = dct_qte.get("theoretical_price")
+                    eval1 = dct_qte.get("side") == 1 and dct_qte.get("price") > th_prc
+                    eval2 = dct_qte.get("side") == 2 and dct_qte.get("price") < th_prc
+                    if eval1 or eval2:
+                        break
+
+                self._profit_id += 1
+                dtc_ordr = ordr.copy()
+                dtc_ordr["status"] = "Canceled"
+                dtc_ordr["date"] = datetime.now()
+                dtc_ordr["profit_id"] = self._profit_id
+
+                self._dct_orders[sbl].append(dtc_ordr)
+                print(f"send_cancel_all_orders -> {dtc_ordr}")
 
     def send_zero_position(self, conta: str, broker: str, ativo: str, bolsa: str, senha: str, price: float):
         return
@@ -396,3 +503,50 @@ class ProfitDLLSim(ProfitDLL):
 
         lp_tr = make_price_book(lst_book)
         self._dct_lp_tr[asset_id.ticker] = lp_tr
+
+    def _execute_orders(self, ativo, date, price, qtd, trade_type):
+        if not self._simulator:
+            return
+
+        if trade_type not in [2, 3, 4, 12, 13]:
+            return
+
+        lst_ordrs = self._dct_orders.get(ativo)
+        for ordr in lst_ordrs:
+            if ordr.get("status") in ["New", "PartiallyFilled"]:
+                b_found = False
+                for itm in lst_ordrs:
+                    if ordr.get("profit_id") == itm.get("profit_id") and itm.get("status") == "Filled":
+                        break
+
+                if b_found:
+                    continue
+
+                # Lado da ordem (Compra=1, Venda=2)
+                if ordr.get("side") == 1 and price > ordr.get("price") or \
+                        ordr.get("side") == 2 and price < ordr.get("price"):
+                    continue
+
+                self._profit_id += 1
+                dtc_ordr = ordr.copy()
+                if qtd >= dtc_ordr.get("traded_qtd"):
+                    dtc_ordr["status"] = "Filled"
+                    dtc_ordr["profit_id"] = self._profit_id
+
+                else:
+                    dtc_ordr["status"] = "PartiallyFilled"
+
+                dtc_ordr["date"] = date
+
+                self._dct_orders[ativo].append(dtc_ordr)
+                print(f"_execute_orders -> {dtc_ordr}")
+
+    def new_trade_callback(self, asset_id, date, trade_number, price, vol, qtd, buy_agent, sell_agent, trade_type,
+                           is_edit):
+        super().new_trade_callback(asset_id, date, trade_number, price, vol, qtd, buy_agent, sell_agent, trade_type,
+                                   is_edit)
+        self._execute_orders(asset_id.ticker, date, price, qtd, trade_type)
+
+    def history_trade_callback(self, asset_id, date, trade_number, price, vol, qtd, buy_agent, sell_agent, trade_type):
+        super().history_trade_callback(asset_id, date, trade_number, price, vol, qtd, buy_agent, sell_agent, trade_type)
+        self._execute_orders(asset_id.ticker, date, price, qtd, trade_type)

@@ -51,11 +51,9 @@ class ProfitDLL:
     # tipo de ordem do callback TOrderChangeCallback
     _lst_tipo_ordem = [
         "Market", "Limit", "Stop", "StopLimit", "MarketOnClose", "WithOrWithout", "LimitOrBetter",
-        "LimitWithOrWithout",
-        "OnBasis", "OnClose", "LimitOnClose", "ForexMarket", "PreviouslyQuoted", "PreviouslyIndicated",
-        "ForexLimit",
-        "ForexSwap", "ForexPreviouslyQuoted", "Funari", "MarketIfTouched", "MarketWithLeftoverAsLimit",
-        "PreviousFundValuationPoint", "Pegged", "Unknown"
+        "LimitWithOrWithout", "OnBasis", "OnClose", "LimitOnClose", "ForexMarket", "PreviouslyQuoted",
+        "PreviouslyIndicated", "ForexLimit", "ForexSwap", "ForexPreviouslyQuoted", "Funari", "MarketIfTouched",
+        "MarketWithLeftoverAsLimit", "PreviousFundValuationPoint", "Pegged", "Unknown"
     ]
 
     # Valores do Status das callbacks HistoryCallback e OrderChangeCallback.
@@ -429,7 +427,11 @@ class ProfitDLL:
             if not lst_book:
                 return
 
-            lst_prc = [prc for prc in lst_book[side] if prc[0] == price]
+            lst_side = lst_book[side]
+            if not lst_side:
+                return
+
+            lst_prc = [prc for prc in lst_side if prc[0] == price]
             if lst_prc:
                 lst_offers = list(filter(lambda x: x[4].decode("utf-8") == date, lst_prc))
                 if not lst_offers:
@@ -471,20 +473,16 @@ class ProfitDLL:
         if order is None:
             lst_orders.append({
                 "corretora": corretora, "qtd": qtd, "traded_qtd": traded_qtd, "leaves_qtd": leaves_qtd,
-                "side": side,
-                "price": price, "stop_price": stop_price, "avg_price": avg_price, "profit_id": profit_id,
+                "side": side, "price": price, "stop_price": stop_price, "avg_price": avg_price, "profit_id": profit_id,
                 "tipo_ordem": tipo_ordem, "conta": conta, "titular": titular, "cl_ord_id": cl_ord_id,
-                "status": status,
-                "date": date, "symbol": asset_id.ticker
+                "status": status, "date": date, "symbol": asset_id.ticker
             })
         else:
             order.update({
                 "corretora": corretora, "qtd": qtd, "traded_qtd": traded_qtd, "leaves_qtd": leaves_qtd,
-                "side": side,
-                "price": price, "stop_price": stop_price, "avg_price": avg_price, "profit_id": profit_id,
+                "side": side, "price": price, "stop_price": stop_price, "avg_price": avg_price, "profit_id": profit_id,
                 "tipo_ordem": tipo_ordem, "conta": conta, "titular": titular, "cl_ord_id": cl_ord_id,
-                "status": status,
-                "date": date
+                "status": status, "date": date
             })
 
     def progress_callback(self, asset_id, progress):
@@ -536,20 +534,16 @@ class ProfitDLL:
         if order is None:
             lst_orders.append({
                 "corretora": corretora, "qtd": qtd, "traded_qtd": traded_qtd, "leaves_qtd": leaves_qtd,
-                "side": side,
-                "price": price, "stop_price": stop_price, "avg_price": avg_price, "profit_id": profit_id,
+                "side": side, "price": price, "stop_price": stop_price, "avg_price": avg_price, "profit_id": profit_id,
                 "tipo_ordem": tipo_ordem, "conta": conta, "titular": titular, "cl_ord_id": cl_ord_id,
-                "status": status,
-                "date": date, "text_message": text_message, "symbol": asset_id.ticker
+                "status": status, "date": date, "text_message": text_message, "symbol": asset_id.ticker
             })
         else:
             order.update({
                 "corretora": corretora, "qtd": qtd, "traded_qtd": traded_qtd, "leaves_qtd": leaves_qtd,
-                "side": side,
-                "price": price, "stop_price": stop_price, "avg_price": avg_price, "profit_id": profit_id,
+                "side": side, "price": price, "stop_price": stop_price, "avg_price": avg_price, "profit_id": profit_id,
                 "tipo_ordem": tipo_ordem, "conta": conta, "titular": titular, "cl_ord_id": cl_ord_id,
-                "status": status,
-                "date": date, "text_message": text_message
+                "status": status, "date": date, "text_message": text_message
             })
 
     def account_callback(self, corretora, corretora_nome_completo, account_id, nome_titular):
