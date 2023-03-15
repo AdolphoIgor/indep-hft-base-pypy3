@@ -268,7 +268,7 @@ class ProfitDLL:
         dct_quote["security_type_desc"] = self._dct_asset_sec_type.get(security_type)
         dct_quote["security_sub_type_desc"] = self._dct_asset_sec_sub_type.get(security_sub_type)
 
-        logger.debug(f"asset_list_info_callback -> {dct_quote}")
+        # logger.debug(f"asset_list_info_callback -> {dct_quote}")
 
     def asset_list_info_callback_v2(self, asset_id, name, description, min_order_qtd, max_order_qtd, lote,
                                     security_type, security_sub_type, min_price_increment, contract_multiplier,
@@ -294,7 +294,7 @@ class ProfitDLL:
         dct_quote["security_type_desc"] = self._dct_asset_sec_type.get(security_type)
         dct_quote["security_sub_type_desc"] = self._dct_asset_sec_sub_type.get(security_sub_type)
 
-        logger.debug(f"asset_list_info_callback_v2 -> {dct_quote}")
+        # logger.debug(f"asset_list_info_callback_v2 -> {dct_quote}")
 
     def adjust_history_callback(self, asset_id, value, adj_type, observ, dt_ajuste, dt_delib, dt_pagamento,
                                 aff_price):

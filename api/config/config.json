@@ -27,7 +27,7 @@
           "record": false,
           "replay": true,
           "replay_conf": {
-            "date": "2023-03-03",
+            "date": "2023-03-07",
             "loop_init": "08:55:00",
             "loop_end": "19:00:00",
             "speed": 20,
@@ -257,13 +257,53 @@
       ],
       "threads": [
         {
-          "symbol": "WINFUT",
+          "symbol": "DOLFUT",
           "stock_market": "F",
           "broker_id": "15002",
           "tick_value": 0.5,
           "lote": 5,
           "start_param": {
             "order_op_qty": 1
+          }
+        },
+        {
+          "symbol": "WDOFUT",
+          "stock_market": "F",
+          "broker_id": "15002",
+          "tick_value": 0.5,
+          "lote": 1,
+          "start_param": {
+            "order_op_qty": 25
+          }
+        },
+        {
+          "symbol": "INDFUT",
+          "stock_market": "F",
+          "broker_id": "15002",
+          "tick_value": 5,
+          "lote": 5,
+          "start_param": {
+            "order_op_qty": 1
+          }
+        },
+        {
+          "symbol": "WINFUT",
+          "stock_market": "F",
+          "broker_id": "15002",
+          "tick_value": 5,
+          "lote": 1,
+          "start_param": {
+            "order_op_qty": 25
+          }
+        },
+        {
+          "symbol": "DI1F25",
+          "stock_market": "F",
+          "broker_id": "15002",
+          "tick_value": 5,
+          "lote": 1,
+          "start_param": {
+            "order_op_qty": 25
           }
         }
       ],

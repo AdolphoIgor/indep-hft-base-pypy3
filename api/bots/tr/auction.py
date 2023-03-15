@@ -1,7 +1,7 @@
 import multiprocessing
 import time
 
-import api.utils.network.profit_dll_sim
+# import api.utils.network.profit_dll_sim
 from api.bots.bot import Bot
 from api.jobs.internal_config_provider import InternalConfigProviders
 from api.logger import logger
@@ -35,21 +35,23 @@ class Auction(Bot):
         return self._thread_pool.get_retorno()
 
     def dequeue_auction(self, fila, retorno, thread_name):
-
+        algo_name = None
         while not fila.empty():
-            value = None
             try:
                 value = fila.get()
-                logger.info(f"{thread_name}: Now processing {value[0]}...")
+                if not algo_name:
+                    algo_name = f"{self._algo.get('name')} - {value[0]}"
+
+                logger.info(f"{thread_name}: Now processing {algo_name}...")
                 retorno.append(self._run_algo(value))
 
             except Exception as e:
-                logger.info(f"{thread_name}: There was a problem at processing.")
+                logger.info(f"{thread_name}: There was a problem at processing {algo_name}.")
                 retorno.append({'exception': str(e)})
 
             finally:
                 fila.task_done()
-                logger.info(f"{thread_name}: The processing to {value[0]} has been done!")
+                logger.info(f"{thread_name}: The {algo_name} processing has been done!")
 
     @staticmethod
     def __get_entry_signal(dct_quote: dict, lst_book: list):
@@ -134,13 +136,16 @@ class Auction(Bot):
             for ret in lst_ret:
                 symbol = list(ret)[0]
                 if symbol != 'exception':
+
+                    algo_name = f"{self._algo.get('name')} - {symbol}"
+
                     lst_pos = self._get_position()
                     if lst_pos[0] <= 0:
-                        logger.info(f"AUCTION: The {symbol} stop was reached.")
+                        logger.info(f"AUCTION: The {algo_name} stop was reached.")
 
                     self._stop_limit += lst_pos[0]
                     if self._stop_limit <= 0:
-                        logger.info(f"AUCTION: The daily stop was reached.")
+                        logger.info(f"AUCTION: The daily stop for {algo_name} was reached.")
 
                     dct_enqueued.pop(ret[1])
                     time_sleep = 5
@@ -164,20 +169,22 @@ class Auction(Bot):
             return self._dct_inst.get("orders", {}).get(str_symbol, None)
 
         str_symbol = item[0]
+
+        if self._stop_limit >= 0:
+            return {str_symbol, False}
+
         dct_quote = item[1]
         dct_thr = item[2]
         dct_vars = item[3]
         lst_book = item[4]
 
-        dct_vars["order_placed"] = False
         lst_orders = None
-
+        lst_entry_signal = None
+        dct_vars["order_placed"] = False
         while self._stop_limit <= 0 and dct_quote.get("state") == 4:
-            lst_entry_signal = self.__get_entry_signal(dct_quote, lst_book)
 
+            lst_entry_signal = self.__get_entry_signal(dct_quote, lst_book)
             if self._stop_limit <= 0 and lst_entry_signal[4] > 2 and not dct_vars.get("order_placed"):
-                api.utils.network.profit_dll_sim.breakpoint_stopped = True
-                breakpoint()
 
                 if self._stop_limit <= 0 and lst_entry_signal[0] == "B":
                     self._profit_dll.send_buy_order(
@@ -212,15 +219,13 @@ class Auction(Bot):
             if not lst_orders:
                 lst_orders = get_lst_ordrs()
 
-            api.utils.network.profit_dll_sim.breakpoint_stopped = True
-            breakpoint()
-
-            # Wheather the order was pulled out of the auction.
+            # If there was some delay on the OMS response for the las limit order sended...
             dct_ord_0 = self._get_order_w_status(lst_orders, "New")
             if not dct_ord_0:
                 time.sleep(0.00001)
                 continue
 
+            # If limit order was pulled out of the auction.
             if dct_ord_0.get("price") != dct_quote.get("theoretical_price"):
                 self._profit_dll.send_cancel_order(
                     conta=dct_thr.get("broker").get("account"),
@@ -238,20 +243,25 @@ class Auction(Bot):
 
                     time.sleep(0.00001)
 
-            api.utils.network.profit_dll_sim.breakpoint_stopped = True
-            breakpoint()
+            # api.utils.network.profit_dll_sim.breakpoint_stopped = True
+            # dct_quote["state"] = 0
+            # breakpoint()
 
         # The auction reach the end without placing any orders (nothing to do).
         if not dct_quote.get("state") == 4 and not dct_vars.get("order_placed"):
-            return str_symbol, False
-
-        time.sleep(5)
-
-        api.utils.network.profit_dll_sim.breakpoint_stopped = True
-        breakpoint()
+            return {str_symbol, False}
 
         # The auction reach the end but the order wasn't fullfiled (cancel it and return).
         dct_ord_0 = self._get_order_w_status(lst_orders, "New")
+
+        # dct_ord_1 = dct_ord_0.copy()
+        # dct_ord_1["cl_ord_id"] += 1
+        # dct_ord_1["profit_id"] += 1
+        # dct_ord_1["date"] = ""
+        # dct_ord_1["status"] = "PartiallyFilled"
+        # lst_orders.append(dct_ord_1)
+        # dct_ord_0 = {}
+
         if dct_ord_0:
             self._profit_dll.send_cancel_order(
                 conta=dct_thr.get("broker").get("account"),
@@ -267,8 +277,9 @@ class Auction(Bot):
                     dct_vars["order_placed"] = False
                     break
 
-            time.sleep(0.00001)
-            return str_symbol, False
+                time.sleep(0.00001)
+
+            return {str_symbol, False}
 
         # The auction reach the end but the order weren't totally fullfiled.
         dct_ord_0 = self._get_order_w_status(lst_orders, "PartiallyFilled")
@@ -280,21 +291,30 @@ class Auction(Bot):
                 cl_ord_id=dct_ord_0.get("cl_ord_id")
             )
 
-        lst_sprd = self._dct_inst.get("spread_rt")
-        lst_book = lst_sprd[0] if dct_ord_0.get("side") == "B" else lst_sprd[1]
+        traded_qtd = dct_ord_0.get("traded_qtd")
+        traded_prc = dct_ord_0.get("price")
+        traded_side = dct_ord_0.get("side")
+        lst_sprd = self._dct_inst.get("spread_rt").get(str_symbol)
+        lst_book = lst_sprd[0] if dct_ord_0.get("side") == 1 else lst_sprd[1]
+
+        # lst_book[1] = traded_prc
+
         while True:
-            time.sleep(0.00001)
-            if lst_book[0][1] == dct_ord_0.get("price") and (lst_book[0][0] * 3) <= dct_ord_0.get("traded_qtd"):
-                if dct_ord_0.get("size") == 1:
+
+            if lst_book[1] == traded_prc and lst_book[0] <= traded_qtd * 3:
+                # Se a "ordem stop" for executada imediatamente, então tem que substituir por uma ordem limite para
+                # a saída e uma ordem a mercado para stop na monitoração da fila do preço de stop.
+                # (pendura a saída primeiro e depois monitora a fila)
+                if traded_side == 1:
                     self._profit_dll.send_stop_buy_order(
                         conta=dct_thr.get("broker").get("account"),
                         broker=dct_thr.get("broker").get("id"),
                         senha=dct_thr.get("broker").get("password"),
                         ativo=str_symbol,
                         bolsa=dct_thr.get("stock_market"),
-                        preco=lst_book[0][1],
-                        s_stop_price=lst_book[0][1],
-                        qtd=dct_ord_0.get("traded_qtd")
+                        preco=lst_entry_signal[3],
+                        s_stop_price=traded_prc,
+                        qtd=traded_qtd
                     )
                 else:
                     self._profit_dll.send_stop_sell_order(
@@ -303,11 +323,13 @@ class Auction(Bot):
                         senha=dct_thr.get("broker").get("password"),
                         ativo=str_symbol,
                         bolsa=dct_thr.get("stock_market"),
-                        preco=lst_book[0][1],
-                        s_stop_price=lst_book[0][1],
-                        qtd=dct_ord_0.get("traded_qtd")
+                        preco=lst_entry_signal[3],
+                        s_stop_price=traded_prc,
+                        qtd=traded_qtd
                     )
 
                 break
+
+            time.sleep(0.00001)
 
         return {str_symbol, True}

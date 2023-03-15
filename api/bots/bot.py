@@ -65,11 +65,11 @@ class Bot(Thread):
         self._algo["req_instruments"] = list(set(lst_req))
 
         # Restricts to only the assets managed by the current instance.
-        self.__lst_inst = [inst for inst in self._config_prov.get_internal_provider_data("instruments")
-                           if inst.get("type") in self._algo.get("req_instruments")]
+        self._lst_inst = [inst for inst in self._config_prov.get_internal_provider_data("instruments")
+                          if inst.get("type") in self._algo.get("req_instruments")]
 
-        self.__lst_subs = [sub for sub in self._config_prov.get_internal_provider_data("subscriptions")
-                           if sub.get("type") in self._algo.get("req_instruments")]
+        self._lst_subs = [sub for sub in self._config_prov.get_internal_provider_data("subscriptions")
+                          if sub.get("type") in self._algo.get("req_instruments")]
 
         self.__missing_lst_ordrs = True
 
@@ -218,7 +218,7 @@ class Bot(Thread):
         while True:
             dct_res = {}
             lst_found = []
-            for inst in self.__lst_inst:
+            for inst in self._lst_inst:
                 dct_val = {}
                 for sbl in self._lst_sbl:
                     b_found = False
@@ -247,7 +247,7 @@ class Bot(Thread):
             of self._execute() method.
         """
         if self.__missing_lst_ordrs:
-            for inst in self.__lst_inst:
+            for inst in self._lst_inst:
                 if inst.get("type") == "orders":
                     dct_order = {}
                     for sbl in self._lst_sbl:
@@ -266,7 +266,7 @@ class Bot(Thread):
     def __subscribe(self):
         logger.info(f"Subscribing instruments for the algo: {self.name}...")
 
-        for sbs in self.__lst_subs:
+        for sbs in self._lst_subs:
             for sbl in self._lst_sbl_mkt:
                 inst = sbs.get("value")
                 if inst.count(sbl[0]) == 0:
@@ -291,7 +291,7 @@ class Bot(Thread):
     def __unsubscribe(self):
         logger.info(f"Unsubscribing instruments for the algo: {self.name}...")
 
-        for sbs in self.__lst_subs:
+        for sbs in self._lst_subs:
             for sbl in self._lst_sbl_mkt:
                 inst = sbs.get("value")
                 if sbs.get("type") == "quote":

@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from threading import Thread
 
 from api.jobs.internal_config_provider import InternalConfigProviders
+from api.logger import logger
 from api.utils.network.profit_dll import ProfitDLL
 from api.utils.network.profit_dll_recorder import REC_TIME_FMT, REC_PATH
 from api.utils.network.profit_dll_win import TAssetID
@@ -31,14 +32,16 @@ class ProfitDLLSim(ProfitDLL):
             except Exception:
                 raise Exception("Error converting datetime format from replay.")
 
+            file_path = f"{REC_PATH}/{datetime.strptime(file_date, '%Y-%m-%d').strftime('%Y%m%d')}.log"
             try:
+
                 self._b_market_connected = True
 
-                file_path = f"{REC_PATH}/{datetime.strptime(file_date, '%Y-%m-%d').strftime('%Y%m%d')}.log"
                 with open(file_path, mode='r', encoding="UTF-8", newline='\n') as file:
 
                     file_start_idx = 0
                     time_track_a = None
+                    act_line = -1
                     while True:
 
                         if breakpoint_stopped:
@@ -49,8 +52,9 @@ class ProfitDLLSim(ProfitDLL):
                             break
 
                         lst_val = fl_val.replace('\n', '').split("|")
+                        act_line += 1
                         time_track_b = datetime.strptime(lst_val[0], REC_TIME_FMT)
-                        print(f"time: {lst_val[0]}, value: {lst_val[1]}|{lst_val[2][:10]}")
+                        # print(f"time: {lst_val[0]}, value: {lst_val[1]}|{lst_val[2][:10]}")
 
                         if loop_init and loop_init > time_track_b:
                             file_start_idx += 1
@@ -70,10 +74,10 @@ class ProfitDLLSim(ProfitDLL):
                                 time.sleep(lg_sleep)
 
                         asset_id = TAssetID()
-                        lst_param = eval(lst_val[2].replace("nan", "-1"))
-                        asset_id.ticker = lst_param[0]
-                        lst_param[0] = asset_id
-                        exec(f"self.{lst_val[1]}(*lst_param)")
+                        lst_val[2] = eval(lst_val[2].replace("nan", "-1"))
+                        asset_id.ticker = lst_val[2][0]
+                        lst_val[2][0] = asset_id
+                        exec(f"self.{lst_val[1]}(*lst_val[2])")
 
                         if loop_end and loop_end <= time_track_b:
                             file.seek(file_start_idx)
@@ -81,10 +85,14 @@ class ProfitDLLSim(ProfitDLL):
                         time_track_a = time_track_b
 
             except Exception as e:
-                print(f"Exception raised in play_log(). Error: {e}")
+                logger.debug(f"Exception raised in play_log(). File: {file_path}")
+                logger.debug(f"Exception raised in play_log(). Line: {act_line}")
+                logger.debug(f"Exception raised in play_log(). Time: {time_track_b}")
+                logger.debug(f"Exception raised in play_log(). Error: {e}")
 
             finally:
                 self._b_market_connected = False
+                logger.info(f"The replay for {file_date} has been ended.")
 
         play_thr = Thread(target=play, name="play", args=(f_date, loop_start, loop_ending, speed, no_wait))
         play_thr.start()
@@ -172,7 +180,7 @@ class ProfitDLLSim(ProfitDLL):
         }
 
         lst_orders.append(dtc_ordr)
-        print(f"send_buy_order -> {dtc_ordr}")
+        logger.debug(f"send_buy_order -> {dtc_ordr}")
 
     def send_sell_order(self, conta: str, broker: str, senha: str, ativo: str, bolsa: str, preco: float, qtd: int):
         if not self._simulator:
@@ -232,15 +240,17 @@ class ProfitDLLSim(ProfitDLL):
         }
 
         lst_orders.append(dtc_ordr)
-        print(f"send_sell_order -> {dtc_ordr}")
+        logger.debug(f"send_sell_order -> {dtc_ordr}")
 
     def send_stop_buy_order(self, conta: str, broker: str, senha: str, ativo: str, bolsa: str, preco: float,
                             s_stop_price: float, qtd: int):
-        return
+        self.send_sell_order(conta, broker, senha, ativo, bolsa, preco, qtd)
+        self.send_sell_order(conta, broker, senha, ativo, bolsa, s_stop_price, qtd)
 
     def send_stop_sell_order(self, conta: str, broker: str, senha: str, ativo: str, bolsa: str, preco: float,
                              s_stop_price: float, qtd: int):
-        return
+        self.send_buy_order(conta, broker, senha, ativo, bolsa, preco, qtd)
+        self.send_buy_order(conta, broker, senha, ativo, bolsa, s_stop_price, qtd)
 
     def send_change_order(self, conta: str, broker: str, senha: str, cl_ord_id: str, preco: float, qtd: int):
         return
@@ -273,13 +283,16 @@ class ProfitDLLSim(ProfitDLL):
                 return
 
         self._profit_id += 1
+        self._cl_ord_id += 1
+
         dtc_ordr = dct_org_ordr.copy()
         dtc_ordr["status"] = "Canceled"
         dtc_ordr["date"] = datetime.now()
         dtc_ordr["profit_id"] = self._profit_id
+        dtc_ordr["cl_ord_id"] = self._cl_ord_id
 
         self._dct_orders[symbol].append(dtc_ordr)
-        print(f"send_cancel_order -> {dtc_ordr}")
+        logger.debug(f"send_cancel_order -> {dtc_ordr}")
 
     def send_cancel_orders(self, conta: str, broker: str, senha: str, ativo: str, bolsa: str):
         if not self._simulator:
@@ -304,9 +317,10 @@ class ProfitDLLSim(ProfitDLL):
             dtc_ordr["status"] = "Canceled"
             dtc_ordr["date"] = datetime.now()
             dtc_ordr["profit_id"] = self._profit_id
+            dtc_ordr["cl_ord_id"] = self._cl_ord_id
 
             self._dct_orders[symbol].append(dtc_ordr)
-            print(f"send_cancel_orders -> {dtc_ordr}")
+            logger.debug(f"send_cancel_orders -> {dtc_ordr}")
 
     def send_cancel_all_orders(self, conta: str, broker: str, senha: str):
         if not self._simulator:
@@ -331,9 +345,10 @@ class ProfitDLLSim(ProfitDLL):
                 dtc_ordr["status"] = "Canceled"
                 dtc_ordr["date"] = datetime.now()
                 dtc_ordr["profit_id"] = self._profit_id
+                dtc_ordr["cl_ord_id"] = self._cl_ord_id
 
                 self._dct_orders[sbl].append(dtc_ordr)
-                print(f"send_cancel_all_orders -> {dtc_ordr}")
+                logger.debug(f"send_cancel_all_orders -> {dtc_ordr}")
 
     def send_zero_position(self, conta: str, broker: str, ativo: str, bolsa: str, senha: str, price: float):
         return
@@ -511,7 +526,7 @@ class ProfitDLLSim(ProfitDLL):
         if trade_type not in [2, 3, 4, 12, 13]:
             return
 
-        lst_ordrs = self._dct_orders.get(ativo)
+        lst_ordrs = self._dct_orders.get(ativo, [])
         for ordr in lst_ordrs:
             if ordr.get("status") in ["New", "PartiallyFilled"]:
                 b_found = False
@@ -528,10 +543,12 @@ class ProfitDLLSim(ProfitDLL):
                     continue
 
                 self._profit_id += 1
+                self._cl_ord_id += 1
                 dtc_ordr = ordr.copy()
                 if qtd >= dtc_ordr.get("traded_qtd"):
                     dtc_ordr["status"] = "Filled"
                     dtc_ordr["profit_id"] = self._profit_id
+                    dtc_ordr["cl_ord_id"] = self._cl_ord_id
 
                 else:
                     dtc_ordr["status"] = "PartiallyFilled"
@@ -539,14 +556,16 @@ class ProfitDLLSim(ProfitDLL):
                 dtc_ordr["date"] = date
 
                 self._dct_orders[ativo].append(dtc_ordr)
-                print(f"_execute_orders -> {dtc_ordr}")
+                logger.debug(f"_execute_orders -> {dtc_ordr}")
 
     def new_trade_callback(self, asset_id, date, trade_number, price, vol, qtd, buy_agent, sell_agent, trade_type,
                            is_edit):
         super().new_trade_callback(asset_id, date, trade_number, price, vol, qtd, buy_agent, sell_agent, trade_type,
                                    is_edit)
         self._execute_orders(asset_id.ticker, date, price, qtd, trade_type)
+        logger.debug(f"new_trade_callback -> {asset_id.ticker}, {date}, {price}, {qtd}")
 
     def history_trade_callback(self, asset_id, date, trade_number, price, vol, qtd, buy_agent, sell_agent, trade_type):
         super().history_trade_callback(asset_id, date, trade_number, price, vol, qtd, buy_agent, sell_agent, trade_type)
         self._execute_orders(asset_id.ticker, date, price, qtd, trade_type)
+        logger.debug(f"history_trade_callback -> {asset_id.ticker}, {date}, {price}, {qtd}")
