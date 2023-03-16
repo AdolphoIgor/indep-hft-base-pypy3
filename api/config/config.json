@@ -24,8 +24,8 @@
         "soft_key": "1054617003966110409",
         "debug_mode": {
           "enabled": true,
-          "record": false,
-          "replay": true,
+          "record": true,
+          "replay": false,
           "replay_conf": {
             "date": "2023-03-07",
             "loop_init": "08:55:00",
@@ -256,6 +256,16 @@
         "quote_adtl"
       ],
       "threads": [
+        {
+          "symbol": "",
+          "stock_market": "B",
+          "broker_id": "15002",
+          "tick_value": 0.1,
+          "lote": 100,
+          "start_param": {
+            "order_op_qty": 1
+          }
+        },
         {
           "symbol": "DOLFUT",
           "stock_market": "F",

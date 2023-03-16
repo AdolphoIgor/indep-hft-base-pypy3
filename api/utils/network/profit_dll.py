@@ -378,6 +378,21 @@ class ProfitDLL:
         # logger.debug(f"set_theoretical_price_callback -> {dct_quote}")
 
     def state_callback(self, type_val, result):
+        """
+            connStMarket : TConnMarketDataState ( conncsDisconnected = 0, conncsConnecting = 1,
+            conncsConnectedWaiting = 2, conncsConnectedNotLogged = 3, conncsConnectedLogged = 4 );
+
+            connStLogin : TConnAuthenticationResult ( connArSuccess = 0, connArLoginInvalid = 1,
+            connArPasswordInvalid = 2, connArPasswordBlocked = 3, connArPasswordExpired = 4,
+            connArUnknown = 200);
+
+            connStBroker : TConnBrokerConnectionState ( connHcsDisconnected=0, connHcsConnecting=1,
+            connHcsConnected=2, connHcsBrokerDisconnected=3, connHcsBrokerConnecting=4,
+            connHcsBrokerConnected=5 );
+
+            connStActv : TConnActivationResult ( connActivatValid = 0, connActivatInvalid =1 );
+
+        """
         # 0 : connStLogin (Notify Login Change)
         if type_val == 0:
             if result == 0:

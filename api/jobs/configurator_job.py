@@ -42,7 +42,7 @@ class ConfiguratorJob(Job):
                                 username=self._config.get("username"),
                                 password=self._config.get("password")
                             )
-                            api.utils.network.profit_dll.prov_conn = dct_sys_cfg["prov_conn"]
+                            api.utils.network.profit_dll_win.prov_conn = dct_sys_cfg["prov_conn"]
                             dct_sys_cfg["prov_conn"].connect()
 
                         elif self._dct_debug_mode.get("record"):
@@ -52,7 +52,7 @@ class ConfiguratorJob(Job):
                                 username=self._config.get("username"),
                                 password=self._config.get("password")
                             )
-                            api.utils.network.profit_dll.prov_conn = dct_sys_cfg["prov_conn"]
+                            api.utils.network.profit_dll_win.prov_conn = dct_sys_cfg["prov_conn"]
                             dct_sys_cfg["prov_conn"].connect()
 
                         elif self._dct_debug_mode.get("replay"):
