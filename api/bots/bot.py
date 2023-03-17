@@ -236,6 +236,8 @@ class Bot(Thread):
                 self._dct_inst.update(dct_res)
                 break
 
+            time.sleep(0.1)
+
         logger.info(f"All de instruments for the algo: {self.name} has been received.")
 
     def _get_missing_lst_ordrs(self):
