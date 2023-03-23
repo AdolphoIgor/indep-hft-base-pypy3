@@ -108,7 +108,7 @@ if os.name == "nt":
                         tiny_book_callback)
 
                 while True:
-                    if self.is_connected:
+                    if self.is_connected():
                         self._profit_dll.SetChangeCotationCallback(change_cotation_callback)
                         self._profit_dll.SetAssetListCallback(asset_list_callback)
                         self._profit_dll.SetAssetListInfoCallback(asset_list_info_callback)
