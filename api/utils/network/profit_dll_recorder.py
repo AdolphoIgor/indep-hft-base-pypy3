@@ -198,6 +198,10 @@ if os.name == "nt":
                 if not offer_book:
                     return []
 
+                for off_bk in offer_book:
+                    if off_bk[0] is None:
+                        off_bk[0] = []
+
                 return [proc_side(offer_book[0][::-1]), proc_side(offer_book[1][::-1])]
 
             def decript(price_array):
