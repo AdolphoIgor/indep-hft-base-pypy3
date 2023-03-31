@@ -614,8 +614,7 @@ if os.name == "nt":
                             has_date, has_offer_id, has_agent, date, array_sell, array_buy):
         if prov_conn:
             prov_conn.offer_book_callback(asset_id, action, position, side, qtd, agent, offer_id, price, has_price,
-                                          has_qtd,
-                                          has_date, has_offer_id, has_agent, date, array_sell, array_buy)
+                                          has_qtd, has_date, has_offer_id, has_agent, date, array_sell, array_buy)
 
 
     @WINFUNCTYPE(None, TAssetID, c_double, c_longlong)

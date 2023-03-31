@@ -199,10 +199,14 @@ if os.name == "nt":
                     return []
 
                 for off_bk in offer_book:
-                    if off_bk[0] is None:
-                        off_bk[0] = []
+                    if off_bk is None:
+                        off_bk = []
+                        continue
 
-                return [proc_side(offer_book[0][::-1]), proc_side(offer_book[1][::-1])]
+                    if off_bk:
+                        off_bk = off_bk[::-1]
+
+                return [proc_side(offer_book[0]), proc_side(offer_book[1])]
 
             def decript(price_array):
                 price_array_decripted = []
@@ -279,8 +283,7 @@ if os.name == "nt":
 
             self.record_log("offer_book_callback",
                             [asset_id.ticker, action, position, side, qtd, agent, offer_id, price,
-                             has_price, has_qtd, has_date, has_offer_id, has_agent,
-                             date, None, None])
+                             has_price, has_qtd, has_date, has_offer_id, has_agent, date, None, None])
 
         def set_theoretical_price_callback(self, asset_id, theoretical_price, theoretical_qtd):
             super().set_theoretical_price_callback(asset_id, theoretical_price, theoretical_qtd)
