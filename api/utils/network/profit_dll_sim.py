@@ -42,6 +42,7 @@ class ProfitDLLSim(ProfitDLL):
                     file_start_idx = 0
                     time_track_a = None
                     act_line = -1
+                    lst_repl_sbl = ['DOLFUT', 'WDOFUT', 'INDFUT', 'WINFUT']
                     while True:
 
                         if breakpoint_stopped:
@@ -75,7 +76,14 @@ class ProfitDLLSim(ProfitDLL):
 
                         asset_id = TAssetID()
                         lst_val[2] = eval(lst_val[2].replace("nan", "-1"))
-                        asset_id.ticker = lst_val[2][0]
+
+                        symbol = lst_val[2][0]
+                        for sbl in lst_repl_sbl:
+                            if symbol.find(sbl[:3]) >= 0:
+                                symbol = sbl
+                                break
+
+                        asset_id.ticker = symbol
                         lst_val[2][0] = asset_id
                         exec(f"self.{lst_val[1]}(*lst_val[2])")
 
@@ -563,9 +571,9 @@ class ProfitDLLSim(ProfitDLL):
         super().new_trade_callback(asset_id, date, trade_number, price, vol, qtd, buy_agent, sell_agent, trade_type,
                                    is_edit)
         self._execute_orders(asset_id.ticker, date, price, qtd, trade_type)
-        logger.debug(f"new_trade_callback -> {asset_id.ticker}, {date}, {price}, {qtd}")
+        # logger.debug(f"new_trade_callback -> {asset_id.ticker}, {date}, {price}, {qtd}")
 
     def history_trade_callback(self, asset_id, date, trade_number, price, vol, qtd, buy_agent, sell_agent, trade_type):
         super().history_trade_callback(asset_id, date, trade_number, price, vol, qtd, buy_agent, sell_agent, trade_type)
         self._execute_orders(asset_id.ticker, date, price, qtd, trade_type)
-        logger.debug(f"history_trade_callback -> {asset_id.ticker}, {date}, {price}, {qtd}")
+        # logger.debug(f"history_trade_callback -> {asset_id.ticker}, {date}, {price}, {qtd}")

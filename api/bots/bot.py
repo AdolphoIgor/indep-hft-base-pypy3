@@ -1,4 +1,5 @@
 import time
+import traceback
 from datetime import datetime
 from threading import Thread
 
@@ -11,6 +12,7 @@ class Bot(Thread):
     # CONSTANTS
     ARM_ONE = 1
     ARM_TWO = 2
+    ARM_TOO_MANY = -1
 
     AGR_BMF = 60
     AGR_BOV = 1.30
@@ -31,9 +33,6 @@ class Bot(Thread):
 
         self._dct_asset_state = self._profit_dll.get_asset_state()
         self._dct_ord_status = self._profit_dll.get_dct_order_status()
-
-        # When running bots which requires a scan of an entire stockmarket that method should take care of it.
-        self.__run_entire_market()
 
         self._lst_sbl_mkt = [(alg.get("symbol"), alg.get("stock_market")) for alg in self._algo.get("threads")]
         self._lst_sbl = [sbl[0] for sbl in self._lst_sbl_mkt]
@@ -85,49 +84,6 @@ class Bot(Thread):
         """
         pass
 
-    def __run_entire_market(self):
-        lst_threads = [thr for thr in self._algo.get("threads") if not thr.get("symbol")]
-        if not lst_threads:
-            return
-
-        for thr in lst_threads:
-            self._profit_dll.get_all_ticker(thr.get("stock_market"))
-
-        # Filters
-        lst_quotes = [
-            (k, v.get("security_type"), v.get("lote"))
-            for k, v in self._config_prov.get_internal_provider_data(
-                "quote", sublist=self._config_prov.get_internal_provider_data("instruments")).items()
-            if ((v.get("security_type") == 14 and v.get("security_sub_type") == 25 and v.get("lote") == 100) or
-                (v.get("security_type") == 15 and v.get("security_sub_type") == 26 and v.get("lote") == 100) or
-                (v.get("security_type") == 0 and v.get("security_sub_type") in [2, 4, 13]))
-        ]
-
-        # Configures
-        lst_return = []
-        for quote in lst_quotes:
-
-            thr_sel = None
-            stock_market = "F" if quote[1] == 0 else "B"
-            for thr in lst_threads:
-                if thr.get("stock_market") == stock_market:
-                    thr_sel = thr
-                    break
-
-            if not thr_sel:
-                continue
-
-            dct_thr_cpy = eval(str(thr_sel))
-            dct_thr_cpy["symbol"] = quote[0]
-            dct_thr_cpy["stock_market"] = stock_market
-            dct_thr_cpy.get("start_param")["order_op_qty"] *= quote[2]
-            lst_return.append(dct_thr_cpy)
-
-        lst_threads = [thr for thr in self._algo.get("threads") if thr.get("symbol")]
-        self._algo.get("threads").clear()
-        self._algo.get("threads").extend(lst_threads)
-        self._algo.get("threads").extend(lst_return)
-
     def __initialize_super(self):
         # Get the multiplier in order to simulate an order at market. BM&F increase 30 ticks, Bovespa increase 15%.
         for thr in self._algo.get("threads"):
@@ -141,7 +97,7 @@ class Bot(Thread):
                 elif dct_quote.get("security_type") in [14, 15]:
                     thr["agr_adj"] = self.AGR_BOV
 
-    def __recover_shutdownd_state(self):
+    def _recover_shutdownd_state(self):
         # when the system were interrupted after opened orders, they must be cleaned.
         for sbl, lst_ordr in self._dct_inst.get("orders", {}).items():
 
@@ -179,10 +135,10 @@ class Bot(Thread):
 
     def run(self):
         logger.info(f"Initializing the algo name: {self.name}...")
-        self.__subscribe()
+        self._subscribe()
         self.__init_instruments()
         self.__initialize_super()
-        self.__recover_shutdownd_state()
+        self._recover_shutdownd_state()
         self._initilize()
 
         while self._config_prov.get_keep_running() and self._algo.get("enabled"):
@@ -191,6 +147,8 @@ class Bot(Thread):
                 self._execute()
 
             except Exception:
+                logger.error(traceback.format_exc())
+
                 self._init_orders_instruments()
 
                 if self._profit_dll and not self._profit_dll.is_connected():
@@ -199,7 +157,7 @@ class Bot(Thread):
 
                     time.sleep(0.2)
 
-        self.__unsubscribe()
+        self._unsubscribe()
         logger.info(f"The algo name: {self.name} was finalized.")
 
     def _test_qtd_assets(self):
@@ -265,7 +223,7 @@ class Bot(Thread):
                 self.__missing_lst_ordrs = False
                 logger.info(f"All of the  symbol's list of orders for the algo: {self.name} were recovered.")
 
-    def __subscribe(self):
+    def _subscribe(self):
         logger.info(f"Subscribing instruments for the algo: {self.name}...")
 
         for sbs in self._lst_subs:
@@ -290,7 +248,7 @@ class Bot(Thread):
         time.sleep(1)
         logger.info(f"Instruments subscription for the algo: {self.name} done.")
 
-    def __unsubscribe(self):
+    def _unsubscribe(self):
         logger.info(f"Unsubscribing instruments for the algo: {self.name}...")
 
         for sbs in self._lst_subs:
@@ -360,4 +318,4 @@ class Bot(Thread):
         comb_pos = cons_pos + act_pos
 
         stp_lmt = self._algo.get("stop_param").get("stop_limit")
-        return cons_pos, act_pos, comb_pos, cons_pos < stp_lmt, act_pos < stp_lmt, comb_pos < stp_lmt
+        return [cons_pos, act_pos, comb_pos, cons_pos < stp_lmt, act_pos < stp_lmt, comb_pos < stp_lmt]
