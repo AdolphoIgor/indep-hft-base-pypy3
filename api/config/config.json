@@ -24,13 +24,13 @@
         "soft_key": "1054617003966110409",
         "debug_mode": {
           "enabled": true,
-          "record": true,
-          "replay": false,
+          "record": false,
+          "replay": true,
           "replay_conf": {
-            "date": "2023-03-07",
-            "loop_init": "08:55:00",
-            "loop_end": "19:00:00",
-            "speed": 20,
+            "date": "2023-03-10",
+            "loop_init": "08:00:00",
+            "loop_end": "20:00:00",
+            "speed": 10,
             "no_wait": true
           },
           "simulator": true
@@ -257,60 +257,10 @@
       ],
       "threads": [
         {
-          "symbol": "",
-          "stock_market": "B",
-          "broker_id": "15002",
-          "tick_value": 0.1,
-          "lote": 100,
-          "start_param": {
-            "order_op_qty": 1
-          }
-        },
-        {
-          "symbol": "DOLFUT",
-          "stock_market": "F",
-          "broker_id": "15002",
-          "tick_value": 0.5,
-          "lote": 5,
-          "start_param": {
-            "order_op_qty": 1
-          }
-        },
-        {
           "symbol": "WDOFUT",
           "stock_market": "F",
           "broker_id": "15002",
           "tick_value": 0.5,
-          "lote": 1,
-          "start_param": {
-            "order_op_qty": 25
-          }
-        },
-        {
-          "symbol": "INDFUT",
-          "stock_market": "F",
-          "broker_id": "15002",
-          "tick_value": 5,
-          "lote": 5,
-          "start_param": {
-            "order_op_qty": 1
-          }
-        },
-        {
-          "symbol": "WINFUT",
-          "stock_market": "F",
-          "broker_id": "15002",
-          "tick_value": 5,
-          "lote": 1,
-          "start_param": {
-            "order_op_qty": 25
-          }
-        },
-        {
-          "symbol": "DI1F25",
-          "stock_market": "F",
-          "broker_id": "15002",
-          "tick_value": 5,
           "lote": 1,
           "start_param": {
             "order_op_qty": 25
@@ -331,7 +281,7 @@
             }
           ]
         },
-        "stop_limit": -500.00
+        "stop_limit": -1000000.00
       },
       "start_param": {
         "threshold": {
@@ -393,6 +343,16 @@
         "quote_adtl"
       ],
       "threads": [
+        {
+          "symbol": "",
+          "stock_market": "B",
+          "broker_id": "15002",
+          "tick_value": 0.01,
+          "lote": 1,
+          "start_param": {
+            "order_op_qty": 100
+          }
+        },
         {
           "symbol": "DOLFUT",
           "stock_market": "F",
